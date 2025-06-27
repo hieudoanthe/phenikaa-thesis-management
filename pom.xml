@@ -25,7 +25,6 @@
     <module>gateway/api-gateway</module>
     <module>discovery/discovery-server</module>
     <module>config/config-server</module>
-    <module>frontend</module>
   </modules>
 
   <properties>
