@@ -1,0 +1,31 @@
+server:
+  port: 8081  # Cổng riêng của service này (VD: user-service)
+
+spring:
+  application:
+    name: user-service  # Tên service (phải trùng với tên file trong Config Server)
+
+  config:
+    import: "configserver:"  # Khai báo sử dụng Config Server
+
+  cloud:
+    config:
+      uri: http://localhost:8888  # Địa chỉ Config Server
+      fail-fast: true  # Nếu không load được config thì fail luôn (an toàn khi chạy prod)
+      retry:
+        initial-interval: 1000  # Retry sau 1s
+        max-attempts: 6         # Tối đa 6 lần
+        multiplier: 1.2         # Tăng dần mỗi lần retry
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/  # Địa chỉ Discovery Server (Eureka)
+    fetch-registry: true
+    register-with-eureka: true
+
+logging:
+  level:
+    org.springframework: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
