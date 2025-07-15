@@ -7,4 +7,10 @@ spring:
       server:
         git:
           uri: https://github.com/hieudoanthe/phenikaa-config-repo.git
-          default-label: main # hoặc master
+          default-label: main
+          search-paths:
+            - thesis-service
+            - user-service
+logging:
+  level:
+    org.springframework.cloud.config: DEBUG

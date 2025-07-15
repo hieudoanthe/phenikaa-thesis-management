@@ -4,7 +4,8 @@ server:
 spring:
   application:
     name: user-service  # Tên service (phải trùng với tên file trong Config Server)
-
+  profiles:
+    active: dev
   config:
     import: "configserver:"  # Khai báo sử dụng Config Server
 

@@ -11,7 +11,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>assignment-service</artifactId>
+    <artifactId>academic-config-service</artifactId>
 
     <dependencies>
         <dependency>
