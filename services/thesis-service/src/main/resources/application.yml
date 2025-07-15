@@ -4,10 +4,10 @@ server:
 spring:
   application:
     name: thesis-service  # Tên service (phải trùng với tên file trong Config Server)
-
+  profiles:
+    active: dev
   config:
     import: "configserver:"  # Khai báo sử dụng Config Server
-
   cloud:
     config:
       uri: http://localhost:8888  # Địa chỉ Config Server
@@ -20,7 +20,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/  # Địa chỉ Discovery Server (Eureka)
+      defaultZone: http://localhost:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
 
