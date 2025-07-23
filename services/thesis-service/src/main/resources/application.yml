@@ -1,28 +1,22 @@
 server:
-  port: 8082  # Cổng riêng của service này (VD: user-service)
+  port: 8082
 
 spring:
   application:
-    name: thesis-service  # Tên service (phải trùng với tên file trong Config Server)
+    name: thesis-service
   profiles:
     active: dev
   config:
-    import: "configserver:"  # Khai báo sử dụng Config Server
+    import: "configserver:"
+
   cloud:
     config:
-      uri: http://localhost:8888  # Địa chỉ Config Server
-      fail-fast: true  # Nếu không load được config thì fail luôn (an toàn khi chạy prod)
+      uri: http://localhost:8888
+      fail-fast: true
       retry:
-        initial-interval: 1000  # Retry sau 1s
-        max-attempts: 6         # Tối đa 6 lần
-        multiplier: 1.2         # Tăng dần mỗi lần retry
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    fetch-registry: true
-    register-with-eureka: true
+        initial-interval: 1000
+        max-attempts: 6
+        multiplier: 1.2
 
 logging:
   level:

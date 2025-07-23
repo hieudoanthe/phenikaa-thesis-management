@@ -11,6 +11,14 @@ spring:
           search-paths:
             - thesis-service
             - user-service
+            - academic-config-service
+            - assign-service
+            - communication-log-service
+            - eval-service
+            - group-service
+            - profile-service
+            - submission-service
+
 logging:
   level:
     org.springframework.cloud.config: DEBUG

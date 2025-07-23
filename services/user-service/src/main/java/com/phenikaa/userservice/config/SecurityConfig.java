@@ -34,8 +34,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/test/public").permitAll()
-                        .requestMatchers("/api/user/**").hasAnyRole("ADMIN", "USER") // ROLE_
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/api/lecturer/**").hasAnyRole("TEACHER")
+                        .requestMatchers("/api/student/**").hasAnyRole("STUDENT")
+                        .requestMatchers("/internal/**").hasAnyRole("ADMIN", "STUDENT", "TEACHER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -51,7 +53,10 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173") // Vite mặc định cổng này
+//                        .allowedOrigins("http://localhost:5173")
+//                        .allowedOrigins("http://localhost:8082")
+//                        .allowedOrigins("http://localhost:8083")
+                        .allowedOrigins("*")
                         .allowedMethods("*")
                         .allowedHeaders("*");
             }

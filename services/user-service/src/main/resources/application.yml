@@ -1,5 +1,5 @@
 server:
-  port: 8081  # Cổng riêng của service này (VD: user-service)
+  port: 8081
 
 spring:
   application:
@@ -17,13 +17,6 @@ spring:
         initial-interval: 1000  # Retry sau 1s
         max-attempts: 6         # Tối đa 6 lần
         multiplier: 1.2         # Tăng dần mỗi lần retry
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/  # Địa chỉ Discovery Server (Eureka)
-    fetch-registry: true
-    register-with-eureka: true
 
 logging:
   level:

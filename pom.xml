@@ -25,9 +25,9 @@
     <module>services/user-service</module>
     <module>services/thesis-service</module>
     <module>services/academic-config-service</module>
-    <module>services/assignment-service</module>
+    <module>services/assign-service</module>
+    <module>services/eval-service</module>
     <module>services/communication-log-service</module>
-    <module>services/evaluation-service</module>
     <module>services/group-service</module>
     <module>services/profile-service</module>
     <module>services/submission-service</module>

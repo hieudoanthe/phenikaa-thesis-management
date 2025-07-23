@@ -1,13 +1,15 @@
 package com.phenikaa.userservice.security;
 
-import com.phenikaa.userservice.entity.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
-import io.jsonwebtoken.security.Keys;
+
 import java.security.Key;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -26,11 +28,11 @@ public class JwtTokenProvider {
     private long refreshExpirationMs;
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());  // Sử dụng secret key để tạo Signing Key
+        return Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret));
     }
 
     // Sinh Access Token
-    public String generateAccessToken(String username, Collection<? extends GrantedAuthority> authorities) {
+    public String generateAccessToken(String username, Integer userId, Collection<? extends GrantedAuthority> authorities) {
         List<String> roles = authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
@@ -41,6 +43,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("roles", roles)
+                .claim("userId", userId)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
@@ -50,24 +53,35 @@ public class JwtTokenProvider {
     // Sinh Refresh Token
     public String generateRefreshToken(String username) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + refreshExpirationMs);  // Lấy thời gian hết hạn cho refresh token
+        Date expiryDate = new Date(now.getTime() + refreshExpirationMs);
 
         return Jwts.builder()
                 .setSubject(username)  // Đặt username là subject
                 .setIssuedAt(now)  // Thời gian tạo token
-                .setExpiration(expiryDate)  // Thời gian hết hạn
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)  // Sử dụng HS512 để ký refresh token
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
+    }
+
+    // Lấy userID từ JWT
+    public Integer extractUserIdFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.get("userId", Integer.class);
     }
 
     // Lấy username từ JWT
     public String getUsernameFromJWT(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())  // Đặt signing key
+                .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)  // Parse claims từ token
                 .getBody()
-                .getSubject();  // Lấy username từ subject
+                .getSubject();
     }
 
     // Kiểm tra tính hợp lệ của token
@@ -84,10 +98,10 @@ public class JwtTokenProvider {
     // Lấy thời gian hết hạn của token (để debug hoặc log)
     public Date getExpirationDateFromToken(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())  // Đặt signing key
+                .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
-                .getExpiration();  // Lấy thời gian hết hạn
+                .getExpiration();
     }
 }

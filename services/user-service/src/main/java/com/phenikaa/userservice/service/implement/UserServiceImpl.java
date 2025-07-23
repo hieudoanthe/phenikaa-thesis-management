@@ -1,5 +1,6 @@
 package com.phenikaa.userservice.service.implement;
 
+import com.phenikaa.common.dto.UserDto;
 import com.phenikaa.userservice.dao.interfaces.UserDao;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.service.interfaces.UserService;
@@ -25,6 +26,13 @@ public class UserServiceImpl implements UserService {
     public User save(User user) {
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
         return userDao.save(user);
+    }
+
+    @Override
+    public UserDto getUserById(Integer id) {
+        UserDto user = new UserDto();
+        user.setId(id);
+        return user;
     }
 }
 

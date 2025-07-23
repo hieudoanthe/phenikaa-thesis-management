@@ -1,11 +1,10 @@
 package com.phenikaa.userservice.controller;
 
+import com.phenikaa.userservice.config.CustomUserDetails;
 import com.phenikaa.userservice.dto.response.AuthResponse;
-import com.phenikaa.userservice.security.JwtTokenProvider;
 import com.phenikaa.userservice.dao.interfaces.UserDao;
-import com.phenikaa.userservice.dto.response.JwtResponse;
 import com.phenikaa.userservice.dto.request.LoginRequest;
-import com.phenikaa.userservice.entity.User;
+import com.phenikaa.userservice.security.JwtTokenProvider;
 import com.phenikaa.userservice.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,15 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,21 +28,8 @@ public class AuthController {
     private final CustomUserDetailsService customUserDetailsService;
     private final PasswordEncoder passwordEncoder;
 
-    @PostMapping("/login1")
-    public ResponseEntity<?> test(@RequestBody Map<String, Object> body) {
-        String encodedPassword = passwordEncoder.encode("123456");
-        User user = new User();
-        user.setUserId("1");
-        user.setUsername("admin");
-        user.setFullName("Admin User");
-        user.setPasswordHash(encodedPassword);
-        System.out.println(encodedPassword);
-        return ResponseEntity.ok("OK");
-    }
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // 1. Xác thực username + password
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
@@ -56,19 +37,39 @@ public class AuthController {
                 )
         );
 
-        // 2. Lưu Authentication vào SecurityContextHolder
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // 3. Lấy thông tin UserDetails từ DB
-        UserDetails userDetails = customUserDetailsService.loadUserByUsername(loginRequest.getUsername());
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        // 4. Sinh token dùng thông tin từ UserDetails (không ép kiểu về User)
-        String accessToken = jwtTokenProvider.generateAccessToken(userDetails.getUsername(), userDetails.getAuthorities());
+        String expectedRole = "ROLE_" + loginRequest.getRole();
+        boolean matched = userDetails.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals(expectedRole));
+
+        if (!matched) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bạn không có quyền với vai trò đã chọn.");
+        }
+
+        String actualRole = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(r -> r.replace("ROLE_", ""))
+                .findFirst()
+                .orElse("USER");
+
+        String accessToken = jwtTokenProvider.generateAccessToken(
+                userDetails.getUsername(),
+                userDetails.getUserId(),
+                userDetails.getAuthorities()
+        );
         String refreshToken = jwtTokenProvider.generateRefreshToken(userDetails.getUsername());
 
-        // 5. Trả về AccessToken và RefreshToken
-        AuthResponse authResponse = new AuthResponse(accessToken, refreshToken);
+        // Log để kiểm tra
+        System.out.println("userId: " + userDetails.getUserId());
+        System.out.println("accessToken: " + accessToken);
+
+        AuthResponse authResponse = new AuthResponse(userDetails.getUserId(),accessToken, refreshToken, actualRole);
+
         return ResponseEntity.ok(authResponse);
+
     }
 
 }

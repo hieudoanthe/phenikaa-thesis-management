@@ -6,8 +6,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -24,6 +22,11 @@ public class UserDaoImpl implements UserDao {
         TypedQuery<User> query = entityManager.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
         query.setParameter("username", username);
         return Optional.ofNullable(query.getSingleResult());
+    }
+
+    @Override
+    public Optional<User> findByUserId(String userId) {
+        return Optional.empty();
     }
 
     @Override

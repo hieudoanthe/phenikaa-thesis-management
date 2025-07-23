@@ -14,9 +14,9 @@ import java.util.Set;
 @ToString
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private String userId;
+    private Integer userId;
 
     @Column(name = "username")
     private String username;
