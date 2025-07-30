@@ -5,14 +5,11 @@ import com.phenikaa.apigateway.security.ServerHttpBearerAuthenticationConverter;
 import com.phenikaa.utils.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
-import reactor.core.publisher.Mono;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 
 @Configuration

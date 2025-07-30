@@ -15,31 +15,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//@Component
+@Component
 public class JwtTokenProvider {
 
-//    @Value("${jwt.secret}")
-//    private String jwtSecret;
-//
-//    @Value("${jwt.expiration}")
-//    private long jwtExpirationInMs;
-//
-//    @Value("${jwt.refresh-expiration}")
-//    private long refreshExpirationMs;
-//
-//    private Key getSigningKey() {
-//        return Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret));
-//    }
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
-    private final String jwtSecret;
-    private final long jwtExpirationInMs;
-    private final long refreshExpirationMs;
+    @Value("${jwt.expiration}")
+    private long accessTokenExpiration;
 
-    public JwtTokenProvider(String jwtSecret, long jwtExpirationInMs, long refreshExpirationMs) {
-        this.jwtSecret = jwtSecret;
-        this.jwtExpirationInMs = jwtExpirationInMs;
-        this.refreshExpirationMs = refreshExpirationMs;
-    }
+    @Value("${jwt.refresh-expiration}")
+    private long refreshTokenExpiration;
+
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret));
@@ -53,7 +40,7 @@ public class JwtTokenProvider {
                 .collect(Collectors.toList());
 
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
+        Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
 
         return Jwts.builder()
                 .setSubject(username)
@@ -68,7 +55,7 @@ public class JwtTokenProvider {
     // Sinh Refresh Token
     public String generateRefreshToken(String username) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + refreshExpirationMs);
+        Date expiryDate = new Date(now.getTime() + refreshTokenExpiration);
 
         return Jwts.builder()
                 .setSubject(username)  // Đặt username là subject
