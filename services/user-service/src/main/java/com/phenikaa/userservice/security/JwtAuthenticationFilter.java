@@ -1,5 +1,6 @@
 package com.phenikaa.userservice.security;
 
+import com.phenikaa.security.JwtTokenProvider;
 import com.phenikaa.userservice.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -44,4 +45,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 }
-

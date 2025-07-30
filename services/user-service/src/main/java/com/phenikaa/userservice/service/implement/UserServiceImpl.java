@@ -1,38 +1,43 @@
 package com.phenikaa.userservice.service.implement;
 
-import com.phenikaa.common.dto.UserDto;
-import com.phenikaa.userservice.dao.interfaces.UserDao;
+import com.phenikaa.userservice.dto.request.UserRequest;
 import com.phenikaa.userservice.entity.User;
+import com.phenikaa.userservice.mapper.UserMapper;
 import com.phenikaa.userservice.service.interfaces.UserService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final UserDao userDao;
+    @PersistenceContext
+    private EntityManager entityManager;
+
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
     @Override
-    public Optional<User> findByUsername(String username) {
-        return userDao.findByUsername(username);
-    }
+    @Transactional
+    public User saveUser(UserRequest userRequest) {
+        // Chuyển đổi DTO thành Entity
+        User user = userMapper.toEntity(userRequest, entityManager);
 
-    @Override
-    public User save(User user) {
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
-        return userDao.save(user);
-    }
+        // Mã hóa mật khẩu trước khi lưu
+        if (userRequest.getPassword() != null && !userRequest.getPassword().isBlank()) {
+            String encodedPassword = passwordEncoder.encode(userRequest.getPassword());
+            user.setPasswordHash(encodedPassword);
+        } else {
+            throw new IllegalArgumentException("Password không được để trống");
+        }
 
-    @Override
-    public UserDto getUserById(Integer id) {
-        UserDto user = new UserDto();
-        user.setId(id);
+        // Lưu entity vào DB
+        entityManager.persist(user);
+
         return user;
     }
 }
-

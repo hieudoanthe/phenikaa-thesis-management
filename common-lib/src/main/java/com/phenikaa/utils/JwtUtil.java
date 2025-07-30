@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Base64;
+import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -24,13 +25,36 @@ public class JwtUtil {
         signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public Integer extractUserId(String token) {
-        Claims claims = Jwts.parserBuilder()
+    public boolean isTokenValid(String token) {
+        try {
+            extractClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public Claims extractClaims(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(signingKey)
                 .build()
-                .parseClaimsJws(token.replace("Bearer ", ""))
+                .parseClaimsJws(cleanToken(token))
                 .getBody();
+    }
 
-        return claims.get("userId", Integer.class);
+    public Integer extractUserId(String token) {
+        return extractClaims(token).get("userId", Integer.class);
+    }
+
+    public String getUsername(String token) {
+        return extractClaims(token).getSubject();
+    }
+
+    public List<String> getRoles(String token) {
+        return extractClaims(token).get("roles", List.class);
+    }
+
+    private String cleanToken(String token) {
+        return token.replace("Bearer ", "").trim();
     }
 }

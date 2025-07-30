@@ -4,6 +4,7 @@ import com.phenikaa.userservice.config.CustomUserDetails;
 import com.phenikaa.userservice.dao.interfaces.UserDao;
 import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
+import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -2,9 +2,14 @@ server:
   port: 8080
 
 spring:
+  main:
+    web-application-type: reactive
   application:
     name: api-gateway
-
+  security:
+    user:
+      name: none
+      password: none
   cloud:
     gateway:
       discovery:
@@ -16,19 +21,12 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/users/**
-          filters:
-            - StripPrefix=2
+            - Path=/api/users/**, /api/admin/**, /api/teacher/**, /api/auth/**
 
         - id: thesis-service
           uri: lb://thesis-service
           predicates:
             - Path=/api/lecturer/thesis/**
-
-#        - id: thesis-service
-#          uri: lb://thesis-service
-#          predicates:
-#            - Path=/api/student/**
 
         - id: profile-service
           uri: lb://profile-service
@@ -55,3 +53,14 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
+
+
+jwt:
+  secret: VHJlbmRvaW5heW5ndW9pZGFuZ2RldHJhbnRyb25nbmFodGFsYW5ndW9pZGFzYW5zYW5nYm90aG9pZ2lhbmRlY2hhbXNvY2JhblRob2lnaWFuY3VhYWljdW5nZGV1ZGFuZ3F1eW5odW5oYWVkZW10aG9pZ2lhbmN1YW5ndW95ZGFuaGNob2JhbmNvbmdnaW9uZ2h1dmllY2RlbWNhdGhlZ2lvaWN1YWJhbnRoYW5jaGlhc2VjdW5nYmFu
+  expiration: 86400000  # 1 ngày (tính bằng milliseconds)
+  refresh-expiration: 604800000
+
+debug: true
+logging:
+  level:
+    org.springframework.security: DEBUG

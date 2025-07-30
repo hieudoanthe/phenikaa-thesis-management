@@ -5,4 +5,5 @@ import com.phenikaa.thesisservice.entity.Register;
 
 public interface RegisterService {
     Register registerTopic(RegisterTopicDTO dto, Integer userId);
+
 }

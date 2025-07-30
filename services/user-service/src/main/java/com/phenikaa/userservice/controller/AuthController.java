@@ -1,10 +1,10 @@
 package com.phenikaa.userservice.controller;
 
+import com.phenikaa.security.JwtTokenProvider;
 import com.phenikaa.userservice.config.CustomUserDetails;
 import com.phenikaa.userservice.dto.response.AuthResponse;
 import com.phenikaa.userservice.dao.interfaces.UserDao;
 import com.phenikaa.userservice.dto.request.LoginRequest;
-import com.phenikaa.userservice.security.JwtTokenProvider;
 import com.phenikaa.userservice.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

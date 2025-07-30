@@ -1,4 +1,4 @@
-package com.phenikaa.thesisservice.Controller;
+package com.phenikaa.thesisservice.controller;
 
 import com.phenikaa.thesisservice.dto.request.RegisterTopicDTO;
 import com.phenikaa.thesisservice.dto.response.AvailableTopicDTO;

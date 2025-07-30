@@ -1,4 +1,4 @@
-package com.phenikaa.thesisservice.Controller;
+package com.phenikaa.thesisservice.controller;
 
 import com.phenikaa.thesisservice.dto.request.CreateProjectTopicDTO;
 import com.phenikaa.thesisservice.dto.request.EditProjectTopicDTO;
@@ -16,7 +16,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/lecturer/thesis")
 @RequiredArgsConstructor
-//@CrossOrigin(origins = "*")
 public class ThesisController {
 
     private final ThesisService thesisService;

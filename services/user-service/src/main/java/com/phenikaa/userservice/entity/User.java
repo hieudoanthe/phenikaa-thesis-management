@@ -45,4 +45,12 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
+
+    @PrePersist
+    public void prePersist() {
+        if (this.status == null) {
+            this.status = 1;
+        }
+    }
+
 }
