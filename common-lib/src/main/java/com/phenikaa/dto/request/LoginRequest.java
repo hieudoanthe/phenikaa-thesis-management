@@ -1,4 +1,5 @@
-package com.phenikaa.userservice.dto.request;
+package com.phenikaa.authservice.dto.request;
+
 
 import lombok.Data;
 
