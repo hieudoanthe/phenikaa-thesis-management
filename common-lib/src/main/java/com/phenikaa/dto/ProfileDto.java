@@ -1,4 +1,4 @@
-package com.phenikaa.common.dto;
+package com.phenikaa.dto;
 
 import lombok.Data;
 

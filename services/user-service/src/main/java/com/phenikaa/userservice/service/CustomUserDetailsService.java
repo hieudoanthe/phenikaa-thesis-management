@@ -1,10 +1,9 @@
 package com.phenikaa.userservice.service;
 
 import com.phenikaa.userservice.config.CustomUserDetails;
-import com.phenikaa.userservice.dao.interfaces.UserDao;
 import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
-import com.phenikaa.userservice.service.interfaces.UserService;
+import com.phenikaa.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,11 +18,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserDao userDao;
+    private final UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
-        User user = userDao.findByUsername(username)
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         Set<SimpleGrantedAuthority> authorities = user.getRoles().stream()

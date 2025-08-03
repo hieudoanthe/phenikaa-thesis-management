@@ -1,6 +1,6 @@
 package com.phenikaa.thesisservice.client;
 
-import com.phenikaa.common.dto.ProfileDto;
+import com.phenikaa.dto.ProfileDto;
 import com.phenikaa.thesisservice.config.FeignTokenInterceptor;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

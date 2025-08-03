@@ -1,6 +1,7 @@
 package com.phenikaa.apigateway.security;
 
 import com.phenikaa.utils.JwtUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -10,25 +11,20 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
 
     private final JwtUtil jwtUtil;
-
-    public JwtAuthenticationManager(JwtUtil jwtUtil) {
-        this.jwtUtil = jwtUtil;
-    }
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         String token = authentication.getCredentials().toString();
 
-        System.out.println("JWT nhận được: " + token);
-
-        if (!jwtUtil.isTokenValid(token)) {
+        if (!jwtUtil.validateToken(token)) {
             return Mono.empty();
         }
 
-        String username = jwtUtil.getUsername(token);
+        String username = jwtUtil.getUsernameFromJWT(token);
         List<String> roles = jwtUtil.getRoles(token);
 
         List<SimpleGrantedAuthority> authorities = roles.stream()

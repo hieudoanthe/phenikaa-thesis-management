@@ -1,9 +1,8 @@
 package com.phenikaa.thesisservice.controller;
 
+import com.phenikaa.utils.JwtUtil;
 import com.phenikaa.thesisservice.dto.request.SuggestTopicDTO;
 import com.phenikaa.thesisservice.service.interfaces.SuggestService;
-import com.phenikaa.thesisservice.service.interfaces.ThesisService;
-import com.phenikaa.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -1,6 +1,6 @@
 package com.phenikaa.profileservice.service.implement;
 
-import com.phenikaa.common.dto.ProfileDto;
+import com.phenikaa.dto.ProfileDto;
 import com.phenikaa.profileservice.service.interfaces.ProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

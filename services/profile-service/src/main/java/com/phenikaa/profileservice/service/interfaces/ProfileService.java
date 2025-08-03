@@ -1,6 +1,6 @@
 package com.phenikaa.profileservice.service.interfaces;
 
-import com.phenikaa.common.dto.ProfileDto;
+import com.phenikaa.dto.ProfileDto;
 
 public interface ProfileService {
     ProfileDto getSupervisorId(Integer id);

@@ -15,6 +15,6 @@ public interface RegisterMapper {
     @Mapping(target = "recordStatus", constant = "ACTIVE")
     @Mapping(target = "registerStatus", constant = "PENDING")
     @Mapping(target = "registeredAt", expression = "java(java.time.LocalDateTime.now())")
-    @Mapping(target = "projectTopic", ignore = true) // Gán thủ công sau
+    @Mapping(target = "projectTopic", ignore = true)
     Register toRegister(RegisterTopicDTO dto);
 }

@@ -18,10 +18,16 @@ spring:
           lower-case-service-id: true
 
       routes:
+
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**, /internal/users/**
+
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/users/**, /api/admin/**, /api/teacher/**, /api/auth/**
+            - Path=/api/users/**, /api/admin/**, /api/teacher/**, /api/auth/**, /internal/users/**
 
         - id: thesis-service
           uri: lb://thesis-service
@@ -32,20 +38,6 @@ spring:
           uri: lb://profile-service
           predicates:
             - Path=/internal/**
-
-      globalcors:
-        add-to-simple-url-handler-mapping: true
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: "http://localhost:5173"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
 
 eureka:
   client:
@@ -64,3 +56,5 @@ debug: true
 logging:
   level:
     org.springframework.security: DEBUG
+    org.springframework.web.cors: DEBUG
+    org.springframework.web.filter.CorsFilter: DEBUG

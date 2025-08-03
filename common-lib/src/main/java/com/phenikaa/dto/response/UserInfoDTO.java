@@ -1,4 +1,4 @@
-package com.phenikaa.authservice.dto.response;
+package com.phenikaa.dto.response;
 
 
 import java.util.List;

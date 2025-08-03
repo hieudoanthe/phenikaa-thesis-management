@@ -1,4 +1,4 @@
-package com.phenikaa.security;
+package com.phenikaa.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class JwtTokenProvider {
+public class JwtUtil {
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -105,4 +105,19 @@ public class JwtTokenProvider {
     public Date getExpirationDateFromToken(String token) {
         return extractClaims(token).getExpiration();
     }
+
+    public String generateAccessToken(String username, List<String> roles) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
+
+        return Jwts.builder()
+                .setSubject(username)
+                .claim("roles", roles)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
+    }
+
+
 }

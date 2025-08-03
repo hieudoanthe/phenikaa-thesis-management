@@ -37,10 +37,10 @@ public class SuggestServiceImpl implements SuggestService {
     @Override
     public void acceptSuggestedTopic(Integer suggestedId, Integer approverId) {
         SuggestedTopic suggestion = suggestRepository.findById(suggestedId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đề xuất"));
+                .orElseThrow(() -> new RuntimeException("Not found suggested topic with id: " + suggestedId + " or it has been deleted by supervisor"));
 
         if (suggestion.getSuggestionStatus() != SuggestedTopic.SuggestionStatus.PENDING) {
-            throw new RuntimeException("Đề xuất đã được xử lý trước đó");
+            throw new RuntimeException("The proposal has been processed before!");
         }
 
         suggestion.setSuggestionStatus(SuggestedTopic.SuggestionStatus.APPROVED);

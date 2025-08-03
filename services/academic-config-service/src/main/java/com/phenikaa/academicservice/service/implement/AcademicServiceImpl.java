@@ -3,8 +3,7 @@ package com.phenikaa.academicservice.service.implement;
 import com.phenikaa.academicservice.entity.AcademicYear;
 import com.phenikaa.academicservice.repository.AcademicRepository;
 import com.phenikaa.academicservice.service.interfaces.AcademicService;
-import com.phenikaa.common.dto.AcademicDto;
-import jakarta.persistence.TypedQuery;
+import com.phenikaa.dto.AcademicDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

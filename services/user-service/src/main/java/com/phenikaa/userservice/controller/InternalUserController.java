@@ -1,23 +1,25 @@
 package com.phenikaa.userservice.controller;
 
-import com.phenikaa.userservice.dto.request.LoginRequest;
-import com.phenikaa.userservice.dto.response.UserInfoDTO;
+import com.phenikaa.dto.request.LoginRequest;
+import com.phenikaa.dto.response.UserInfoDTO;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
 
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/internal/users")
-public class UserInternalController {
+public class InternalUserController {
 
     private final UserService userService;
 
-
     @PostMapping("/verify")
-    public Mono<UserInfoDTO> verifyUser(@RequestBody LoginRequest request) {
-        return userService.verifyUser(request.username(), request.password());
+    public ResponseEntity<UserInfoDTO> verifyUser(@RequestBody LoginRequest request) {
+        return userService.verifyUser(request)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 }

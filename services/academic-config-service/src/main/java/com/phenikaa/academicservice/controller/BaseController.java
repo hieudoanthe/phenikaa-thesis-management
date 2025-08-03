@@ -1,7 +1,7 @@
 package com.phenikaa.academicservice.controller;
 
 import com.phenikaa.academicservice.service.interfaces.AcademicService;
-import com.phenikaa.common.dto.AcademicDto;
+import com.phenikaa.dto.AcademicDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

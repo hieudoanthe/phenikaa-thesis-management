@@ -24,6 +24,16 @@ public class GatewayHeaderAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+
+
+        String path = request.getRequestURI();
+
+        // Bỏ qua filter nếu là API nội bộ
+        if (path.startsWith("/internal/users/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // Xác minh header đặc biệt để đảm bảo request từ Gateway
         String internalSecret = request.getHeader("X-Internal-Secret");
         if (!"abc123".equals(internalSecret)) {

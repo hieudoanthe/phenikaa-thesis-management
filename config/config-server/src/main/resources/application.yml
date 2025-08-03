@@ -18,6 +18,7 @@ spring:
             - group-service
             - profile-service
             - submission-service
+            - auth-service
 
 logging:
   level:

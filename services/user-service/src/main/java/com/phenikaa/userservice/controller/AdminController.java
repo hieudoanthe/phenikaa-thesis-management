@@ -1,6 +1,6 @@
 package com.phenikaa.userservice.controller;
 
-import com.phenikaa.userservice.dto.request.UserRequest;
+import com.phenikaa.userservice.dto.request.CreateUserRequest;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,10 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/saveUser")
-    public ResponseEntity<User> saveUser(@RequestBody UserRequest userRequest) {
-        User savedUser = userService.saveUser(userRequest);
+    public ResponseEntity<User> saveUser(@RequestBody CreateUserRequest createUserRequest) {
+        User savedUser = userService.saveUser(createUserRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }
+
+
 }

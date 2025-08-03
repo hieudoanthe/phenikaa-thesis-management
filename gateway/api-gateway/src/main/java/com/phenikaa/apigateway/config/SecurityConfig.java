@@ -5,12 +5,19 @@ import com.phenikaa.apigateway.security.ServerHttpBearerAuthenticationConverter;
 import com.phenikaa.utils.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.web.util.pattern.PathPatternParser;
+
+import java.util.List;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -26,9 +33,12 @@ public class SecurityConfig {
         authenticationWebFilter.setServerAuthenticationConverter(authConverter);
 
         return http
-                .csrf(csrf -> csrf.disable())
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> {})
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/auth/**").permitAll()
+                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .pathMatchers("/api/auth/**").permitAll()
+                        .pathMatchers("/internal/users/**").permitAll()
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/user/**").hasRole("USER")
                         .pathMatchers("/api/teacher/**").hasRole("TEACHER")
@@ -47,6 +57,21 @@ public class SecurityConfig {
     @Bean
     public ServerHttpBearerAuthenticationConverter bearerAuthenticationConverter() {
         return new ServerHttpBearerAuthenticationConverter();
+    }
+
+    @Bean
+    @org.springframework.core.annotation.Order(-1)
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(new PathPatternParser());
+        source.registerCorsConfiguration("/**", config);
+
+        return new CorsWebFilter(source);
     }
 
 }

@@ -1,6 +1,7 @@
 package com.phenikaa.userservice.mapper;
 
-import com.phenikaa.userservice.dto.request.UserRequest;
+import com.phenikaa.userservice.dto.request.CreateUserRequest;
+import com.phenikaa.userservice.dto.response.GetUserResponse;
 import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
 import jakarta.persistence.EntityManager;
@@ -15,13 +16,11 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-    // Chuyển từ DTO sang Entity
     @Mapping(target = "passwordHash", source = "password")
-    @Mapping(target = "roles", expression = "java(mapRoleIdsToRoles(userRequest.getRoleIds(), entityManager))")
-    User toEntity(UserRequest userRequest, @Context EntityManager entityManager);
+    @Mapping(target = "roles", expression = "java(mapRoleIdsToRoles(createUserRequest.getRoleIds(), entityManager))")
+    User toEntity(CreateUserRequest createUserRequest, @Context EntityManager entityManager);
 
-    // Chuyển từ Entity sang DTO
-    UserRequest toDTO(User user);
+    GetUserResponse toDTO(User user);
 
     // Phương thức để lấy các Role từ roleIds
     default Set<Role> mapRoleIdsToRoles(Set<Integer> roleIds, @Context EntityManager em) {

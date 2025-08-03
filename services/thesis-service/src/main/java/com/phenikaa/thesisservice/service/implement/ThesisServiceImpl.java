@@ -28,8 +28,6 @@ public class ThesisServiceImpl implements ThesisService {
 
     private final ProjectTopicMapper projectTopicMapper;
 
-    private final ProfileServiceClient profileServiceClient;
-
     @Override
     public ProjectTopic createProjectTopic(CreateProjectTopicDTO dto, Integer userId) {
         ProjectTopic entity = ProjectTopic.builder()
