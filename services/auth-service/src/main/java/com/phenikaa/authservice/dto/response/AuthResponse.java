@@ -1,3 +1,3 @@
 package com.phenikaa.authservice.dto.response;
 
-public record AuthResponse(String accessToken) {}
+public record AuthResponse(String accessToken, String refreshToken) {}

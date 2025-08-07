@@ -27,7 +27,7 @@ public class JwtHeaderRelayFilter implements WebFilter {
                     ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                             .header("X-Username", username)
                             .header("X-Roles", roles)
-                            .header("X-Internal-Secret", "abc123")  // để downstream xác minh nguồn
+                            .header("X-Internal-Secret", "abc123")
                             .build();
 
                     ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();

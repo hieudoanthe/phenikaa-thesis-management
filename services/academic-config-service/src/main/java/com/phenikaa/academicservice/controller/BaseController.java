@@ -9,9 +9,8 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/internal")
+@RequestMapping("/academic-config")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class BaseController {
 
     private final AcademicService academicService;
