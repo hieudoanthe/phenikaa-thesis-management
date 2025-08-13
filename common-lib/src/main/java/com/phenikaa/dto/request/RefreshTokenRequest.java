@@ -1,17 +1,12 @@
 package com.phenikaa.dto.request;
 
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.Instant;
+import lombok.*;
 
 @Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class RefreshTokenRequest {
-    private String token;
-    private Instant expiryDate;
-    private Integer userId;
+    private String refreshToken;
 }

@@ -8,11 +8,13 @@ import java.util.Set;
 
 @Data
 public class UpdateUserRequest {
-    @NotNull(message = "User ID không được để trống")
+
     private Integer userId;
-    @NotBlank(message = "Họ tên không được để trống")
+    @NotBlank(message = "Họ tên không được để trống!")
     private String fullName;
-    @NotBlank(message = "Tên đăng nhập không được để trống")
+    @NotBlank(message = "Tên đăng nhập không được để trống!")
     private String username;
+    @NotBlank(message = "Vai trò không được để trống!")
     private Set<Integer> roleIds;
+
 }

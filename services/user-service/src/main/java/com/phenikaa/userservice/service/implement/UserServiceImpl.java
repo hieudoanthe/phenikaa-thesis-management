@@ -13,10 +13,15 @@ import com.phenikaa.userservice.service.interfaces.UserService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,7 +47,7 @@ public class UserServiceImpl implements UserService {
             String encodedPassword = passwordEncoder.encode(createUserRequest.getPassword());
             user.setPasswordHash(encodedPassword);
         } else {
-            throw new IllegalArgumentException("Password cannot be empty!");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password cannot be empty!");
         }
 
         entityManager.persist(user);
@@ -50,18 +55,28 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    @Override
+    public UserInfoResponse verifyUser(LoginRequest request) {
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
 
-    public Optional<UserInfoResponse> verifyUser(LoginRequest request) {
-        return userRepository.findByUsername(request.getUsername())
-                .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPasswordHash()))
-                .map(user -> new UserInfoResponse(
-                        user.getUserId(),
-                        user.getUsername(),
-                        user.getRoles().stream()
-                                .map(role -> role.getRoleName().name())
-                                .collect(Collectors.toList())
-                ));
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password!");
+        }
+
+        if (user.getStatus() == 2) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is blocked!");
+        }
+
+        return new UserInfoResponse(
+                user.getUserId(),
+                user.getUsername(),
+                user.getRoles().stream()
+                        .map(role -> role.getRoleName().name())
+                        .collect(Collectors.toList())
+        );
     }
+
 
     @Override
     public List<GetUserResponse> getAllUsers() {
@@ -75,35 +90,48 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Integer userId) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
-            throw new NotFoundException("User not found!");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
         }
         userRepository.delete(userOpt.get());
     }
 
     @Override
-    public User updateUser(UpdateUserRequest updateUserRequest) {
-        Optional<User> userOpt = userRepository.findById(updateUserRequest.getUserId());
+    public void updateUser(UpdateUserRequest updateUserRequest) {
+        User user = userRepository.findById(updateUserRequest.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
 
-        if (userOpt.isPresent()){
-            User user = userOpt.orElseThrow(() -> new NotFoundException("User not found!"));
+        userMapper.toEntity(updateUserRequest, user);
 
-            userMapper.toEntity(updateUserRequest, user);
-
-            if (updateUserRequest.getRoleIds() != null) {
-                Set<Role> roles = updateUserRequest.getRoleIds().stream()
-                        .map(id -> {
-                            Role role = new Role();
-                            role.setRoleId(id);
-                            return role;
-                        })
-                        .collect(Collectors.toSet());
-                user.setRoles(roles);
-            }
-            return userRepository.save(user);
+        if (updateUserRequest.getRoleIds() != null) {
+            Set<Role> roles = updateUserRequest.getRoleIds().stream()
+                    .map(id -> {
+                        Role role = new Role();
+                        role.setRoleId(id);
+                        return role;
+                    })
+                    .collect(Collectors.toSet());
+            user.setRoles(roles);
         }
-        else {
-            throw new NotFoundException("User not found!");
+
+        userRepository.save(user);
+    }
+
+    @Override
+    public void changeStatusUser(Integer userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
         }
+        User user = userOpt.get();
+        user.setStatus(user.getStatus() == 1 ? 2 : 1);
+        userRepository.save(user);
+    }
+
+    @Override
+    public Page<GetUserResponse> getAllUsers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("userId").ascending());
+        return userRepository.findAll(pageable)
+                .map(userMapper::toDTO);
     }
 
 }

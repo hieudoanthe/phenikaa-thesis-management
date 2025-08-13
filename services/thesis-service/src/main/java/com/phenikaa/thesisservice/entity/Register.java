@@ -35,19 +35,6 @@ public class Register {
         GROUP
     }
 
-    @Column(name = "motivation", columnDefinition = "TEXT")
-    private String motivation;
-
-    @Column(name = "record_status")
-    @Enumerated(EnumType.STRING)
-    private RecordStatus recordStatus;
-
-    public enum RecordStatus {
-        ACTIVE,
-        INACTIVE,
-        DELETED
-    }
-
     @Column(name = "registered_at")
     private LocalDateTime registeredAt;
 
@@ -64,8 +51,7 @@ public class Register {
     public enum RegisterStatus {
         PENDING,
         APPROVED,
-        REJECTED,
-        CANCELED
+        REJECTED
     }
 
     // Relationship với Project Topic
@@ -78,9 +64,6 @@ public class Register {
         registeredAt = LocalDateTime.now();
         if (registerType == null) {
             registerType = RegisterType.INDIVIDUAL;
-        }
-        if (recordStatus == null) {
-            recordStatus = RecordStatus.ACTIVE;
         }
         if (registerStatus == null) {
             registerStatus = RegisterStatus.PENDING;

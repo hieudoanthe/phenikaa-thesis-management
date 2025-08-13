@@ -2,9 +2,10 @@ package com.phenikaa.authservice.service.implement;
 
 
 import com.phenikaa.authservice.client.UserServiceClient;
+import com.phenikaa.dto.request.RefreshTokenRequest;
 import com.phenikaa.dto.request.LoginRequest;
 import com.phenikaa.authservice.dto.response.AuthResponse;
-import com.phenikaa.dto.request.RefreshTokenRequest;
+import com.phenikaa.dto.request.SaveRefreshTokenRequest;
 import com.phenikaa.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class AuthService {
                     String accessToken = jwtUtil.generateAccessToken(user.username(), user.id(), authorities);
                     String refreshToken = jwtUtil.generateRefreshToken(user.username(), user.id());
 
-                    RefreshTokenRequest tokenRequest = new RefreshTokenRequest();
+                    SaveRefreshTokenRequest tokenRequest = new SaveRefreshTokenRequest();
                     tokenRequest.setToken(refreshToken);
                     tokenRequest.setUserId(user.id());
                     tokenRequest.setExpiryDate(jwtUtil.getExpirationDateFromToken(refreshToken).toInstant());
@@ -45,6 +46,25 @@ public class AuthService {
                 });
     }
 
+    public Mono<AuthResponse> refreshAccessToken(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+
+        if (!jwtUtil.validateToken(refreshToken)) {
+            return Mono.error(new RuntimeException("Refresh token is invalid or expired!"));
+        }
+
+        return userServiceClient.getUserByRefreshToken(refreshToken)
+                .switchIfEmpty(Mono.error(new RuntimeException("Refresh token not found in DB!")))
+                .flatMap(user -> {
+                    var authorities = user.roles().stream()
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .collect(Collectors.toList());
+
+                    String accessToken = jwtUtil.generateAccessToken(user.username(), user.id(), authorities);
+
+                    return Mono.just(new AuthResponse(accessToken, refreshToken));
+                });
+    }
 
 }
 

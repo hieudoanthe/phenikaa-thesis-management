@@ -1,6 +1,6 @@
 package com.phenikaa.thesisservice.service.implement;
 
-import com.phenikaa.thesisservice.dto.request.SuggestTopicDTO;
+import com.phenikaa.thesisservice.dto.request.SuggestTopicRequest;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
 import com.phenikaa.thesisservice.entity.SuggestedTopic;
 import com.phenikaa.thesisservice.mapper.SuggestTopicMapper;
@@ -18,7 +18,7 @@ public class SuggestServiceImpl implements SuggestService {
     private final SuggestRepository suggestRepository;
 
     @Override
-    public void suggestTopic(SuggestTopicDTO dto, Integer studentId) {
+    public void suggestTopic(SuggestTopicRequest dto, Integer studentId) {
 
         ProjectTopic topic = suggestTopicMapper.toProjectTopic(dto);
         topic.setCreatedBy(studentId);

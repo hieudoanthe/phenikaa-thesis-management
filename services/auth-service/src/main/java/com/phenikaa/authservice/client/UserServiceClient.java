@@ -1,7 +1,7 @@
 package com.phenikaa.authservice.client;
 
 import com.phenikaa.dto.request.LoginRequest;
-import com.phenikaa.dto.request.RefreshTokenRequest;
+import com.phenikaa.dto.request.SaveRefreshTokenRequest;
 import com.phenikaa.dto.response.UserInfoResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -27,7 +27,7 @@ public class UserServiceClient {
     }
 
 
-    public Mono<Void> saveRefreshToken(RefreshTokenRequest request) {
+    public Mono<Void> saveRefreshToken(SaveRefreshTokenRequest request) {
         return webClientBuilder.baseUrl(userServiceUrl)
                 .build()
                 .post()

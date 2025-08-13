@@ -1,10 +1,12 @@
 package com.phenikaa.userservice.controller;
 
 import com.phenikaa.userservice.dto.request.CreateUserRequest;
+import com.phenikaa.userservice.dto.request.UpdateUserRequest;
 import com.phenikaa.userservice.dto.response.GetUserResponse;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,10 +34,29 @@ public class AdminController {
         return userService.getAllUsers();
     }
 
+    @GetMapping("/getUsersPaged")
+    public Page<GetUserResponse> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size) {
+        return userService.getAllUsers(page, size);
+    }
+
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/deleteUser")
     public void deleteUser(@RequestParam Integer userId) {
         userService.deleteUser(userId);
+    }
+
+    @PutMapping("updateUser")
+    public ResponseEntity<Void> updateUser(@RequestBody UpdateUserRequest request) {
+        userService.updateUser(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/changeStatusUser")
+    public ResponseEntity<Void> changeStatusUser(@RequestParam Integer userId) {
+        userService.changeStatusUser(userId);
+        return ResponseEntity.noContent().build();
     }
 
 }

@@ -1,11 +1,13 @@
 package com.phenikaa.authservice.controller;
 
 import com.phenikaa.authservice.client.UserServiceClient;
+import com.phenikaa.dto.request.RefreshTokenRequest;
 import com.phenikaa.dto.request.LoginRequest;
 import com.phenikaa.authservice.dto.response.AuthResponse;
 import com.phenikaa.authservice.service.implement.AuthService;
 import com.phenikaa.dto.response.RefreshTokenResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -33,6 +35,13 @@ public class AuthController {
     public Mono<ResponseEntity<Void>> logout(@RequestBody RefreshTokenResponse request) {
         return userServiceClient.deleteRefreshToken(request.getRefreshToken())
                 .thenReturn(ResponseEntity.ok().<Void>build());
+    }
+
+    @PostMapping("/refresh-token")
+    public Mono<ResponseEntity<AuthResponse>> refreshAccessToken(@RequestBody RefreshTokenRequest request) {
+        return authService.refreshAccessToken(request)
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()));
     }
 
 }

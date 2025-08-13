@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/internal")
+@RequestMapping("/ix")
 @RequiredArgsConstructor
 public class BaseController {
     private final ProfileService profileService;

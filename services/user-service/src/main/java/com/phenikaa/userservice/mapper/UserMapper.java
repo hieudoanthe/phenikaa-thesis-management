@@ -1,5 +1,6 @@
 package com.phenikaa.userservice.mapper;
 
+import com.phenikaa.dto.response.UserInfoResponse;
 import com.phenikaa.userservice.dto.request.CreateUserRequest;
 import com.phenikaa.userservice.dto.request.UpdateUserRequest;
 import com.phenikaa.userservice.dto.response.GetUserResponse;
@@ -47,5 +48,18 @@ public interface UserMapper {
                 .map(Role::getRoleId)
                 .collect(Collectors.toList());
     }
+
+    @Mapping(source = "userId", target = "id")
+    @Mapping(source = "roles", target = "roles", qualifiedByName = "mapRoleNames")
+    UserInfoResponse toUserInfoResponse(User user);
+
+    @Named("mapRoleNames")
+    default List<String> mapRoleNames(Set<Role> roles) {
+        if (roles == null) return null;
+        return roles.stream()
+                .map(role -> role.getRoleName().name())
+                .collect(Collectors.toList());
+    }
+
 }
 

@@ -1,35 +1,33 @@
 package com.phenikaa.thesisservice.service.implement;
 
-import com.phenikaa.thesisservice.client.ProfileServiceClient;
-import com.phenikaa.thesisservice.dto.request.CreateProjectTopicDTO;
-import com.phenikaa.thesisservice.dto.request.EditProjectTopicDTO;
-import com.phenikaa.thesisservice.dto.request.RegisterTopicDTO;
-import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicDTO;
-import com.phenikaa.thesisservice.dto.response.AvailableTopicDTO;
-import com.phenikaa.thesisservice.dto.response.ProjectTopicResponseDTO;
-import com.phenikaa.thesisservice.entity.Register;
+import com.phenikaa.thesisservice.dto.request.CreateProjectTopicRequest;
+import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
+import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicRequest;
+import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
+import com.phenikaa.thesisservice.dto.response.ProjectTopicResponse;
 import com.phenikaa.thesisservice.mapper.ProjectTopicMapper;
-import com.phenikaa.thesisservice.mapper.RegisterMapper;
 import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
-import com.phenikaa.thesisservice.repository.RegisterRepository;
-import com.phenikaa.thesisservice.service.interfaces.ThesisService;
+import com.phenikaa.thesisservice.service.interfaces.TopicProjectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ThesisServiceImpl implements ThesisService {
+public class TopicProjectServiceImpl implements TopicProjectService {
 
     private final ProjectTopicRepository projectTopicRepository;
 
     private final ProjectTopicMapper projectTopicMapper;
 
     @Override
-    public ProjectTopic createProjectTopic(CreateProjectTopicDTO dto, Integer userId) {
+    public ProjectTopic createProjectTopic(CreateProjectTopicRequest dto, Integer userId) {
         ProjectTopic entity = ProjectTopic.builder()
                 .topicCode(dto.getTopicCode())
                 .title(dto.getTitle())
@@ -48,10 +46,10 @@ public class ThesisServiceImpl implements ThesisService {
     }
 
     @Override
-    public List<ProjectTopicResponseDTO> findAll() {
+    public List<ProjectTopicResponse> findAll() {
         return projectTopicRepository.findAll()
                 .stream()
-                .map(e -> ProjectTopicResponseDTO.builder()
+                .map(e -> ProjectTopicResponse.builder()
                         .topicId(e.getTopicId())
                         .topicCode(e.getTopicCode())
                         .title(e.getTitle())
@@ -59,27 +57,29 @@ public class ThesisServiceImpl implements ThesisService {
                         .objectives(e.getObjectives())
                         .methodology(e.getMethodology())
                         .expectedOutcome(e.getExpectedOutcome())
-                        .supervisorId(e.getSupervisorId())
                         .academicYearId(e.getAcademicYearId())
                         .maxStudents(e.getMaxStudents())
                         .difficultyLevel(e.getDifficultyLevel())
                         .topicStatus(e.getTopicStatus())
-                        .createdAt(e.getCreatedAt())
-                        .updatedAt(e.getUpdatedAt())
                         .approvalStatus(e.getApprovalStatus())
+                        .registerId(
+                                e.getRegisters() != null && !e.getRegisters().isEmpty()
+                                        ? e.getRegisters().getFirst().getRegisterId()
+                                        : null
+                        )
                         .build()
                 ).collect(Collectors.toList());
     }
 
     @Override
-    public ProjectTopic editProjectTopic(EditProjectTopicDTO dto) {
+    public ProjectTopic editProjectTopic(EditProjectTopicRequest dto) {
         ProjectTopic entity = projectTopicRepository.findById(dto.getTopicId()).orElseThrow(() -> new RuntimeException("Not found"));
         projectTopicMapper.editProjectTopic(dto, entity);
         return projectTopicRepository.save(entity);
     }
 
     @Override
-    public ProjectTopic updateProjectTopic(UpdateProjectTopicDTO dto) {
+    public ProjectTopic updateProjectTopic(UpdateProjectTopicRequest dto) {
         ProjectTopic entity = projectTopicRepository.findById(dto.getTopicId()).orElseThrow(() -> new RuntimeException("Not found"));
         projectTopicMapper.updateProjectTopic(dto, entity);
         return projectTopicRepository.save(entity);
@@ -92,7 +92,7 @@ public class ThesisServiceImpl implements ThesisService {
     }
 
     @Override
-    public List<AvailableTopicDTO> getAvailableTopics() {
+    public List<AvailableTopicResponse> getAvailableTopics() {
         List<ProjectTopic> topics = projectTopicRepository.findByApprovalStatusAndTopicStatus(
                 ProjectTopic.ApprovalStatus.AVAILABLE,
                 ProjectTopic.TopicStatus.ACTIVE
@@ -101,6 +101,28 @@ public class ThesisServiceImpl implements ThesisService {
         return topics.stream()
                 .map(projectTopicMapper::toAvailableTopicDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void approvedTopic(Integer topicId) {
+        Optional<ProjectTopic> projectTopicOpt = projectTopicRepository.findById(topicId);
+        if (projectTopicOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project topic not found!");
+        }
+        ProjectTopic projectTopic = projectTopicOpt.get();
+        projectTopic.setApprovalStatus(ProjectTopic.ApprovalStatus.APPROVED);
+        projectTopicRepository.save(projectTopic);
+    }
+
+    @Override
+    public void rejectTopic(Integer topicId) {
+        Optional<ProjectTopic> projectTopicOpt = projectTopicRepository.findById(topicId);
+        if (projectTopicOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project topic not found!");
+        }
+        ProjectTopic projectTopic = projectTopicOpt.get();
+        projectTopic.setApprovalStatus(ProjectTopic.ApprovalStatus.REJECTED);
+        projectTopicRepository.save(projectTopic);
     }
 
 }

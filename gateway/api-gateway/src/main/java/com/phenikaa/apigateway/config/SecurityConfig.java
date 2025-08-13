@@ -40,8 +40,9 @@ public class SecurityConfig {
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/internal/users/**").permitAll()
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
-                        .pathMatchers("/api/user/**").hasRole("USER")
-                        .pathMatchers("/api/teacher/**").hasRole("TEACHER")
+                        .pathMatchers("/api/thesis-service/student/**").hasRole("USER")
+                        .pathMatchers("/api/thesis-service/teacher/**").hasRole("TEACHER")
+                        .pathMatchers("/api/profile-service/profile/**").hasAnyRole("USER", "TEACHER")
                         .pathMatchers("/api/lecturer/thesis/**").permitAll()
                         .anyExchange().authenticated()
                 )
@@ -64,7 +65,7 @@ public class SecurityConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:5173"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 

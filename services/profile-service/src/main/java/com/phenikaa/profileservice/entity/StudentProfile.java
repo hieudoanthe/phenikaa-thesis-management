@@ -12,20 +12,17 @@ import lombok.*;
 @Table(name = "student_profile", schema = "HieuDT")
 public class StudentProfile {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "student_id")
-    private Integer studentId;
+    private String studentId;
 
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
-    @Column(name = "student_code", unique = true)
-    private String studentCode;
-
-    @Column(name = "major")
+    @Column(name = "major", columnDefinition = "NVARCHAR(255)")
     private String major;
 
-    @Column(name = "class_name")
+    @Column(name = "class_name", columnDefinition = "NVARCHAR(255)")
     private String className;
 
     @Column(name = "academic_year")
@@ -45,11 +42,17 @@ public class StudentProfile {
         if (studentStatus == null) {
             studentStatus = StudentStatus.ACTIVE;
         }
+        if (major == null) {
+            major = "Công nghệ thông tin";
+        }
     }
 
     @Column(name = "email")
     private String email;
 
     @Column(name = "phone")
-    private String phone;
+    private String phoneNumber;
+
+    @Column(name = "avt")
+    private String avt;
 }

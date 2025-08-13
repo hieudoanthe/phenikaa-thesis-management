@@ -1,8 +1,9 @@
 package com.phenikaa.userservice.controller;
 
 import com.phenikaa.dto.request.LoginRequest;
-import com.phenikaa.dto.request.RefreshTokenRequest;
+import com.phenikaa.dto.request.SaveRefreshTokenRequest;
 import com.phenikaa.dto.response.UserInfoResponse;
+import com.phenikaa.userservice.repository.RefreshTokenRepository;
 import com.phenikaa.userservice.service.interfaces.RefreshTokenService;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +22,12 @@ public class InternalUserController {
 
     @PostMapping("/verify")
     public ResponseEntity<UserInfoResponse> verifyUser(@RequestBody LoginRequest request) {
-        return userService.verifyUser(request)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+        UserInfoResponse response = userService.verifyUser(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/saveRefreshToken")
-    public ResponseEntity<Void> saveRefreshToken(@RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<Void> saveRefreshToken(@RequestBody SaveRefreshTokenRequest request) {
         refreshTokenService.save(request);
         return ResponseEntity.ok().build();
     }
@@ -38,9 +38,10 @@ public class InternalUserController {
         return ResponseEntity.ok().build();
     }
 
-//    @GetMapping("/getUserByRefreshToken")
-//    public ResponseEntity<UserInfoResponse> getUserByRefreshToken(@RequestParam String token) {
-//        return ResponseEntity.ok("OK");
-//    }
+    @GetMapping("/getUserByRefreshToken")
+    public ResponseEntity<UserInfoResponse> getUserByRefreshToken(@RequestParam String token) {
+        UserInfoResponse response = refreshTokenService.getUserByRefreshToken(token);
+        return ResponseEntity.ok(response);
+    }
 
 }

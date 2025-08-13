@@ -1,9 +1,10 @@
 package com.phenikaa.userservice.service.implement;
 
-import com.phenikaa.dto.request.RefreshTokenRequest;
-import com.phenikaa.exception.TokenRefreshException;
+import com.phenikaa.dto.request.SaveRefreshTokenRequest;
+import com.phenikaa.dto.response.UserInfoResponse;
 import com.phenikaa.userservice.entity.RefreshToken;
 import com.phenikaa.userservice.entity.User;
+import com.phenikaa.userservice.mapper.UserMapper;
 import com.phenikaa.userservice.repository.RefreshTokenRepository;
 import com.phenikaa.userservice.repository.UserRepository;
 import com.phenikaa.userservice.service.interfaces.RefreshTokenService;
@@ -20,9 +21,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Transactional
-    public void save(RefreshTokenRequest request) {
+    public void save(SaveRefreshTokenRequest request) {
 
         Optional<RefreshToken> existingToken = refreshTokenRepository.findByUser_UserId(request.getUserId());
 
@@ -48,17 +50,16 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public RefreshToken verifyExpiration(RefreshToken token) {
-        if (token.getExpiryDate().isBefore(Instant.now())) {
-            refreshTokenRepository.delete(token);
-            throw new TokenRefreshException("Refresh token expired!");
-        }
-        return token;
-    }
+    public UserInfoResponse getUserByRefreshToken(String token) {
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
 
-    @Override
-    public Optional<RefreshToken> findByToken(String token) {
-        return refreshTokenRepository.findByToken(token);
+        if (refreshToken.getExpiryDate().isBefore(Instant.now())) {
+            throw new RuntimeException("Refresh token expired");
+        }
+
+        User user = refreshToken.getUser();
+        return userMapper.toUserInfoResponse(user);
     }
 
 }

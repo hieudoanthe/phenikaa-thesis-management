@@ -4,7 +4,7 @@ import com.phenikaa.thesisservice.entity.ProjectTopic;
 import lombok.Data;
 
 @Data
-public class AvailableTopicDTO {
+public class AvailableTopicResponse {
     private Integer topicId;
     private String topicCode;
     private String title;

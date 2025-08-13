@@ -1,13 +1,10 @@
 package com.phenikaa.userservice.service.interfaces;
 
-import com.phenikaa.dto.request.RefreshTokenRequest;
-import com.phenikaa.userservice.entity.RefreshToken;
-
-import java.util.Optional;
+import com.phenikaa.dto.request.SaveRefreshTokenRequest;
+import com.phenikaa.dto.response.UserInfoResponse;
 
 public interface RefreshTokenService {
-    void save(RefreshTokenRequest request);
+    void save(SaveRefreshTokenRequest request);
     void deleteByToken(String token);
-    RefreshToken verifyExpiration(RefreshToken token);
-    Optional<RefreshToken> findByToken(String token);
+    UserInfoResponse getUserByRefreshToken(String token);
 }
