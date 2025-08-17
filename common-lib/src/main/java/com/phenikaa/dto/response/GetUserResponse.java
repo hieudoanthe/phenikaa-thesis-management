@@ -1,4 +1,4 @@
-package com.phenikaa.userservice.dto.response;
+package com.phenikaa.dto.response;
 
 import lombok.Data;
 

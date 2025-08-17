@@ -1,7 +1,7 @@
 package com.phenikaa.userservice.service.implement;
 
 import com.phenikaa.dto.request.SaveRefreshTokenRequest;
-import com.phenikaa.dto.response.UserInfoResponse;
+import com.phenikaa.dto.response.AuthenticatedUserResponse;
 import com.phenikaa.userservice.entity.RefreshToken;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.mapper.UserMapper;
@@ -50,7 +50,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public UserInfoResponse getUserByRefreshToken(String token) {
+    public AuthenticatedUserResponse getUserByRefreshToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
 

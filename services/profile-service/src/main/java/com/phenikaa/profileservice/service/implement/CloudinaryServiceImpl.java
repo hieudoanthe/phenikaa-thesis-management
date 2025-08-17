@@ -15,18 +15,20 @@ import java.util.Map;
 public class CloudinaryServiceImpl implements CloudinaryService {
     private final Cloudinary cloudinary;
 
+    @Override
     public String uploadFile(MultipartFile file, String folderName) {
         try {
             Map<String, Object> options = ObjectUtils.asMap(
-                    "folder", folderName // chỉ định folder
+                    "folder", folderName
             );
 
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(), options);
             return uploadResult.get("secure_url").toString();
         } catch (IOException e) {
-            throw new RuntimeException("Upload ảnh thất bại", e);
+            throw new RuntimeException("Upload failed", e);
         }
     }
+
 }
 
 

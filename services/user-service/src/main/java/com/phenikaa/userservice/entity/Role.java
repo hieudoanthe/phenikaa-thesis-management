@@ -21,7 +21,7 @@ public class Role {
     private RoleName roleName;
 
     public enum RoleName {
-        USER, ADMIN, TEACHER
+        STUDENT, ADMIN, TEACHER
     }
 
     @Column(name = "is_active")

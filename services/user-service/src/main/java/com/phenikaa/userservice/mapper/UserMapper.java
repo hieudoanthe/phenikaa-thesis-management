@@ -1,9 +1,9 @@
 package com.phenikaa.userservice.mapper;
 
-import com.phenikaa.dto.response.UserInfoResponse;
+import com.phenikaa.dto.response.AuthenticatedUserResponse;
 import com.phenikaa.userservice.dto.request.CreateUserRequest;
 import com.phenikaa.userservice.dto.request.UpdateUserRequest;
-import com.phenikaa.userservice.dto.response.GetUserResponse;
+import com.phenikaa.dto.response.GetUserResponse;
 import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
 import jakarta.persistence.EntityManager;
@@ -51,7 +51,7 @@ public interface UserMapper {
 
     @Mapping(source = "userId", target = "id")
     @Mapping(source = "roles", target = "roles", qualifiedByName = "mapRoleNames")
-    UserInfoResponse toUserInfoResponse(User user);
+    AuthenticatedUserResponse toUserInfoResponse(User user);
 
     @Named("mapRoleNames")
     default List<String> mapRoleNames(Set<Role> roles) {

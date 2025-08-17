@@ -24,7 +24,7 @@ public class TopicProjectController {
     private final JwtUtil jwtUtil;
 
     @PreAuthorize("hasRole('TEACHER')")
-    @PostMapping("/createTopic")
+    @PostMapping("/create-topic")
     public ProjectTopic createTopic(@RequestHeader("Authorization") String token,
                                     @RequestBody CreateProjectTopicRequest request) {
         Integer userId = jwtUtil.extractUserId(token);
@@ -32,38 +32,38 @@ public class TopicProjectController {
     }
 
     @PreAuthorize("hasRole('TEACHER')")
-    @GetMapping("/getListTopic")
+    @GetMapping("/get-list-topic")
     public List<ProjectTopicResponse> getListTopic() {
         return topicProjectService.findAll();
     }
 
     @PreAuthorize("hasRole('TEACHER')")
-    @PostMapping("/editTopic")
+    @PostMapping("/edit-topic")
     public ProjectTopic editTopic(@RequestBody EditProjectTopicRequest request) {
         return topicProjectService.editProjectTopic(request);
     }
 
     @PreAuthorize("hasRole('TEACHER')")
-    @PutMapping("/updateTopic")
+    @PutMapping("/update-topic")
     public ProjectTopic updateTopic(@RequestBody UpdateProjectTopicRequest request) {
         return topicProjectService.updateProjectTopic(request);
     }
 
     @PreAuthorize("hasRole('TEACHER')")
-    @DeleteMapping("/deleteTopic")
+    @DeleteMapping("/delete-topic")
     public void deleteTopic(@RequestParam Integer topicId) {
         topicProjectService.deleteTopic(topicId);
     }
 
     @PreAuthorize("hasRole('TEACHER')")
-    @PatchMapping("/approveTopic")
+    @PatchMapping("/approve-topic")
     public ResponseEntity<Void> approveTopic(@RequestParam Integer topicId) {
         topicProjectService.approvedTopic(topicId);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasRole('TEACHER')")
-    @PatchMapping("/rejectTopic")
+    @PatchMapping("/reject-topic")
     public ResponseEntity<Void> rejectTopic(@RequestParam Integer topicId) {
         topicProjectService.rejectTopic(topicId);
         return ResponseEntity.noContent().build();

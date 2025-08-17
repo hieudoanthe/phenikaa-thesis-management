@@ -1,4 +1,4 @@
-package com.phenikaa.thesisservice.config;
+package com.phenikaa.filter;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;

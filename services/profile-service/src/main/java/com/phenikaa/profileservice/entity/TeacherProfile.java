@@ -12,15 +12,12 @@ import lombok.*;
 @ToString
 public class TeacherProfile {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "teacher_id")
-    private Integer teacherId;
+    private String teacherId;
 
     @Column(name = "user_id", nullable = false)
     private Integer userId;
-
-    @Column(name = "teacher_code", unique = true)
-    private String teacherCode;
 
     @Column(name = "department")
     private String department;
@@ -49,14 +46,17 @@ public class TeacherProfile {
         if (teacherStatus == null) {
             teacherStatus = TeacherStatus.ACTIVE;
         }
+        if (department == null){
+            department = "Công nghệ thông tin";
+        }
         if (maxStudents == null || maxStudents > 15) {
             maxStudents = 15;
         }
     }
 
-    @Column(name = "email")
-    private String email;
-
     @Column(name = "phone")
-    private String phone;
+    private String phoneNumber;
+
+    @Column(name = "avt")
+    private String avt;
 }

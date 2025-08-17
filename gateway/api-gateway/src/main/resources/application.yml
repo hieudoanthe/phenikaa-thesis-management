@@ -27,7 +27,7 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/users/**, /api/admin/**, /api/teacher/**, /api/auth/**, /internal/users/**
+            - Path=/api/user-service/student/**, /api/admin/**, /api/teacher/**, /api/auth/**, /internal/users/**
 
         - id: thesis-service
           uri: lb://thesis-service
@@ -37,7 +37,7 @@ spring:
         - id: profile-service
           uri: lb://profile-service
           predicates:
-            - Path=/api/profile-service/profile/**
+            - Path=/api/profile-service/**
 
         - id: academic-config-service
           uri: lb://academic-config-service

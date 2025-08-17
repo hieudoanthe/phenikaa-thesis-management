@@ -2,7 +2,7 @@ package com.phenikaa.userservice.controller;
 
 import com.phenikaa.userservice.dto.request.CreateUserRequest;
 import com.phenikaa.userservice.dto.request.UpdateUserRequest;
-import com.phenikaa.userservice.dto.response.GetUserResponse;
+import com.phenikaa.dto.response.GetUserResponse;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,19 +22,19 @@ public class AdminController {
     private final UserService userService;
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/saveUser")
+    @PostMapping("/save-user")
     public ResponseEntity<User> createUser(@RequestBody CreateUserRequest createUserRequest) {
         User savedUser = userService.createUser(createUserRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/getUsers")
+    @GetMapping("/get-users")
     public List<GetUserResponse> getAllUsers() {
         return userService.getAllUsers();
     }
 
-    @GetMapping("/getUsersPaged")
+    @GetMapping("/get-users-paged")
     public Page<GetUserResponse> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size) {
@@ -42,18 +42,18 @@ public class AdminController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/deleteUser")
+    @DeleteMapping("/delete-user")
     public void deleteUser(@RequestParam Integer userId) {
         userService.deleteUser(userId);
     }
 
-    @PutMapping("updateUser")
+    @PutMapping("update-user")
     public ResponseEntity<Void> updateUser(@RequestBody UpdateUserRequest request) {
         userService.updateUser(request);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/changeStatusUser")
+    @PatchMapping("/change-status-user")
     public ResponseEntity<Void> changeStatusUser(@RequestParam Integer userId) {
         userService.changeStatusUser(userId);
         return ResponseEntity.noContent().build();

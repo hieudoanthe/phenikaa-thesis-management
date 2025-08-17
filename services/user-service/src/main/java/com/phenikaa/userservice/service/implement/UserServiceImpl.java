@@ -1,10 +1,12 @@
 package com.phenikaa.userservice.service.implement;
 
+import com.phenikaa.dto.request.CreateProfileRequest;
 import com.phenikaa.dto.request.LoginRequest;
-import com.phenikaa.dto.response.UserInfoResponse;
+import com.phenikaa.dto.response.AuthenticatedUserResponse;
+import com.phenikaa.userservice.client.ProfileServiceClient;
 import com.phenikaa.userservice.dto.request.CreateUserRequest;
 import com.phenikaa.userservice.dto.request.UpdateUserRequest;
-import com.phenikaa.userservice.dto.response.GetUserResponse;
+import com.phenikaa.dto.response.GetUserResponse;
 import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.mapper.UserMapper;
@@ -36,8 +38,10 @@ public class UserServiceImpl implements UserService {
     private EntityManager entityManager;
 
     private final PasswordEncoder passwordEncoder;
+    private final ProfileServiceClient profileServiceClient;
     private final UserMapper userMapper;
     private final UserRepository userRepository;
+
     @Override
     @Transactional
     public User createUser(CreateUserRequest createUserRequest) {
@@ -52,11 +56,16 @@ public class UserServiceImpl implements UserService {
 
         entityManager.persist(user);
 
+        for (Role role : user.getRoles()) {
+            String roleName = String.valueOf(role.getRoleName());
+            profileServiceClient.createProfile(new CreateProfileRequest(user.getUserId(), roleName));
+        }
+
         return user;
     }
 
     @Override
-    public UserInfoResponse verifyUser(LoginRequest request) {
+    public AuthenticatedUserResponse verifyUser(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
 
@@ -68,7 +77,7 @@ public class UserServiceImpl implements UserService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is blocked!");
         }
 
-        return new UserInfoResponse(
+        return new AuthenticatedUserResponse(
                 user.getUserId(),
                 user.getUsername(),
                 user.getRoles().stream()
@@ -93,6 +102,7 @@ public class UserServiceImpl implements UserService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
         }
         userRepository.delete(userOpt.get());
+        profileServiceClient.deleteProfile(userId);
     }
 
     @Override
@@ -132,6 +142,15 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("userId").ascending());
         return userRepository.findAll(pageable)
                 .map(userMapper::toDTO);
+    }
+
+    @Override
+    public GetUserResponse getUserById(Integer userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
+        }
+        return userMapper.toDTO(userOpt.get());
     }
 
 }

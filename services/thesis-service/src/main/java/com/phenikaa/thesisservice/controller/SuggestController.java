@@ -16,7 +16,7 @@ public class SuggestController {
     private final SuggestService suggestService;
     private final JwtUtil jwtUtil;
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/suggest-topic")
     public ResponseEntity<String> suggestTopic(@RequestBody SuggestTopicRequest dto,
                                                @RequestHeader("Authorization") String token) {
@@ -25,7 +25,7 @@ public class SuggestController {
         return ResponseEntity.ok("Đã gửi đề xuất đề tài");
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('STUDENT')")
     @PutMapping("/suggestions/{suggestedId}/accept")
     public ResponseEntity<String> acceptSuggestedTopic(@PathVariable Integer suggestedId,
                                                        @RequestHeader("Authorization") String token) {

@@ -20,7 +20,7 @@ public class BaseController {
         return academicService.getAcademicDto(yearId, yearName);
     }
 
-    @GetMapping("/listAcademicYear")
+    @GetMapping("/list-academic-year")
     public List<AcademicDto> getAcademicYears() {
         return academicService.findAll();
     }
