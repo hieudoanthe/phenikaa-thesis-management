@@ -9,6 +9,8 @@ import com.phenikaa.profileservice.entity.StudentProfile;
 import com.phenikaa.profileservice.entity.TeacherProfile;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 public interface ProfileService {
     StudentProfile createStudentProfile(StudentProfile createStudentProfileRequest, Integer userId, MultipartFile avtFile);
     void createProfile(CreateProfileRequest createProfileRequest);
@@ -17,4 +19,5 @@ public interface ProfileService {
     StudentProfile updateStudentProfile(UpdateStudentProfileRequest request, Integer userId, MultipartFile avtFile);
     TeacherProfile updateTeacherProfile(UpdateTeacherProfileRequest request, Integer userId, MultipartFile avtFile);
     void deleteProfile(Integer userId);
+    List<GetTeacherProfileResponse> getAllTeacherProfiles();
 }

@@ -19,4 +19,5 @@ public interface UserService {
     List<GetUserResponse> getAllUsers();
     Page<GetUserResponse> getAllUsers(int page, int size);
     GetUserResponse getUserById(Integer userId);
+    List<GetUserResponse> getUserByIds(List<Integer> userIds);
 }

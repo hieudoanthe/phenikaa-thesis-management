@@ -20,6 +20,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ProfileServiceImpl implements ProfileService {
@@ -135,6 +139,26 @@ public class ProfileServiceImpl implements ProfileService {
             return;
         }
         throw new IllegalArgumentException("Profile not found for userId=" + userId);
+    }
+
+    @Override
+    public List<GetTeacherProfileResponse> getAllTeacherProfiles() {
+        List<TeacherProfile> profiles = teacherProfileRepository.findAll();
+
+        List<Integer> userIds = profiles.stream()
+                .map(TeacherProfile::getUserId)
+                .toList();
+        List<GetUserResponse> users = userServiceClient.getUsersByIds(userIds);
+
+        Map<Integer, GetUserResponse> userMap = users.stream()
+                .collect(Collectors.toMap(GetUserResponse::getUserId, u -> u));
+
+        return profiles.stream()
+                .map(profile -> teacherProfileMapper.toResponse(
+                        userMap.get(profile.getUserId()),
+                        profile
+                ))
+                .toList();
     }
 
 }

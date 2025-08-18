@@ -10,6 +10,10 @@ import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
 import com.phenikaa.thesisservice.service.interfaces.TopicProjectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -70,6 +74,22 @@ public class TopicProjectServiceImpl implements TopicProjectService {
                         .build()
                 ).collect(Collectors.toList());
     }
+
+    @Override
+    public List<ProjectTopicResponse> getTopicsByTeacherId(Integer teacherId) {
+        List<ProjectTopic> topics = projectTopicRepository.findBySupervisorId(teacherId);
+        return topics.stream()
+                .map(projectTopicMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public Page<ProjectTopicResponse> getTopicsByTeacherId(Integer teacherId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("topicId").ascending());
+        return projectTopicRepository.findBySupervisorId(teacherId, pageable)
+                .map(projectTopicMapper::toResponse);
+    }
+
 
     @Override
     public ProjectTopic editProjectTopic(EditProjectTopicRequest dto) {

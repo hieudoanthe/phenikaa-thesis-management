@@ -22,6 +22,7 @@ public class SuggestServiceImpl implements SuggestService {
 
         ProjectTopic topic = suggestTopicMapper.toProjectTopic(dto);
         topic.setCreatedBy(studentId);
+        topic.setTopicStatus(ProjectTopic.TopicStatus.ACTIVE);
         projectTopicRepository.save(topic);
 
         SuggestedTopic suggested = SuggestedTopic.builder()

@@ -153,4 +153,12 @@ public class UserServiceImpl implements UserService {
         return userMapper.toDTO(userOpt.get());
     }
 
+    @Override
+    public List<GetUserResponse> getUserByIds(List<Integer> userIds) {
+        List<User> users = userRepository.findAllById(userIds);
+        return users.stream()
+                .map(userMapper::toDTO)
+                .toList();
+    }
+
 }

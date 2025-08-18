@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class SuggestTopicRequest {
+    private String topicCode;
     private String title;
     private String description;
     private String objectives;

@@ -17,6 +17,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/profile-service")
 @RequiredArgsConstructor
@@ -88,6 +90,13 @@ public class ProfileController {
         Integer userId = jwtUtil.extractUserId(token);
 
         return profileService.updateStudentProfile(updateRequest, userId, avtFile);
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @GetMapping("/student/get-all-teachers")
+    public ResponseEntity<List<GetTeacherProfileResponse>> getAllTeacherProfiles() {
+        List<GetTeacherProfileResponse> response = profileService.getAllTeacherProfiles();
+        return ResponseEntity.ok(response);
     }
 
 }

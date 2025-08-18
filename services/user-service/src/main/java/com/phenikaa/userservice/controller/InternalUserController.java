@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -48,4 +50,8 @@ public class InternalUserController {
         return ResponseEntity.ok(userService.getUserById(userId));
     }
 
+    @PostMapping("/get-all-users/batch")
+    public List<GetUserResponse> getUsersByIds(@RequestBody List<Integer> userIds) {
+        return userService.getUserByIds(userIds);
+    }
 }

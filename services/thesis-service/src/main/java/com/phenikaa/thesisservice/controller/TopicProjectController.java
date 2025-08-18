@@ -8,6 +8,7 @@ import com.phenikaa.thesisservice.dto.response.ProjectTopicResponse;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
 import com.phenikaa.thesisservice.service.interfaces.TopicProjectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +36,25 @@ public class TopicProjectController {
     @GetMapping("/get-list-topic")
     public List<ProjectTopicResponse> getListTopic() {
         return topicProjectService.findAll();
+    }
+
+    @PreAuthorize("hasRole('TEACHER')")
+    @GetMapping("/get-topic-by-/{teacherId}")
+    public List<ProjectTopicResponse> getTopicByTeacherId(@PathVariable Integer teacherId) {
+        return topicProjectService.getTopicsByTeacherId(teacherId);
+    }
+
+    @PreAuthorize("hasRole('TEACHER')")
+    @GetMapping("/get-topic-by-{teacherId}/paged")
+    public ResponseEntity<Page<ProjectTopicResponse>> getTopicsByTeacherId(
+            @PathVariable Integer teacherId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size) {
+
+        Page<ProjectTopicResponse> topics =
+                topicProjectService.getTopicsByTeacherId(teacherId, page, size);
+
+        return ResponseEntity.ok(topics);
     }
 
     @PreAuthorize("hasRole('TEACHER')")
