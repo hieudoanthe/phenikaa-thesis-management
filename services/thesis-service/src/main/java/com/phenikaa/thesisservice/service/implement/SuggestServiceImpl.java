@@ -1,5 +1,7 @@
 package com.phenikaa.thesisservice.service.implement;
 
+import com.phenikaa.thesisservice.client.NotificationServiceClient;
+import com.phenikaa.dto.request.NotificationRequest;
 import com.phenikaa.thesisservice.dto.request.SuggestTopicRequest;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
 import com.phenikaa.thesisservice.entity.SuggestedTopic;
@@ -10,29 +12,41 @@ import com.phenikaa.thesisservice.service.interfaces.SuggestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class SuggestServiceImpl implements SuggestService {
     private final SuggestTopicMapper suggestTopicMapper;
     private final ProjectTopicRepository projectTopicRepository;
     private final SuggestRepository suggestRepository;
+    private final NotificationServiceClient notificationServiceClient;
+
 
     @Override
     public void suggestTopic(SuggestTopicRequest dto, Integer studentId) {
 
         ProjectTopic topic = suggestTopicMapper.toProjectTopic(dto);
         topic.setCreatedBy(studentId);
+        topic.setTopicCode(UUID.randomUUID().toString());
         topic.setTopicStatus(ProjectTopic.TopicStatus.ACTIVE);
         projectTopicRepository.save(topic);
 
         SuggestedTopic suggested = SuggestedTopic.builder()
-                .topicId(topic.getTopicId())
+                .projectTopic(topic)
                 .suggestedBy(studentId)
                 .suggestedFor(dto.getSupervisorId())
                 .reason(dto.getReason())
                 .suggestionStatus(SuggestedTopic.SuggestionStatus.PENDING)
                 .build();
         suggestRepository.save(suggested);
+
+        NotificationRequest noti = new NotificationRequest(
+                studentId,
+                dto.getSupervisorId(),
+                "Bạn có một đề tài mới cần duyệt!"
+        );
+        notificationServiceClient.sendNotification(noti);
     }
 
     @Override

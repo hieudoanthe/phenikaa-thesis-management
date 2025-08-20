@@ -44,6 +44,17 @@ spring:
           predicates:
             - Path=/academic-config/**
 
+        - id: communication-log-service
+          uri: lb://communication-log-service
+          predicates:
+            - Path=/notifications/**
+
+        - id: communication-log-service-ws
+          uri: lb:ws://communication-log-service
+          predicates:
+            - Path=/ws/notifications/**
+
+
 eureka:
   client:
     service-url:
@@ -62,4 +73,5 @@ logging:
   level:
     org.springframework.security: DEBUG
     org.springframework.web.cors: DEBUG
+    org.springframework.web.socket: DEBUG
     org.springframework.web.filter.CorsFilter: DEBUG

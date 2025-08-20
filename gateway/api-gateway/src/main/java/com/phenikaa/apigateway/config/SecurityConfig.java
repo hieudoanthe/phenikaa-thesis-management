@@ -2,7 +2,7 @@ package com.phenikaa.apigateway.config;
 
 import com.phenikaa.apigateway.security.JwtAuthenticationManager;
 import com.phenikaa.apigateway.security.ServerHttpBearerAuthenticationConverter;
-import com.phenikaa.utils.JwtUtil;
+import com.phenikaa.apigateway.utils.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .pathMatchers("/api/thesis-service/teacher/**").hasRole("TEACHER")
                         .pathMatchers("/api/profile-service/**").hasAnyRole("STUDENT", "TEACHER")
                         .pathMatchers("/api/lecturer/thesis/**").permitAll()
+                        .pathMatchers("/notifications/**").permitAll()
+                        .pathMatchers("/ws/notifications/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
@@ -65,7 +67,10 @@ public class SecurityConfig {
     @org.springframework.core.annotation.Order(-1)
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+//        config.setAllowedOrigins(List.of("http://localhost:5173"));
+//        config.setAllowedOrigins(List.of("https://websocketking.com"));
+        config.addAllowedOrigin("http://localhost:5173");
+        config.addAllowedOrigin("https://websocketking.com");
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

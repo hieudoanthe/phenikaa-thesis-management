@@ -1,6 +1,6 @@
 package com.phenikaa.apigateway.security;
 
-import com.phenikaa.utils.JwtUtil;
+import com.phenikaa.apigateway.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -39,12 +39,6 @@ public class TopicProjectController {
     }
 
     @PreAuthorize("hasRole('TEACHER')")
-    @GetMapping("/get-topic-by-/{teacherId}")
-    public List<ProjectTopicResponse> getTopicByTeacherId(@PathVariable Integer teacherId) {
-        return topicProjectService.getTopicsByTeacherId(teacherId);
-    }
-
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/get-topic-by-{teacherId}/paged")
     public ResponseEntity<Page<ProjectTopicResponse>> getTopicsByTeacherId(
             @PathVariable Integer teacherId,

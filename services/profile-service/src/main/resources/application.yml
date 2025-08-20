@@ -22,7 +22,6 @@ cloudinary:
   api_key: ${CLOUDINARY_API_KEY}
   api_secret: ${CLOUDINARY_API_SECRET}
 
-debug: true
 logging:
   level:
     org.springframework: INFO

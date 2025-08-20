@@ -20,14 +20,11 @@ public class SuggestedTopic {
     @Column(name = "suggested_id")
     private Integer suggestedId;
 
-    @Column(name = "topic_id")
-    private Integer topicId;
-
     @Column(name = "suggested_by")
-    private Integer suggestedBy; // Reference to UserService
+    private Integer suggestedBy;
 
     @Column(name = "suggested_for")
-    private Integer suggestedFor; // Reference to ProfileService
+    private Integer suggestedFor;
 
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
@@ -46,11 +43,11 @@ public class SuggestedTopic {
     private LocalDateTime createdAt;
 
     @Column(name = "approved_by")
-    private Integer approvedBy; // Reference to UserService
+    private Integer approvedBy;
 
     // Relationship với Project Topic
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "topic_id", insertable = false, updatable = false)
+    @JoinColumn(name = "topic_id")
     private ProjectTopic projectTopic;
 
     @PrePersist

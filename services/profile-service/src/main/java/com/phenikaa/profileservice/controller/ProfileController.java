@@ -73,7 +73,7 @@ public class ProfileController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('TEACHER','STUDENT')")
     @GetMapping("/student/get-profile/{userId}")
     public ResponseEntity<GetStudentProfileResponse> getStudentProfile(@PathVariable Integer userId) {
         GetStudentProfileResponse response = profileService.getStudentProfile(userId);

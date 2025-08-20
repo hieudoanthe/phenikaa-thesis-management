@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class ProjectTopicResponse {
     private Integer topicId;
     private Integer registerId;
+    private Integer suggestedBy;
     private String topicCode;
     private String title;
     private String description;

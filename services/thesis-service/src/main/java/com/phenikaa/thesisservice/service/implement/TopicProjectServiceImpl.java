@@ -5,6 +5,8 @@ import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
 import com.phenikaa.thesisservice.dto.response.ProjectTopicResponse;
+import com.phenikaa.thesisservice.entity.Register;
+import com.phenikaa.thesisservice.entity.SuggestedTopic;
 import com.phenikaa.thesisservice.mapper.ProjectTopicMapper;
 import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -51,7 +54,7 @@ public class TopicProjectServiceImpl implements TopicProjectService {
 
     @Override
     public List<ProjectTopicResponse> findAll() {
-        return projectTopicRepository.findAll()
+        return projectTopicRepository.findAllWithAssociations()
                 .stream()
                 .map(e -> ProjectTopicResponse.builder()
                         .topicId(e.getTopicId())
@@ -66,28 +69,34 @@ public class TopicProjectServiceImpl implements TopicProjectService {
                         .difficultyLevel(e.getDifficultyLevel())
                         .topicStatus(e.getTopicStatus())
                         .approvalStatus(e.getApprovalStatus())
-                        .registerId(
-                                e.getRegisters() != null && !e.getRegisters().isEmpty()
-                                        ? e.getRegisters().getFirst().getRegisterId()
-                                        : null
-                        )
                         .build()
                 ).collect(Collectors.toList());
     }
 
-    @Override
-    public List<ProjectTopicResponse> getTopicsByTeacherId(Integer teacherId) {
-        List<ProjectTopic> topics = projectTopicRepository.findBySupervisorId(teacherId);
-        return topics.stream()
-                .map(projectTopicMapper::toResponse)
-                .toList();
-    }
 
     @Override
     public Page<ProjectTopicResponse> getTopicsByTeacherId(Integer teacherId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("topicId").ascending());
         return projectTopicRepository.findBySupervisorId(teacherId, pageable)
-                .map(projectTopicMapper::toResponse);
+                .map(projectTopic -> {
+                    ProjectTopicResponse dto = projectTopicMapper.toResponse(projectTopic);
+
+                    dto.setSuggestedBy(
+                            projectTopic.getSuggestedTopics().stream()
+                                    .findFirst()
+                                    .map(SuggestedTopic::getSuggestedBy)
+                                    .orElse(null)
+                    );
+
+                    dto.setRegisterId(
+                            projectTopic.getRegisters().stream()
+                                    .findFirst()
+                                    .map(Register::getRegisterId)
+                                    .orElse(null)
+                    );
+
+                    return dto;
+                });
     }
 
 

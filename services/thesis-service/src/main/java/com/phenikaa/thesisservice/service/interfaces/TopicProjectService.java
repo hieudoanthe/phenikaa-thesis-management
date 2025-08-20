@@ -13,7 +13,6 @@ import java.util.List;
 public interface TopicProjectService {
     ProjectTopic createProjectTopic(CreateProjectTopicRequest dto, Integer userId);
     List<ProjectTopicResponse> findAll();
-    List<ProjectTopicResponse> getTopicsByTeacherId(Integer teacherId);
     Page<ProjectTopicResponse> getTopicsByTeacherId(Integer teacherId, int page, int size);
     ProjectTopic editProjectTopic(EditProjectTopicRequest dto);
     ProjectTopic updateProjectTopic(UpdateProjectTopicRequest dto);

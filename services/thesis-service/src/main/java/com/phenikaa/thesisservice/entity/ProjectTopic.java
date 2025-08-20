@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "project_topic", schema = "HieuDT")
@@ -13,7 +13,8 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-@ToString
+@ToString(exclude = {"suggestedTopics","registers"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ProjectTopic {
 
     @Id
@@ -86,10 +87,10 @@ public class ProjectTopic {
 
     // Relationships
     @OneToMany(mappedBy = "projectTopic", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<SuggestedTopic> suggestedTopics;
+    private Set<SuggestedTopic> suggestedTopics;
 
     @OneToMany(mappedBy = "projectTopic", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Register> registers;
+    private Set<Register> registers;
 
     @PrePersist
     protected void onCreate() {
