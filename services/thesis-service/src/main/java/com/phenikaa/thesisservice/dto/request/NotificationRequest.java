@@ -1,4 +1,4 @@
-package com.phenikaa.dto.request;
+package com.phenikaa.thesisservice.dto.request;
 
 import lombok.*;
 

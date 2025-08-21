@@ -4,6 +4,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.*;
 
+import java.time.Instant;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -12,9 +14,9 @@ import lombok.*;
 public class Notification {
     @Id
     private String id;
-    private Integer studentId;
-    private Integer teacherId;
+    private Integer senderId;
+    private Integer receiverId;
     private String message;
     private boolean read;
-    private long createdAt;
+    private Instant createdAt;
 }

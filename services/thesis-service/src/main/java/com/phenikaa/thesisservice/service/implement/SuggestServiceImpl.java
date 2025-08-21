@@ -1,7 +1,7 @@
 package com.phenikaa.thesisservice.service.implement;
 
 import com.phenikaa.thesisservice.client.NotificationServiceClient;
-import com.phenikaa.dto.request.NotificationRequest;
+import com.phenikaa.thesisservice.dto.request.NotificationRequest;
 import com.phenikaa.thesisservice.dto.request.SuggestTopicRequest;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
 import com.phenikaa.thesisservice.entity.SuggestedTopic;

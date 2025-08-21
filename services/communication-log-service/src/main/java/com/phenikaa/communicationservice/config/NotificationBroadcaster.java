@@ -13,16 +13,17 @@ public class NotificationBroadcaster {
 
     private final Map<Integer, Sinks.Many<Notification>> sinks = new ConcurrentHashMap<>();
 
-    public Flux<Notification> subscribe(int teacherId) {
-        Sinks.Many<Notification> sink = sinks.computeIfAbsent(teacherId,
-                id -> Sinks.many().multicast().onBackpressureBuffer());
-        return sink.asFlux();
+    public void publish(Integer receiverId, Notification notification) {
+        sinks.computeIfAbsent(receiverId,
+                id -> Sinks.many().multicast().onBackpressureBuffer()
+        ).tryEmitNext(notification);
     }
 
-    public void publish(Notification noti) {
-        Sinks.Many<Notification> sink = sinks.get(noti.getTeacherId());
-        if (sink != null) {
-            sink.tryEmitNext(noti);
-        }
+    public Flux<Notification> subscribe(Integer receiverId) {
+        return sinks.computeIfAbsent(receiverId,
+                id -> Sinks.many().multicast().onBackpressureBuffer()
+        ).asFlux();
     }
 }
+
+

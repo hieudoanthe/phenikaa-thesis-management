@@ -1,7 +1,9 @@
 package com.phenikaa.thesisservice.service.implement;
 
+import com.phenikaa.thesisservice.client.NotificationServiceClient;
 import com.phenikaa.thesisservice.dto.request.CreateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
+import com.phenikaa.thesisservice.dto.request.NotificationRequest;
 import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
 import com.phenikaa.thesisservice.dto.response.ProjectTopicResponse;
@@ -10,6 +12,7 @@ import com.phenikaa.thesisservice.entity.SuggestedTopic;
 import com.phenikaa.thesisservice.mapper.ProjectTopicMapper;
 import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
+import com.phenikaa.thesisservice.repository.SuggestRepository;
 import com.phenikaa.thesisservice.service.interfaces.TopicProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +36,10 @@ public class TopicProjectServiceImpl implements TopicProjectService {
     private final ProjectTopicRepository projectTopicRepository;
 
     private final ProjectTopicMapper projectTopicMapper;
+
+    private final SuggestRepository suggestRepository;
+
+    private final NotificationServiceClient notificationServiceClient;
 
     @Override
     public ProjectTopic createProjectTopic(CreateProjectTopicRequest dto, Integer userId) {
@@ -134,14 +142,34 @@ public class TopicProjectServiceImpl implements TopicProjectService {
 
     @Override
     public void approvedTopic(Integer topicId) {
-        Optional<ProjectTopic> projectTopicOpt = projectTopicRepository.findById(topicId);
-        if (projectTopicOpt.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project topic not found!");
-        }
-        ProjectTopic projectTopic = projectTopicOpt.get();
+        ProjectTopic projectTopic = projectTopicRepository.findById(topicId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project topic not found!"));
+
+        Integer senderId = projectTopic.getSupervisorId();
+
+        SuggestedTopic suggestedTopic = projectTopic.getSuggestedTopics().stream()
+                .filter(st -> st.getSuggestionStatus() == SuggestedTopic.SuggestionStatus.PENDING)
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No pending suggestion found!"));
+
+        Integer receiverId = suggestedTopic.getSuggestedBy();
+
         projectTopic.setApprovalStatus(ProjectTopic.ApprovalStatus.APPROVED);
+        suggestedTopic.setSuggestionStatus(SuggestedTopic.SuggestionStatus.APPROVED);
         projectTopicRepository.save(projectTopic);
+
+        NotificationRequest notification = new NotificationRequest(
+                senderId,
+                receiverId,
+                "Đề tài '" + projectTopic.getTitle() + "' đã được duyệt!"
+        );
+        notificationServiceClient.sendNotification(notification);
     }
+
+
+
+
+
 
     @Override
     public void rejectTopic(Integer topicId) {
@@ -152,6 +180,7 @@ public class TopicProjectServiceImpl implements TopicProjectService {
         ProjectTopic projectTopic = projectTopicOpt.get();
         projectTopic.setApprovalStatus(ProjectTopic.ApprovalStatus.REJECTED);
         projectTopicRepository.save(projectTopic);
+
     }
 
 }

@@ -20,7 +20,7 @@ public class RegisterController {
     private final TopicProjectService thesisService;
     private final JwtUtil jwtUtil;
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/register-topic")
     public ResponseEntity<String> registerTopic(
             @RequestHeader("Authorization") String token,
@@ -31,7 +31,7 @@ public class RegisterController {
         return ResponseEntity.ok("Registered successfully!");
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/available-topics")
     public List<AvailableTopicResponse> getAvailableTopics() {
         return thesisService.getAvailableTopics();
