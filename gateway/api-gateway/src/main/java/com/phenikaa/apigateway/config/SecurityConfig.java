@@ -47,6 +47,8 @@ public class SecurityConfig {
                         .pathMatchers("/api/lecturer/thesis/**").permitAll()
                         .pathMatchers("/notifications/**").permitAll()
                         .pathMatchers("/ws/notifications/**").permitAll()
+                        .pathMatchers("/chat/**").permitAll()
+                        .pathMatchers("/ws/chat/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)

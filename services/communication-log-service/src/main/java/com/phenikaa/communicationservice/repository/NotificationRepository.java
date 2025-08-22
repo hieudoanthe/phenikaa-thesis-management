@@ -5,6 +5,5 @@ import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import reactor.core.publisher.Flux;
 
 public interface NotificationRepository extends ReactiveMongoRepository<Notification, String> {
-//    Flux<Notification> findByTeacherId(Integer teacherId);
     Flux<Notification> findByReceiverId(Integer receiverId);
 }

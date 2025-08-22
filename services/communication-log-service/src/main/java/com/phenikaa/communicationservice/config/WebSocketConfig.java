@@ -12,9 +12,10 @@ import java.util.Map;
 public class WebSocketConfig {
 
     @Bean
-    public HandlerMapping handlerMapping(NotificationWebSocketHandler handler) {
+    public HandlerMapping handlerMapping(NotificationWebSocketHandler notificationWebSocketHandler, ChatWebSocketHandler chatWebSocketHandler) {
         return new SimpleUrlHandlerMapping(Map.of(
-                "/ws/notifications", handler
+                "/ws/notifications", notificationWebSocketHandler,
+                "/ws/chat", chatWebSocketHandler
         ), -1);
     }
 

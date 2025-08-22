@@ -10,10 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
@@ -42,46 +39,12 @@ public class JwtUtil {
         return token.replace("Bearer ", "").trim();
     }
 
-    public String generateAccessToken(String username, Integer userId, Collection<? extends GrantedAuthority> authorities) {
-        List<String> roles = authorities.stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
-
-        return Jwts.builder()
-                .setSubject(username)
-                .claim("roles", roles)
-                .claim("userId", userId)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
-                .compact();
-    }
-
-    public String generateRefreshToken(String username, Integer userId) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + refreshTokenExpiration);
-
-        return Jwts.builder()
-                .setSubject(username)
-                .claim("userId", userId)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
-                .compact();
-    }
-
     public Claims extractClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(cleanToken(token))
                 .getBody();
-    }
-
-    public Integer extractUserId(String token) {
-        return extractClaims(token).get("userId", Integer.class);
     }
 
     public String getUsernameFromJWT(String token) {
@@ -100,10 +63,6 @@ public class JwtUtil {
             System.out.println("Token invalid: " + ex.getMessage());
             return false;
         }
-    }
-
-    public Date getExpirationDateFromToken(String token) {
-        return extractClaims(token).getExpiration();
     }
 
 }

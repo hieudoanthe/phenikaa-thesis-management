@@ -18,7 +18,6 @@ spring:
           lower-case-service-id: true
 
       routes:
-
         - id: auth-service
           uri: lb://auth-service
           predicates:
@@ -47,13 +46,12 @@ spring:
         - id: communication-log-service
           uri: lb://communication-log-service
           predicates:
-            - Path=/notifications/**
+            - Path=/notifications/**, /chat/**
 
         - id: communication-log-service-ws
           uri: lb:ws://communication-log-service
           predicates:
-            - Path=/ws/notifications/**
-
+            - Path=/ws/notifications/**, /ws/chat/**
 
 eureka:
   client:
@@ -62,10 +60,9 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
 
-
 jwt:
   secret: VHJlbmRvaW5heW5ndW9pZGFuZ2RldHJhbnRyb25nbmFodGFsYW5ndW9pZGFzYW5zYW5nYm90aG9pZ2lhbmRlY2hhbXNvY2JhblRob2lnaWFuY3VhYWljdW5nZGV1ZGFuZ3F1eW5odW5oYWVkZW10aG9pZ2lhbmN1YW5ndW95ZGFuaGNob2JhbmNvbmdnaW9uZ2h1dmllY2RlbWNhdGhlZ2lvaWN1YWJhbnRoYW5jaGlhc2VjdW5nYmFu
-  expiration: 86400000  # 1 ngày (tính bằng milliseconds)
+  expiration: 86400000 # 1 ngày (tính bằng milliseconds)
   refresh-expiration: 604800000
 
 debug: true
