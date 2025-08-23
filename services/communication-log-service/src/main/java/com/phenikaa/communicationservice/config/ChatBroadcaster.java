@@ -1,6 +1,7 @@
 package com.phenikaa.communicationservice.config;
 
 import com.phenikaa.communicationservice.entity.ChatMessage;
+import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -21,12 +22,11 @@ public class ChatBroadcaster {
         return redisTemplate.convertAndSend(topic, msg);
     }
 
-    // Subscribe: tất cả topic mà userId tham gia
+    // Subscribe: nhận tất cả topic mà user tham gia
     public Flux<ChatMessage> subscribe(String userId) {
-        String pattern = "chat_*_" + userId;
-        return redisTemplate.listenToPattern(pattern)
-                .map(record -> record.getMessage())
-                .filter(msg -> msg.getSenderId().equals(userId) || msg.getReceiverId().equals(userId));
+        return redisTemplate.listenToPattern("chat_*")
+                .map(ReactiveSubscription.Message::getMessage)
+                .filter(msg -> msg.getReceiverId().equals(userId));
     }
 
     // Sinh topic theo cặp user (thứ tự tăng dần để không bị lệch)
