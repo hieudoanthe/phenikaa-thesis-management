@@ -6,14 +6,13 @@ import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.NotificationRequest;
 import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
-import com.phenikaa.thesisservice.dto.response.ProjectTopicResponse;
+import com.phenikaa.thesisservice.dto.response.GetThesisResponse;
 import com.phenikaa.thesisservice.entity.Register;
 import com.phenikaa.thesisservice.entity.SuggestedTopic;
 import com.phenikaa.thesisservice.mapper.ProjectTopicMapper;
 import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
-import com.phenikaa.thesisservice.repository.SuggestRepository;
-import com.phenikaa.thesisservice.service.interfaces.TopicProjectService;
+import com.phenikaa.thesisservice.service.interfaces.ThesisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,23 +20,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class TopicProjectServiceImpl implements TopicProjectService {
+public class ThesisServiceImpl implements ThesisService {
 
     private final ProjectTopicRepository projectTopicRepository;
 
     private final ProjectTopicMapper projectTopicMapper;
-
-    private final SuggestRepository suggestRepository;
 
     private final NotificationServiceClient notificationServiceClient;
 
@@ -61,10 +56,10 @@ public class TopicProjectServiceImpl implements TopicProjectService {
     }
 
     @Override
-    public List<ProjectTopicResponse> findAll() {
+    public List<GetThesisResponse> findAll() {
         return projectTopicRepository.findAllWithAssociations()
                 .stream()
-                .map(e -> ProjectTopicResponse.builder()
+                .map(e -> GetThesisResponse.builder()
                         .topicId(e.getTopicId())
                         .topicCode(e.getTopicCode())
                         .title(e.getTitle())
@@ -81,13 +76,12 @@ public class TopicProjectServiceImpl implements TopicProjectService {
                 ).collect(Collectors.toList());
     }
 
-
     @Override
-    public Page<ProjectTopicResponse> getTopicsByTeacherId(Integer teacherId, int page, int size) {
+    public Page<GetThesisResponse> getTopicsByTeacherId(Integer teacherId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("topicId").ascending());
         return projectTopicRepository.findBySupervisorId(teacherId, pageable)
                 .map(projectTopic -> {
-                    ProjectTopicResponse dto = projectTopicMapper.toResponse(projectTopic);
+                    GetThesisResponse dto = projectTopicMapper.toResponse(projectTopic);
 
                     dto.setSuggestedBy(
                             projectTopic.getSuggestedTopics().stream()
@@ -106,7 +100,6 @@ public class TopicProjectServiceImpl implements TopicProjectService {
                     return dto;
                 });
     }
-
 
     @Override
     public ProjectTopic editProjectTopic(EditProjectTopicRequest dto) {
@@ -156,6 +149,8 @@ public class TopicProjectServiceImpl implements TopicProjectService {
 
         projectTopic.setApprovalStatus(ProjectTopic.ApprovalStatus.APPROVED);
         suggestedTopic.setSuggestionStatus(SuggestedTopic.SuggestionStatus.APPROVED);
+        suggestedTopic.setApprovedBy(senderId);
+
         projectTopicRepository.save(projectTopic);
 
         NotificationRequest notification = new NotificationRequest(
@@ -166,11 +161,6 @@ public class TopicProjectServiceImpl implements TopicProjectService {
         notificationServiceClient.sendNotification(notification);
     }
 
-
-
-
-
-
     @Override
     public void rejectTopic(Integer topicId) {
         Optional<ProjectTopic> projectTopicOpt = projectTopicRepository.findById(topicId);
@@ -180,7 +170,6 @@ public class TopicProjectServiceImpl implements TopicProjectService {
         ProjectTopic projectTopic = projectTopicOpt.get();
         projectTopic.setApprovalStatus(ProjectTopic.ApprovalStatus.REJECTED);
         projectTopicRepository.save(projectTopic);
-
     }
 
 }

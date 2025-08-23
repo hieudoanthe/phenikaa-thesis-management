@@ -22,7 +22,7 @@ public class TopicRequest {
     private Integer requestId;
 
     @Column(name = "user_id")
-    private Integer userId; // Reference to UserService
+    private Integer userId;
 
     @Column(name = "keywords")
     private String keywords;
@@ -41,10 +41,9 @@ public class TopicRequest {
     private TopicRequestStatus topicRequestStatus;
 
     public enum TopicRequestStatus {
-        PENDING,       // Chờ xử lý
-        IN_REVIEW,     // Đang được xem xét
-        APPROVED,      // Đã duyệt
-        REJECTED       // Từ chối
+        PENDING,
+        APPROVED,
+        REJECTED
     }
 
     @Column(name = "created_at")
@@ -56,7 +55,6 @@ public class TopicRequest {
     @Column(name = "priority")
     private Integer priority;
 
-    // Relationship với AI Suggested Topics
     @OneToMany(mappedBy = "topicRequest", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<AiSuggestedTopic> aiSuggestedTopics;
 

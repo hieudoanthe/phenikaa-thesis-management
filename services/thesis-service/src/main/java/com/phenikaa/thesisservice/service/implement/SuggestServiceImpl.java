@@ -3,6 +3,7 @@ package com.phenikaa.thesisservice.service.implement;
 import com.phenikaa.thesisservice.client.NotificationServiceClient;
 import com.phenikaa.thesisservice.dto.request.NotificationRequest;
 import com.phenikaa.thesisservice.dto.request.SuggestTopicRequest;
+import com.phenikaa.thesisservice.dto.response.GetSuggestTopicResponse;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
 import com.phenikaa.thesisservice.entity.SuggestedTopic;
 import com.phenikaa.thesisservice.mapper.SuggestTopicMapper;
@@ -10,6 +11,10 @@ import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.repository.SuggestRepository;
 import com.phenikaa.thesisservice.service.interfaces.SuggestService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -21,7 +26,6 @@ public class SuggestServiceImpl implements SuggestService {
     private final ProjectTopicRepository projectTopicRepository;
     private final SuggestRepository suggestRepository;
     private final NotificationServiceClient notificationServiceClient;
-
 
     @Override
     public void suggestTopic(SuggestTopicRequest dto, Integer studentId) {
@@ -50,24 +54,31 @@ public class SuggestServiceImpl implements SuggestService {
     }
 
     @Override
-    public void acceptSuggestedTopic(Integer suggestedId, Integer approverId) {
-        SuggestedTopic suggestion = suggestRepository.findById(suggestedId)
-                .orElseThrow(() -> new RuntimeException("Not found suggested topic with id: " + suggestedId + " or it has been deleted by supervisor"));
-
-        if (suggestion.getSuggestionStatus() != SuggestedTopic.SuggestionStatus.PENDING) {
-            throw new RuntimeException("The proposal has been processed before!");
-        }
-
-        suggestion.setSuggestionStatus(SuggestedTopic.SuggestionStatus.APPROVED);
-        suggestion.setApprovedBy(approverId);
-
-        ProjectTopic topic = suggestion.getProjectTopic();
-        topic.setApprovalStatus(ProjectTopic.ApprovalStatus.AVAILABLE);
-        topic.setTopicStatus(ProjectTopic.TopicStatus.ACTIVE);
-
-        projectTopicRepository.save(topic);
-        suggestRepository.save(suggestion);
+    public Page<GetSuggestTopicResponse> getSuggestTopicByStudentId(Integer studentId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return suggestRepository.findBySuggestedBy(studentId, pageable)
+                .map(suggestTopicMapper::toGetSuggestTopicResponse);
     }
 
+
+//    @Override
+//    public void acceptSuggestedTopic(Integer suggestedId, Integer approverId) {
+//        SuggestedTopic suggestion = suggestRepository.findById(suggestedId)
+//                .orElseThrow(() -> new RuntimeException("Not found suggested topic with id: " + suggestedId + " or it has been deleted by supervisor"));
+//
+//        if (suggestion.getSuggestionStatus() != SuggestedTopic.SuggestionStatus.PENDING) {
+//            throw new RuntimeException("The proposal has been processed before!");
+//        }
+//
+//        suggestion.setSuggestionStatus(SuggestedTopic.SuggestionStatus.APPROVED);
+//        suggestion.setApprovedBy(approverId);
+//
+//        ProjectTopic topic = suggestion.getProjectTopic();
+//        topic.setApprovalStatus(ProjectTopic.ApprovalStatus.AVAILABLE);
+//        topic.setTopicStatus(ProjectTopic.TopicStatus.ACTIVE);
+//
+//        projectTopicRepository.save(topic);
+//        suggestRepository.save(suggestion);
+//    }
 
 }

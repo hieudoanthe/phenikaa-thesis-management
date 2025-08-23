@@ -41,10 +41,10 @@ public class ProjectTopic {
     private String expectedOutcome;
 
     @Column(name = "supervisor_id")
-    private Integer supervisorId; // Reference to ProfileService
+    private Integer supervisorId;
 
     @Column(name = "academic_year_id")
-    private Integer academicYearId; // Reference to AcademicConfigService
+    private Integer academicYearId;
 
     @Column(name = "max_students")
     private Integer maxStudents;
@@ -72,10 +72,10 @@ public class ProjectTopic {
     private LocalDateTime updatedAt;
 
     @Column(name = "created_by")
-    private Integer createdBy; // Reference to UserService
+    private Integer createdBy;
 
     @Column(name = "updated_by")
-    private Integer updatedBy; // Reference to UserService
+    private Integer updatedBy;
 
     @Column(name = "approval_status")
     @Enumerated(EnumType.STRING)
@@ -85,7 +85,6 @@ public class ProjectTopic {
         PENDING, AVAILABLE, APPROVED, REJECTED
     }
 
-    // Relationships
     @OneToMany(mappedBy = "projectTopic", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<SuggestedTopic> suggestedTopics;
 

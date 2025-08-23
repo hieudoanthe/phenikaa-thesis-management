@@ -34,9 +34,9 @@ public class SuggestedTopic {
     private SuggestionStatus suggestionStatus;
 
     public enum SuggestionStatus {
-        PENDING,     // Đề xuất đang chờ được duyệt
-        APPROVED,    // Đã được duyệt
-        REJECTED     // Bị từ chối
+        PENDING,
+        APPROVED,
+        REJECTED
     }
 
     @Column(name = "created_at")
@@ -45,7 +45,6 @@ public class SuggestedTopic {
     @Column(name = "approved_by")
     private Integer approvedBy;
 
-    // Relationship với Project Topic
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id")
     private ProjectTopic projectTopic;

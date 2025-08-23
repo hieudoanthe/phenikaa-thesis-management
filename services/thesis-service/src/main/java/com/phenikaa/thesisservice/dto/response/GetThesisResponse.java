@@ -4,11 +4,9 @@ import com.phenikaa.thesisservice.entity.ProjectTopic;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Data
 @Builder
-public class ProjectTopicResponse {
+public class GetThesisResponse {
     private Integer topicId;
     private Integer registerId;
     private Integer suggestedBy;

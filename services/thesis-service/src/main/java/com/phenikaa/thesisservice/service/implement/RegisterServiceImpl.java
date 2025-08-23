@@ -9,7 +9,6 @@ import com.phenikaa.thesisservice.repository.RegisterRepository;
 import com.phenikaa.thesisservice.service.interfaces.RegisterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,7 +21,7 @@ public class RegisterServiceImpl implements RegisterService {
     private final ProjectTopicRepository projectTopicRepository;
 
     @Override
-    public Register registerTopic(RegisterTopicRequest dto, Integer userId) {
+    public void registerTopic(RegisterTopicRequest dto, Integer userId) {
         Register register = registerMapper.toRegister(dto);
 
         ProjectTopic topic = projectTopicRepository.findById(dto.getTopicId())
@@ -35,6 +34,6 @@ public class RegisterServiceImpl implements RegisterService {
 
         register.setStudentId(userId);
 
-        return registerRepository.save(register);
+        registerRepository.save(register);
     }
 }
