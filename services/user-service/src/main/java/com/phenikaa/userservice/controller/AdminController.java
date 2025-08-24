@@ -2,7 +2,10 @@ package com.phenikaa.userservice.controller;
 
 import com.phenikaa.userservice.dto.request.CreateUserRequest;
 import com.phenikaa.userservice.dto.request.UpdateUserRequest;
+import com.phenikaa.userservice.dto.request.UserFilterRequest;
+import com.phenikaa.userservice.dto.request.DynamicFilterRequest;
 import com.phenikaa.dto.response.GetUserResponse;
+import com.phenikaa.userservice.dto.response.UserFilterResponse;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +60,43 @@ public class AdminController {
     public ResponseEntity<Void> changeStatusUser(@RequestParam Integer userId) {
         userService.changeStatusUser(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/filter-users")
+    public ResponseEntity<UserFilterResponse> filterUsers(@RequestBody UserFilterRequest filterRequest) {
+        Page<GetUserResponse> filteredUsers = userService.filterUsers(filterRequest);
+        UserFilterResponse response = UserFilterResponse.fromPage(filteredUsers);
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/search-users")
+    public ResponseEntity<List<GetUserResponse>> searchUsers(@RequestParam String searchPattern) {
+        List<GetUserResponse> users = userService.searchUsersByPattern(searchPattern);
+        return ResponseEntity.ok(users);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/users-by-role")
+    public ResponseEntity<List<GetUserResponse>> getUsersByRole(@RequestParam String roleName) {
+        List<GetUserResponse> users = userService.getUsersByRole(roleName);
+        return ResponseEntity.ok(users);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/users-by-status")
+    public ResponseEntity<List<GetUserResponse>> getUsersByStatus(@RequestParam Integer status) {
+        List<GetUserResponse> users = userService.getUsersByStatus(status);
+        return ResponseEntity.ok(users);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/dynamic-filter-users")
+    public ResponseEntity<UserFilterResponse> dynamicFilterUsers(@RequestBody DynamicFilterRequest dynamicFilterRequest) {
+        Page<GetUserResponse> filteredUsers = userService.dynamicFilterUsers(dynamicFilterRequest);
+        UserFilterResponse response = UserFilterResponse.fromPage(filteredUsers);
+        return ResponseEntity.ok(response);
     }
 
 }

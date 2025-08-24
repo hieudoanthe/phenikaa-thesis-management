@@ -6,12 +6,17 @@ import com.phenikaa.dto.response.AuthenticatedUserResponse;
 import com.phenikaa.userservice.client.ProfileServiceClient;
 import com.phenikaa.userservice.dto.request.CreateUserRequest;
 import com.phenikaa.userservice.dto.request.UpdateUserRequest;
+import com.phenikaa.userservice.dto.request.UserFilterRequest;
+import com.phenikaa.userservice.dto.request.DynamicFilterRequest;
 import com.phenikaa.dto.response.GetUserResponse;
 import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.mapper.UserMapper;
 import com.phenikaa.userservice.repository.UserRepository;
 import com.phenikaa.userservice.service.interfaces.UserService;
+import com.phenikaa.userservice.specification.UserSpecification;
+import com.phenikaa.userservice.filter.DynamicFilterBuilder;
+import com.phenikaa.userservice.filter.DynamicQueryBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
@@ -20,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -159,6 +165,87 @@ public class UserServiceImpl implements UserService {
         return users.stream()
                 .map(userMapper::toDTO)
                 .toList();
+    }
+
+    @Override
+    public Page<GetUserResponse> filterUsers(UserFilterRequest filterRequest) {
+        // Tạo specification từ filter request
+        Specification<User> spec = UserSpecification.withFilter(filterRequest);
+        
+        // Tạo Pageable với sorting
+        Sort sort = Sort.by(
+            filterRequest.getSortDirection().equalsIgnoreCase("DESC") ? 
+            Sort.Direction.DESC : Sort.Direction.ASC,
+            filterRequest.getSortBy()
+        );
+        
+        Pageable pageable = PageRequest.of(
+            filterRequest.getPage(), 
+            filterRequest.getSize(), 
+            sort
+        );
+        
+        // Thực hiện query với specification và pageable
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+        
+        // Map kết quả sang DTO
+        return userPage.map(userMapper::toDTO);
+    }
+
+    @Override
+    public List<GetUserResponse> searchUsersByPattern(String searchPattern) {
+        Specification<User> spec = UserSpecification.withSearchPattern(searchPattern);
+        List<User> users = userRepository.findAll(spec);
+        return users.stream()
+                .map(userMapper::toDTO)
+                .toList();
+    }
+
+    @Override
+    public List<GetUserResponse> getUsersByRole(String roleName) {
+        try {
+            Role.RoleName role = Role.RoleName.valueOf(roleName.toUpperCase());
+            Specification<User> spec = UserSpecification.withRole(role);
+            List<User> users = userRepository.findAll(spec);
+            return users.stream()
+                    .map(userMapper::toDTO)
+                    .toList();
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vai trò không hợp lệ: " + roleName);
+        }
+    }
+
+    @Override
+    public List<GetUserResponse> getUsersByStatus(Integer status) {
+        Specification<User> spec = UserSpecification.withStatus(status);
+        List<User> users = userRepository.findAll(spec);
+        return users.stream()
+                .map(userMapper::toDTO)
+                .toList();
+    }
+
+    @Override
+    public Page<GetUserResponse> dynamicFilterUsers(DynamicFilterRequest dynamicFilterRequest) {
+        // Validate request
+        List<String> validationErrors = DynamicQueryBuilder.validateRequest(dynamicFilterRequest);
+        if (!validationErrors.isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, 
+                "Validation errors: " + String.join(", ", validationErrors)
+            );
+        }
+        
+        // Tạo specification từ dynamic filter
+        Specification<User> spec = DynamicFilterBuilder.buildSpecification(dynamicFilterRequest);
+        
+        // Tạo Pageable với sorting
+        Pageable pageable = DynamicQueryBuilder.buildPageable(dynamicFilterRequest);
+        
+        // Thực hiện query với specification và pageable
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+        
+        // Map kết quả sang DTO
+        return userPage.map(userMapper::toDTO);
     }
 
 }

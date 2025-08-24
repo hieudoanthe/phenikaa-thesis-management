@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class GetSuggestTopicResponse {
     private Integer suggestedId;
     private Integer suggestedBy;
+    private Integer suggestedFor;
     private SuggestedTopic.SuggestionStatus suggestionStatus;
     private Integer approvedBy;
     private LocalDateTime createdAt;

@@ -57,7 +57,7 @@ public class ThesisStudentController {
     public ResponseEntity<Page<GetSuggestTopicResponse>> getSuggestTopicByStudentId(
             @PathVariable Integer studentId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "8") int size) {
+            @RequestParam(defaultValue = "6") int size) {
 
         Page<GetSuggestTopicResponse> suggestTopic = suggestService.getSuggestTopicByStudentId(studentId, page, size);
 
