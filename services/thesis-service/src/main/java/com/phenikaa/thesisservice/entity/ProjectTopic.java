@@ -110,4 +110,72 @@ public class ProjectTopic {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    // ========== BUSINESS LOGIC METHODS ==========
+
+    /**
+     * Kiểm tra xem đề tài có thể nhận thêm sinh viên không
+     * @return true nếu còn chỗ, false nếu đã đủ
+     */
+    public boolean canAcceptMoreStudents() {
+        return maxStudents > 0;
+    }
+
+    /**
+     * Kiểm tra xem đề tài có thể được approve không
+     * @return true nếu có thể approve, false nếu đã đủ sinh viên
+     */
+    public boolean canBeApproved() {
+        return canAcceptMoreStudents() && approvalStatus != ApprovalStatus.APPROVED;
+    }
+
+    /**
+     * Giảm số lượng sinh viên có thể nhận khi approve đề tài
+     * @return true nếu giảm thành công, false nếu không thể giảm
+     */
+    public boolean decreaseMaxStudents() {
+        if (canAcceptMoreStudents()) {
+            maxStudents--;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Lấy số lượng sinh viên còn lại có thể nhận
+     * @return số lượng sinh viên còn lại
+     */
+    public Integer getRemainingStudentSlots() {
+        return Math.max(0, maxStudents);
+    }
+
+    /**
+     * Lấy số lượng sinh viên đã được nhận
+     * @return số lượng sinh viên đã được nhận
+     */
+    public Integer getAcceptedStudentsCount() {
+        return 15 - maxStudents;
+    }
+
+    /**
+     * Kiểm tra xem đề tài có đủ sinh viên chưa
+     * @return true nếu đã đủ, false nếu còn thiếu
+     */
+    public boolean isFull() {
+        return maxStudents <= 0;
+    }
+
+    /**
+     * Cập nhật trạng thái đề tài dựa trên số lượng sinh viên
+     */
+    public void updateTopicStatusBasedOnStudents() {
+        if (isFull()) {
+            // Nếu đã đủ sinh viên, chuyển sang trạng thái INACTIVE
+            this.topicStatus = TopicStatus.INACTIVE;
+            this.approvalStatus = ApprovalStatus.APPROVED;
+        } else if (maxStudents < 15) {
+            // Nếu đã có sinh viên nhưng chưa đủ, giữ nguyên trạng thái
+            this.approvalStatus = ApprovalStatus.APPROVED;
+        }
+    }
 }
