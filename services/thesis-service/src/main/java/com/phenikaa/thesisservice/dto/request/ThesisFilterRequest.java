@@ -4,7 +4,7 @@ import com.phenikaa.thesisservice.entity.ProjectTopic;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 public class ThesisFilterRequest {
@@ -31,16 +31,16 @@ public class ThesisFilterRequest {
     
     // Thời gian tạo và cập nhật
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime createdFrom;
+    private Instant createdFrom;
     
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime createdTo;
+    private Instant createdTo;
     
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime updatedFrom;
+    private Instant updatedFrom;
     
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime updatedTo;
+    private Instant updatedTo;
     
     // Người tạo và cập nhật
     private Integer createdBy;

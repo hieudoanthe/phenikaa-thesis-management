@@ -5,7 +5,12 @@ import com.phenikaa.filter.FeignTokenInterceptor;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
-@FeignClient(name = "api-gateway", path = "/profile-service", configuration = FeignTokenInterceptor.class)
+@FeignClient(
+        name = "api-gateway",
+        contextId = "profileServiceClient",
+        path = "/profile-service",
+        configuration = FeignTokenInterceptor.class
+)
 public interface ProfileServiceClient {
 
     @PostMapping("/api/profile-service/admin/create-profile")

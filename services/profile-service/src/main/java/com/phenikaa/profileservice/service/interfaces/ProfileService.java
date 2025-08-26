@@ -20,4 +20,5 @@ public interface ProfileService {
     TeacherProfile updateTeacherProfile(UpdateTeacherProfileRequest request, Integer userId, MultipartFile avtFile);
     void deleteProfile(Integer userId);
     List<GetTeacherProfileResponse> getAllTeacherProfiles();
+    void decreaseTeacherCapacity(Integer userId);
 }

@@ -33,6 +33,11 @@ spring:
           predicates:
             - Path=/api/lecturer/thesis/**, /api/thesis-service/teacher/**, /api/thesis-service/student/**
 
+        - id: assign-service
+          uri: lb://assign-service
+          predicates:
+            - Path=/api/assign-service/**
+
         - id: profile-service
           uri: lb://profile-service
           predicates:

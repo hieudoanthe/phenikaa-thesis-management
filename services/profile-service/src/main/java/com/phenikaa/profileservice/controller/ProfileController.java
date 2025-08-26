@@ -99,4 +99,12 @@ public class ProfileController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('TEACHER')")
+    @PutMapping("/teacher/decrease-capacity")
+    public ResponseEntity<Void> decreaseTeacherCapacity(@RequestHeader("Authorization") String token) {
+        Integer userId = jwtUtil.extractUserId(token);
+        profileService.decreaseTeacherCapacity(userId);
+        return ResponseEntity.noContent().build();
+    }
+
 }

@@ -3,8 +3,8 @@ package com.phenikaa.assignservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "task", schema = "HieuDT")
@@ -54,10 +54,10 @@ public class Task {
     private Float progress;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "task_status")
     private Integer taskStatus;

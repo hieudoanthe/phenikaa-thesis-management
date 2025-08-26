@@ -161,4 +161,18 @@ public class ProfileServiceImpl implements ProfileService {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public void decreaseTeacherCapacity(Integer userId) {
+        TeacherProfile profile = teacherProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Teacher profile not found for userId=" + userId));
+
+        Integer current = profile.getMaxStudents();
+        if (current == null || current <= 0) {
+            throw new IllegalStateException("Giảng viên đã hết chỉ tiêu sinh viên");
+        }
+        profile.setMaxStudents(current - 1);
+        teacherProfileRepository.save(profile);
+    }
+
 }

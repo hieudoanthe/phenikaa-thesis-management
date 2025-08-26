@@ -12,7 +12,7 @@ import org.mapstruct.Mapping;
 public interface SuggestTopicMapper {
 
     @Mapping(target = "topicId", ignore = true)
-    @Mapping(target = "createdAt", expression = "java(java.time.LocalDateTime.now())")
+    @Mapping(target = "createdAt", expression = "java(java.time.Instant.now())")
     @Mapping(target = "topicStatus", constant = "INACTIVE")
     @Mapping(target = "approvalStatus", constant = "PENDING")
     @Mapping(target = "createdBy", ignore = true)

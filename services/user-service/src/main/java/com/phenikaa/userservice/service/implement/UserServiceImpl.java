@@ -92,7 +92,6 @@ public class UserServiceImpl implements UserService {
         );
     }
 
-
     @Override
     public List<GetUserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
@@ -130,6 +129,27 @@ public class UserServiceImpl implements UserService {
         }
 
         userRepository.save(user);
+
+        // Đồng bộ profile-service theo role mới
+        Set<Role> updatedRoles = user.getRoles();
+        boolean hasTeacher = updatedRoles.stream().anyMatch(r -> r.getRoleName() == Role.RoleName.TEACHER);
+        boolean hasStudent = updatedRoles.stream().anyMatch(r -> r.getRoleName() == Role.RoleName.STUDENT);
+
+        // Xóa profile cũ (gọi 2 lần để đảm bảo xóa cả student/teacher nếu tồn tại)
+        try {
+            profileServiceClient.deleteProfile(user.getUserId());
+        } catch (Exception ignored) {}
+        try {
+            profileServiceClient.deleteProfile(user.getUserId());
+        } catch (Exception ignored) {}
+
+        // Tạo lại profile theo role mới
+        if (hasStudent) {
+            profileServiceClient.createProfile(new CreateProfileRequest(user.getUserId(), "STUDENT"));
+        }
+        if (hasTeacher) {
+            profileServiceClient.createProfile(new CreateProfileRequest(user.getUserId(), "TEACHER"));
+        }
     }
 
     @Override
@@ -187,8 +207,7 @@ public class UserServiceImpl implements UserService {
         
         // Thực hiện query với specification và pageable
         Page<User> userPage = userRepository.findAll(spec, pageable);
-        
-        // Map kết quả sang DTO
+
         return userPage.map(userMapper::toDTO);
     }
 
@@ -234,17 +253,13 @@ public class UserServiceImpl implements UserService {
                 "Validation errors: " + String.join(", ", validationErrors)
             );
         }
-        
-        // Tạo specification từ dynamic filter
+
         Specification<User> spec = DynamicFilterBuilder.buildSpecification(dynamicFilterRequest);
-        
-        // Tạo Pageable với sorting
+
         Pageable pageable = DynamicQueryBuilder.buildPageable(dynamicFilterRequest);
-        
-        // Thực hiện query với specification và pageable
+
         Page<User> userPage = userRepository.findAll(spec, pageable);
-        
-        // Map kết quả sang DTO
+
         return userPage.map(userMapper::toDTO);
     }
 

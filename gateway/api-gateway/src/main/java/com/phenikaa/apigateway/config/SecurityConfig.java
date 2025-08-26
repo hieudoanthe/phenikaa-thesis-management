@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/thesis-service/student/**").hasRole("STUDENT")
                         .pathMatchers("/api/thesis-service/teacher/**").hasRole("TEACHER")
                         .pathMatchers("/api/profile-service/**").hasAnyRole("STUDENT", "TEACHER")
+                        .pathMatchers("/api/assign-service/**").hasAnyRole("STUDENT", "TEACHER")
                         .pathMatchers("/api/lecturer/thesis/**").permitAll()
                         .pathMatchers("/notifications/**").permitAll()
                         .pathMatchers("/ws/notifications/**").permitAll()

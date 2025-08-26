@@ -3,7 +3,7 @@ package com.phenikaa.thesisservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Set;
 
 @Entity
@@ -66,10 +66,10 @@ public class ProjectTopic {
     }
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by")
     private Integer createdBy;
@@ -94,7 +94,7 @@ public class ProjectTopic {
     @PrePersist
     protected void onCreate() {
         if (maxStudents == null) {
-            maxStudents = 15;
+            maxStudents = 4;
         }
         if (topicStatus == null) {
             topicStatus = TopicStatus.ACTIVE;
@@ -102,13 +102,13 @@ public class ProjectTopic {
         if (approvalStatus == null) {
             approvalStatus = ApprovalStatus.AVAILABLE;
         }
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = Instant.now();
+        updatedAt = Instant.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now();
     }
 
     // ========== BUSINESS LOGIC METHODS ==========
@@ -154,7 +154,7 @@ public class ProjectTopic {
      * @return số lượng sinh viên đã được nhận
      */
     public Integer getAcceptedStudentsCount() {
-        return 15 - maxStudents;
+        return 4 - maxStudents;
     }
 
     /**
@@ -173,7 +173,7 @@ public class ProjectTopic {
             // Nếu đã đủ sinh viên, chuyển sang trạng thái INACTIVE
             this.topicStatus = TopicStatus.INACTIVE;
             this.approvalStatus = ApprovalStatus.APPROVED;
-        } else if (maxStudents < 15) {
+        } else if (maxStudents < 4) {
             // Nếu đã có sinh viên nhưng chưa đủ, giữ nguyên trạng thái
             this.approvalStatus = ApprovalStatus.APPROVED;
         }

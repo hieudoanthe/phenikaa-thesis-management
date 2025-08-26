@@ -48,7 +48,7 @@ public class ThesisAdminController {
     public ResponseEntity<Page<GetThesisResponse>> getTopicsByTeacherId(
             @PathVariable Integer teacherId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "8") int size) {
+            @RequestParam(defaultValue = "6") int size) {
 
         Page<GetThesisResponse> topics =
                 thesisService.getTopicsByTeacherId(teacherId, page, size);

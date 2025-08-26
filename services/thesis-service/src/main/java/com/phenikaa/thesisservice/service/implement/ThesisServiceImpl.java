@@ -1,6 +1,7 @@
 package com.phenikaa.thesisservice.service.implement;
 
 import com.phenikaa.thesisservice.client.NotificationServiceClient;
+import com.phenikaa.thesisservice.client.ProfileServiceClient;
 import com.phenikaa.thesisservice.dto.request.CreateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.NotificationRequest;
@@ -40,6 +41,7 @@ public class ThesisServiceImpl implements ThesisService {
     private final ProjectTopicMapper projectTopicMapper;
 
     private final NotificationServiceClient notificationServiceClient;
+    private final ProfileServiceClient profileServiceClient;
 
     @Override
     public ProjectTopic createProjectTopic(CreateProjectTopicRequest dto, Integer userId) {
@@ -179,6 +181,9 @@ public class ThesisServiceImpl implements ThesisService {
         // Cập nhật trạng thái suggestion
         suggestedTopic.setSuggestionStatus(SuggestedTopic.SuggestionStatus.APPROVED);
         suggestedTopic.setApprovedBy(senderId);
+
+        // Giảm chỉ tiêu giảng viên trên profile-service trước khi lưu
+        profileServiceClient.decreaseTeacherCapacity();
 
         // Lưu thay đổi vào database
         projectTopicRepository.save(projectTopic);
@@ -372,8 +377,6 @@ public class ThesisServiceImpl implements ThesisService {
         return projectTopicRepository.countApprovedTopicsBySupervisor(supervisorId);
     }
 
-    // ========== TOPIC STATUS CHECKING METHODS ==========
-
     @Override
     public Map<String, Object> getTopicStatusInfo(Integer topicId) {
         ProjectTopic projectTopic = projectTopicRepository.findById(topicId)
@@ -422,7 +425,7 @@ public class ThesisServiceImpl implements ThesisService {
                 .count();
         
         // Tính toán chính xác hơn
-        int totalInitialCapacity = totalTopics * 15; // Tổng sức chứa ban đầu
+        int totalInitialCapacity = totalTopics * 4; // Tổng sức chứa ban đầu
         int totalAcceptedStudents = supervisorTopics.stream()
                 .mapToInt(ProjectTopic::getAcceptedStudentsCount)
                 .sum();

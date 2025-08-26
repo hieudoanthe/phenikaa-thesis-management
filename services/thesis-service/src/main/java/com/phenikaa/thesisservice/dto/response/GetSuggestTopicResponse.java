@@ -3,7 +3,7 @@ package com.phenikaa.thesisservice.dto.response;
 import com.phenikaa.thesisservice.entity.SuggestedTopic;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 public class GetSuggestTopicResponse {
@@ -12,6 +12,6 @@ public class GetSuggestTopicResponse {
     private Integer suggestedFor;
     private SuggestedTopic.SuggestionStatus suggestionStatus;
     private Integer approvedBy;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
     private Integer topicId;
 }

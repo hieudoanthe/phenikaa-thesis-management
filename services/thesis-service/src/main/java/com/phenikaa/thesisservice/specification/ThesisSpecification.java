@@ -6,7 +6,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.Predicate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -316,7 +316,7 @@ public class ThesisSpecification {
     /**
      * Lọc theo thời gian tạo
      */
-    public static Specification<ProjectTopic> withCreatedTimeRange(LocalDateTime from, LocalDateTime to) {
+    public static Specification<ProjectTopic> withCreatedTimeRange(Instant from, Instant to) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             
@@ -343,7 +343,7 @@ public class ThesisSpecification {
     /**
      * Lọc theo thời gian cập nhật
      */
-    public static Specification<ProjectTopic> withUpdatedTimeRange(LocalDateTime from, LocalDateTime to) {
+    public static Specification<ProjectTopic> withUpdatedTimeRange(Instant from, Instant to) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             

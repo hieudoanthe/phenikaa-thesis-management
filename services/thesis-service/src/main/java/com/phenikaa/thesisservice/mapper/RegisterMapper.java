@@ -13,7 +13,7 @@ public interface RegisterMapper {
     @Mapping(target = "approvedBy", ignore = true)
     @Mapping(target = "approvedAt", ignore = true)
     @Mapping(target = "registerStatus", constant = "PENDING")
-    @Mapping(target = "registeredAt", expression = "java(java.time.LocalDateTime.now())")
+    @Mapping(target = "registeredAt", expression = "java(java.time.Instant.now())")
     @Mapping(target = "projectTopic", ignore = true)
     Register toRegister(RegisterTopicRequest dto);
 }

@@ -3,7 +3,7 @@ package com.phenikaa.thesisservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "ai_suggested_topic", schema = "HieuDT")
@@ -49,7 +49,7 @@ public class AiSuggestedTopic {
     }
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "approved_by")
     private Integer approvedBy; // Reference to UserService
@@ -61,6 +61,6 @@ public class AiSuggestedTopic {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = Instant.now();
     }
 }

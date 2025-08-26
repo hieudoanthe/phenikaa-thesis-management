@@ -3,7 +3,7 @@ package com.phenikaa.thesisservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "register", schema = "HieuDT")
@@ -36,10 +36,10 @@ public class Register {
     }
 
     @Column(name = "registered_at")
-    private LocalDateTime registeredAt;
+    private Instant registeredAt;
 
     @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
+    private Instant approvedAt;
 
     @Column(name = "approved_by")
     private Integer approvedBy; // Reference to UserService
@@ -61,7 +61,7 @@ public class Register {
 
     @PrePersist
     protected void onCreate() {
-        registeredAt = LocalDateTime.now();
+        registeredAt = Instant.now();
         if (registerType == null) {
             registerType = RegisterType.INDIVIDUAL;
         }
