@@ -7,6 +7,7 @@ import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.NotificationRequest;
 import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.ThesisFilterRequest;
+import com.phenikaa.thesisservice.dto.request.ThesisQbeRequest;
 import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
 import com.phenikaa.thesisservice.dto.response.GetThesisResponse;
 import com.phenikaa.thesisservice.entity.Register;
@@ -14,6 +15,8 @@ import com.phenikaa.thesisservice.entity.SuggestedTopic;
 import com.phenikaa.thesisservice.mapper.ProjectTopicMapper;
 import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
+import com.phenikaa.thesisservice.projection.ProjectTopicSummary;
+import com.phenikaa.thesisservice.dto.response.ProjectTopicSummaryDto;
 import com.phenikaa.thesisservice.service.interfaces.ThesisService;
 import com.phenikaa.thesisservice.specification.ThesisSpecification;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -261,6 +266,55 @@ public class ThesisServiceImpl implements ThesisService {
     }
 
     @Override
+    public Page<GetThesisResponse> filterThesesByQbe(ThesisQbeRequest request) {
+        // Tạo probe từ request (chỉ set các trường scalar để QBE hoạt động đơn giản)
+        ProjectTopic probe = ProjectTopic.builder()
+                .topicCode(request.getTopicCode())
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .objectives(request.getObjectives())
+                .methodology(request.getMethodology())
+                .academicYearId(request.getAcademicYearId())
+                .supervisorId(request.getSupervisorId())
+                .difficultyLevel(request.getDifficultyLevel())
+                .topicStatus(request.getTopicStatus())
+                .approvalStatus(request.getApprovalStatus())
+                .build();
+
+        ExampleMatcher matcher = ExampleMatcher.matchingAll()
+                .withIgnoreNullValues()
+                .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING)
+                .withIgnoreCase();
+
+        Example<ProjectTopic> example = Example.of(probe, matcher);
+
+        Sort sort = Sort.by(
+                "DESC".equalsIgnoreCase(request.getSortDirection()) ? Sort.Direction.DESC : Sort.Direction.ASC,
+                request.getSortBy()
+        );
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), sort);
+
+        Page<ProjectTopic> page = projectTopicRepository.findAll(example, pageable);
+
+        // Áp dụng lọc khoảng thời gian trong bộ nhớ (QBE không hỗ trợ range)
+        List<ProjectTopic> filteredContent = page.getContent().stream()
+                .filter(p -> request.getCreatedFrom() == null || (p.getCreatedAt() != null && !p.getCreatedAt().isBefore(request.getCreatedFrom())))
+                .filter(p -> request.getCreatedTo() == null || (p.getCreatedAt() != null && !p.getCreatedAt().isAfter(request.getCreatedTo())))
+                .filter(p -> request.getUpdatedFrom() == null || (p.getUpdatedAt() != null && !p.getUpdatedAt().isBefore(request.getUpdatedFrom())))
+                .filter(p -> request.getUpdatedTo() == null || (p.getUpdatedAt() != null && !p.getUpdatedAt().isAfter(request.getUpdatedTo())))
+                .collect(java.util.stream.Collectors.toList());
+
+        // Giữ nguyên phân trang tổng thể từ DB; chỉ map phần nội dung đã lọc
+        Page<ProjectTopic> adjustedPage = new org.springframework.data.domain.PageImpl<>(
+                filteredContent,
+                pageable,
+                page.getTotalElements()
+        );
+
+        return adjustedPage.map(projectTopicMapper::toResponse);
+    }
+
+    @Override
     public List<GetThesisResponse> searchThesesByPattern(String searchPattern) {
         Specification<ProjectTopic> spec = ThesisSpecification.withSearchPattern(searchPattern);
         List<ProjectTopic> theses = projectTopicRepository.findAll(spec);
@@ -453,5 +507,28 @@ public class ThesisServiceImpl implements ThesisService {
         capacityInfo.put("message", "Thông tin năng lực giảng viên");
         
         return capacityInfo;
+    }
+
+    // ===================== Projection Implementations =====================
+    @Override
+    public org.springframework.data.domain.Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return projectTopicRepository.findSummariesBySupervisorIdAndApprovalStatus(
+                supervisorId,
+                ProjectTopic.ApprovalStatus.APPROVED,
+                pageable
+        );
+    }
+
+    @Override
+    public org.springframework.data.domain.Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return projectTopicRepository.findSummaryDtosBySupervisorId(supervisorId, pageable);
+    }
+
+    @Override
+    public <T> org.springframework.data.domain.Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return projectTopicRepository.findByApprovalStatus(status, type, pageable);
     }
 }

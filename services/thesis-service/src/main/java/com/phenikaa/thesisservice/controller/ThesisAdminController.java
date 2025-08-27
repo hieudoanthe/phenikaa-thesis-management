@@ -3,8 +3,11 @@ package com.phenikaa.thesisservice.controller;
 import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.ThesisFilterRequest;
 import com.phenikaa.thesisservice.dto.response.GetThesisResponse;
+import com.phenikaa.thesisservice.dto.request.ThesisQbeRequest;
 import com.phenikaa.thesisservice.dto.response.ThesisFilterResponse;
+import com.phenikaa.thesisservice.dto.response.ProjectTopicSummaryDto;
 import com.phenikaa.thesisservice.service.interfaces.ThesisService;
+import com.phenikaa.thesisservice.projection.ProjectTopicSummary;
 import com.phenikaa.utils.JwtUtil;
 import com.phenikaa.thesisservice.dto.request.CreateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicRequest;
@@ -42,6 +45,42 @@ public class ThesisAdminController {
     @GetMapping("/get-list-topic")
     public List<GetThesisResponse> getListTopic() {
         return thesisService.findAll();
+    }
+
+    // ========================= Projection test endpoints =========================
+    @PreAuthorize("hasRole('TEACHER')")
+    @GetMapping("/projection/interface/supervisor/{supervisorId}")
+    public ResponseEntity<Page<ProjectTopicSummary>> getInterfaceProjections(
+            @PathVariable Integer supervisorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<ProjectTopicSummary> result = thesisService.getTopicSummariesBySupervisor(supervisorId, page, size);
+        return ResponseEntity.ok(result);
+    }
+
+    @PreAuthorize("hasRole('TEACHER')")
+    @GetMapping("/projection/dto/supervisor/{supervisorId}")
+    public ResponseEntity<Page<ProjectTopicSummaryDto>> getDtoProjections(
+            @PathVariable Integer supervisorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<ProjectTopicSummaryDto> result = thesisService.getTopicSummaryDtosBySupervisor(supervisorId, page, size);
+        return ResponseEntity.ok(result);
+    }
+
+    @PreAuthorize("hasRole('TEACHER')")
+    @GetMapping("/projection/dynamic/approval/{approvalStatus}")
+    public ResponseEntity<Page<ProjectTopicSummary>> getDynamicProjections(
+            @PathVariable String approvalStatus,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            ProjectTopic.ApprovalStatus status = ProjectTopic.ApprovalStatus.valueOf(approvalStatus.toUpperCase());
+            Page<ProjectTopicSummary> result = thesisService.getTopicsByApprovalStatusWithProjection(status, ProjectTopicSummary.class, page, size);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/get-topic-by-{teacherId}/paged")
@@ -92,6 +131,14 @@ public class ThesisAdminController {
     @PostMapping("/filter-theses")
     public ResponseEntity<ThesisFilterResponse> filterTheses(@RequestBody ThesisFilterRequest filterRequest) {
         Page<GetThesisResponse> filteredTheses = thesisService.filterTheses(filterRequest);
+        ThesisFilterResponse response = ThesisFilterResponse.fromPage(filteredTheses);
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('TEACHER')")
+    @PostMapping("/filter-theses-qbe")
+    public ResponseEntity<ThesisFilterResponse> filterThesesByQbe(@RequestBody ThesisQbeRequest request) {
+        Page<GetThesisResponse> filteredTheses = thesisService.filterThesesByQbe(request);
         ThesisFilterResponse response = ThesisFilterResponse.fromPage(filteredTheses);
         return ResponseEntity.ok(response);
     }

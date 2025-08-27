@@ -4,9 +4,12 @@ import com.phenikaa.thesisservice.dto.request.CreateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.ThesisFilterRequest;
+import com.phenikaa.thesisservice.dto.request.ThesisQbeRequest;
 import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
 import com.phenikaa.thesisservice.dto.response.GetThesisResponse;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
+import com.phenikaa.thesisservice.projection.ProjectTopicSummary;
+import com.phenikaa.thesisservice.dto.response.ProjectTopicSummaryDto;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -25,6 +28,8 @@ public interface ThesisService {
     
     // Thêm method filter theo specification
     Page<GetThesisResponse> filterTheses(ThesisFilterRequest filterRequest);
+    // Thêm method filter theo Query By Example
+    Page<GetThesisResponse> filterThesesByQbe(ThesisQbeRequest request);
     
     // Các method filter đơn giản
     List<GetThesisResponse> searchThesesByPattern(String searchPattern);
@@ -43,4 +48,9 @@ public interface ThesisService {
     Map<String, Object> getTopicStatusInfo(Integer topicId);
     boolean canTopicBeApproved(Integer topicId);
     Map<String, Object> getSupervisorCapacityInfo(Integer supervisorId);
+
+    // Projection APIs
+    Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size);
+    Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size);
+    <T> Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size);
 }

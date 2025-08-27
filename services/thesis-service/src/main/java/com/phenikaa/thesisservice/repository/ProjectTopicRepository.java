@@ -1,6 +1,8 @@
 package com.phenikaa.thesisservice.repository;
 
 import com.phenikaa.thesisservice.entity.ProjectTopic;
+import com.phenikaa.thesisservice.projection.ProjectTopicSummary;
+import com.phenikaa.thesisservice.dto.response.ProjectTopicSummaryDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -10,6 +12,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ProjectTopicRepository extends JpaRepository<ProjectTopic, Integer>, JpaSpecificationExecutor<ProjectTopic> {
     
@@ -23,6 +26,9 @@ public interface ProjectTopicRepository extends JpaRepository<ProjectTopic, Inte
     
     @EntityGraph(attributePaths = {"suggestedTopics", "registers"})
     Page<ProjectTopic> findBySupervisorId(Integer supervisorId, Pageable pageable);
+    
+    // Interface-based projection: trả ra ProjectTopicSummary (đổi tên tránh trùng chữ ký)
+    Page<ProjectTopicSummary> findSummariesBySupervisorIdAndApprovalStatus(Integer supervisorId, ProjectTopic.ApprovalStatus approvalStatus, Pageable pageable);
     
     // Thêm method để đếm theo trạng thái
     @Query("SELECT COUNT(p) FROM ProjectTopic p WHERE p.topicStatus = ?1")
@@ -46,6 +52,14 @@ public interface ProjectTopicRepository extends JpaRepository<ProjectTopic, Inte
             ProjectTopic.ApprovalStatus approvalStatus, 
             Pageable pageable
     );
+    
+    // Class-based projection (constructor expression)
+    @Query("select new com.phenikaa.thesisservice.dto.response.ProjectTopicSummaryDto(p.topicId, p.topicCode, p.title, p.difficultyLevel, p.approvalStatus) " +
+           "from ProjectTopic p where p.supervisorId = :supervisorId")
+    Page<ProjectTopicSummaryDto> findSummaryDtosBySupervisorId(@Param("supervisorId") Integer supervisorId, Pageable pageable);
+    
+    // Dynamic projection: method generic với Class<T>
+    <T> Page<T> findByApprovalStatus(ProjectTopic.ApprovalStatus status, Class<T> type, Pageable pageable);
     
     // Thêm method để đếm số đề tài đã xác nhận của giảng viên
     @Query("SELECT COUNT(p) FROM ProjectTopic p WHERE p.supervisorId = ?1 AND p.approvalStatus = 'APPROVED'")
