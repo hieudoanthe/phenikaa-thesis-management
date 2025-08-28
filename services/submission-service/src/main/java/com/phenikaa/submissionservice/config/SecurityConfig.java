@@ -1,4 +1,4 @@
-package com.phenikaa.profileservice.config;
+package com.phenikaa.submissionservice.config;
 
 import com.phenikaa.filter.GatewayHeaderAuthFilter;
 import lombok.RequiredArgsConstructor;

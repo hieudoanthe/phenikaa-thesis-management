@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import java.util.Base64;
 import java.util.List;
 
 @Component
+@Slf4j
 public class JwtUtil {
 
     @Value("${jwt.secret}")
@@ -60,7 +62,7 @@ public class JwtUtil {
             extractClaims(token);
             return true;
         } catch (Exception ex) {
-            System.out.println("Token invalid: " + ex.getMessage());
+            log.error("Token invalid: {}", ex.getMessage());
             return false;
         }
     }

@@ -7,5 +7,4 @@ import org.springframework.data.domain.Page;
 public interface SuggestService {
     void suggestTopic(SuggestTopicRequest dto, Integer studentId);
     Page<GetSuggestTopicResponse> getSuggestTopicByStudentId(Integer studentId, int page, int size );
-//    void acceptSuggestedTopic(Integer suggestedId, Integer approverId);
 }

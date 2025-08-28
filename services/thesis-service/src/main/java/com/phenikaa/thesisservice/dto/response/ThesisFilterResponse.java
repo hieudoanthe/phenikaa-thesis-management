@@ -24,10 +24,8 @@ public class ThesisFilterResponse {
     private Long availableTopics;
     private Long approvedTopics;
     private Long pendingTopics;
-    
-    /**
-     * Tạo response từ Page object
-     */
+
+    // Tạo response từ Page object
     public static ThesisFilterResponse fromPage(org.springframework.data.domain.Page<GetThesisResponse> page) {
         return ThesisFilterResponse.builder()
                 .content(page.getContent())
@@ -39,10 +37,8 @@ public class ThesisFilterResponse {
                 .hasPrevious(page.hasPrevious())
                 .build();
     }
-    
-    /**
-     * Tạo response với thống kê
-     */
+
+    // Tạo response với thống kê
     public static ThesisFilterResponse fromPageWithStats(
             org.springframework.data.domain.Page<GetThesisResponse> page,
             Long totalTopics,

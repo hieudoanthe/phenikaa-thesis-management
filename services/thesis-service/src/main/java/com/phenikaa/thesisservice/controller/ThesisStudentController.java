@@ -26,7 +26,6 @@ public class ThesisStudentController {
     private final SuggestService suggestService;
     private final JwtUtil jwtUtil;
 
-    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/suggest-topic")
     public ResponseEntity<String> suggestTopic(@RequestBody SuggestTopicRequest dto,
                                                @RequestHeader("Authorization") String token) {
@@ -35,7 +34,6 @@ public class ThesisStudentController {
         return ResponseEntity.ok("Đã gửi đề xuất đề tài");
     }
 
-    @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/register-topic")
     public ResponseEntity<String> registerTopic(
             @RequestHeader("Authorization") String token,
@@ -46,13 +44,11 @@ public class ThesisStudentController {
         return ResponseEntity.ok("Registered successfully!");
     }
 
-    @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/available-topics")
     public List<AvailableTopicResponse> getAvailableTopics() {
         return thesisService.getAvailableTopics();
     }
 
-    @PreAuthorize("hasRole('STUDENT')")
     @GetMapping("/get-suggest-topic-{studentId}/paged")
     public ResponseEntity<Page<GetSuggestTopicResponse>> getSuggestTopicByStudentId(
             @PathVariable Integer studentId,
@@ -63,15 +59,5 @@ public class ThesisStudentController {
 
         return ResponseEntity.ok(suggestTopic);
     }
-
-
-//    @PreAuthorize("hasRole('STUDENT')")
-//    @PutMapping("/suggestions/{suggestedId}/accept")
-//    public ResponseEntity<String> acceptSuggestedTopic(@PathVariable Integer suggestedId,
-//                                                       @RequestHeader("Authorization") String token) {
-//        Integer userId = jwtUtil.extractUserId(token);
-//        suggestService.acceptSuggestedTopic(suggestedId, userId);
-//        return ResponseEntity.ok("Đề tài đã được chấp nhận");
-//    }
 
 }

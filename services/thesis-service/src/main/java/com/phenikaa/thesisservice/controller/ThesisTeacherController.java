@@ -1,9 +1,9 @@
 package com.phenikaa.thesisservice.controller;
 
 import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
-import com.phenikaa.thesisservice.dto.request.ThesisFilterRequest;
+import com.phenikaa.thesisservice.dto.request.ThesisSpecificationFilterRequest;
 import com.phenikaa.thesisservice.dto.response.GetThesisResponse;
-import com.phenikaa.thesisservice.dto.request.ThesisQbeRequest;
+import com.phenikaa.thesisservice.dto.request.ThesisQbeFilterRequest;
 import com.phenikaa.thesisservice.dto.response.ThesisFilterResponse;
 import com.phenikaa.thesisservice.dto.response.ProjectTopicSummaryDto;
 import com.phenikaa.thesisservice.service.interfaces.ThesisService;
@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,12 +27,11 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/api/thesis-service/teacher")
 @RequiredArgsConstructor
-public class ThesisAdminController {
+public class ThesisTeacherController {
 
     private final ThesisService thesisService;
     private final JwtUtil jwtUtil;
 
-    @PreAuthorize("hasRole('TEACHER')")
     @PostMapping("/create-topic")
     public ProjectTopic createTopic(@RequestHeader("Authorization") String token,
                                     @RequestBody CreateProjectTopicRequest request) {
@@ -41,14 +39,11 @@ public class ThesisAdminController {
         return thesisService.createProjectTopic(request, userId);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/get-list-topic")
     public List<GetThesisResponse> getListTopic() {
         return thesisService.findAll();
     }
 
-    // ========================= Projection test endpoints =========================
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/projection/interface/supervisor/{supervisorId}")
     public ResponseEntity<Page<ProjectTopicSummary>> getInterfaceProjections(
             @PathVariable Integer supervisorId,
@@ -58,7 +53,6 @@ public class ThesisAdminController {
         return ResponseEntity.ok(result);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/projection/dto/supervisor/{supervisorId}")
     public ResponseEntity<Page<ProjectTopicSummaryDto>> getDtoProjections(
             @PathVariable Integer supervisorId,
@@ -68,7 +62,6 @@ public class ThesisAdminController {
         return ResponseEntity.ok(result);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/projection/dynamic/approval/{approvalStatus}")
     public ResponseEntity<Page<ProjectTopicSummary>> getDynamicProjections(
             @PathVariable String approvalStatus,
@@ -95,7 +88,6 @@ public class ThesisAdminController {
         return ResponseEntity.ok(topics);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @PostMapping("/edit-topic")
     public ProjectTopic editTopic(@RequestBody EditProjectTopicRequest request) {
         return thesisService.editProjectTopic(request);
@@ -107,64 +99,55 @@ public class ThesisAdminController {
         return ResponseEntity.ok(updatedTopic);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @DeleteMapping("/delete-topic")
     public void deleteTopic(@RequestParam Integer topicId) {
         thesisService.deleteTopic(topicId);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @PatchMapping("/approve-topic")
     public ResponseEntity<Void> approveTopic(@RequestParam Integer topicId) {
         thesisService.approvedTopic(topicId);
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @PatchMapping("/reject-topic")
     public ResponseEntity<Void> rejectTopic(@RequestParam Integer topicId) {
         thesisService.rejectTopic(topicId);
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @PostMapping("/filter-theses")
-    public ResponseEntity<ThesisFilterResponse> filterTheses(@RequestBody ThesisFilterRequest filterRequest) {
+    public ResponseEntity<ThesisFilterResponse> filterTheses(@RequestBody ThesisSpecificationFilterRequest filterRequest) {
         Page<GetThesisResponse> filteredTheses = thesisService.filterTheses(filterRequest);
         ThesisFilterResponse response = ThesisFilterResponse.fromPage(filteredTheses);
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @PostMapping("/filter-theses-qbe")
-    public ResponseEntity<ThesisFilterResponse> filterThesesByQbe(@RequestBody ThesisQbeRequest request) {
+    public ResponseEntity<ThesisFilterResponse> filterThesesByQbe(@RequestBody ThesisQbeFilterRequest request) {
         Page<GetThesisResponse> filteredTheses = thesisService.filterThesesByQbe(request);
         ThesisFilterResponse response = ThesisFilterResponse.fromPage(filteredTheses);
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/search-theses")
     public ResponseEntity<List<GetThesisResponse>> searchTheses(@RequestParam String searchPattern) {
         List<GetThesisResponse> theses = thesisService.searchThesesByPattern(searchPattern);
         return ResponseEntity.ok(theses);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/theses-by-supervisor")
     public ResponseEntity<List<GetThesisResponse>> getThesesBySupervisor(@RequestParam Integer supervisorId) {
         List<GetThesisResponse> theses = thesisService.getThesesBySupervisor(supervisorId);
         return ResponseEntity.ok(theses);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/theses-by-academic-year")
     public ResponseEntity<List<GetThesisResponse>> getThesesByAcademicYear(@RequestParam Integer academicYearId) {
         List<GetThesisResponse> theses = thesisService.getThesesByAcademicYear(academicYearId);
         return ResponseEntity.ok(theses);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/theses-by-difficulty")
     public ResponseEntity<List<GetThesisResponse>> getThesesByDifficultyLevel(
             @RequestParam String difficultyLevel) {
@@ -177,7 +160,6 @@ public class ThesisAdminController {
         }
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/theses-by-topic-status")
     public ResponseEntity<List<GetThesisResponse>> getThesesByTopicStatus(
             @RequestParam String topicStatus) {
@@ -190,7 +172,6 @@ public class ThesisAdminController {
         }
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/theses-by-approval-status")
     public ResponseEntity<List<GetThesisResponse>> getThesesByApprovalStatus(
             @RequestParam String approvalStatus) {
@@ -203,10 +184,6 @@ public class ThesisAdminController {
         }
     }
 
-    /**
-     * Lấy danh sách đề tài đã được xác nhận bởi giảng viên 
-     */
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/approved-topics/paged")
     public ResponseEntity<Page<GetThesisResponse>> getApprovedTopicsWithPagination(
             @RequestHeader("Authorization") String token,
@@ -221,10 +198,6 @@ public class ThesisAdminController {
         }
     }
 
-    /**
-     * Lấy số lượng đề tài đã được xác nhận bởi giảng viên
-     */
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/approved-topics/count")
     public ResponseEntity<Map<String, Object>> getApprovedTopicsCount(@RequestHeader("Authorization") String token) {
         try {
@@ -243,10 +216,6 @@ public class ThesisAdminController {
         }
     }
 
-    /**
-     * Lấy số lượng đề tài đã được xác nhận bởi giảng viên cụ thể
-     */
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/approved-topics/supervisor/{supervisorId}/count")
     public ResponseEntity<Map<String, Object>> getApprovedTopicsCountBySpecificSupervisor(
             @PathVariable Integer supervisorId) {
@@ -265,10 +234,7 @@ public class ThesisAdminController {
         }
     }
 
-    /**
-     * Lấy thông tin trạng thái chi tiết của một đề tài
-     */
-    @PreAuthorize("hasRole('TEACHER')")
+    // Lấy trạng thái hiện tại của đề tài
     @GetMapping("/topic-status/{topicId}")
     public ResponseEntity<Map<String, Object>> getTopicStatusInfo(@PathVariable Integer topicId) {
         try {
@@ -283,10 +249,6 @@ public class ThesisAdminController {
         }
     }
 
-    /**
-     * Kiểm tra xem đề tài có thể được approve không
-     */
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/topic-can-approve/{topicId}")
     public ResponseEntity<Map<String, Object>> checkTopicCanBeApproved(@PathVariable Integer topicId) {
         try {
@@ -309,10 +271,7 @@ public class ThesisAdminController {
         }
     }
 
-    /**
-     * Lấy thông tin năng lực của giảng viên (số lượng đề tài, sinh viên đã nhận, etc.)
-     */
-    @PreAuthorize("hasRole('TEACHER')")
+    // Lấy thông tin năng lực của giảng viên
     @GetMapping("/supervisor-capacity")
     public ResponseEntity<Map<String, Object>> getSupervisorCapacity(@RequestHeader("Authorization") String token) {
         try {
@@ -325,10 +284,7 @@ public class ThesisAdminController {
         }
     }
 
-    /**
-     * Lấy thông tin năng lực của giảng viên cụ thể
-     */
-    @PreAuthorize("hasRole('TEACHER')")
+    // Lấy thông tin năng lực của giảng viên cụ thể
     @GetMapping("/supervisor-capacity/{supervisorId}")
     public ResponseEntity<Map<String, Object>> getSpecificSupervisorCapacity(@PathVariable Integer supervisorId) {
         try {
@@ -340,10 +296,6 @@ public class ThesisAdminController {
         }
     }
 
-    /**
-     * Lấy danh sách đề tài đã được xác nhận bởi giảng viên cụ thể 
-     */
-    @PreAuthorize("hasRole('TEACHER')")
     @GetMapping("/approved-topics/supervisor/{supervisorId}/paged")
     public ResponseEntity<Page<GetThesisResponse>> getApprovedTopicsBySpecificSupervisorWithPagination(
             @PathVariable Integer supervisorId,

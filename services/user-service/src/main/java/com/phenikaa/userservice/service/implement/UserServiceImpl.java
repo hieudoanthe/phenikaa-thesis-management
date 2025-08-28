@@ -4,6 +4,7 @@ import com.phenikaa.dto.request.CreateProfileRequest;
 import com.phenikaa.dto.request.LoginRequest;
 import com.phenikaa.dto.response.AuthenticatedUserResponse;
 import com.phenikaa.userservice.client.ProfileServiceClient;
+import com.phenikaa.userservice.config.CustomUserDetails;
 import com.phenikaa.userservice.dto.request.CreateUserRequest;
 import com.phenikaa.userservice.dto.request.UpdateUserRequest;
 import com.phenikaa.userservice.dto.request.UserFilterRequest;
@@ -13,6 +14,7 @@ import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.mapper.UserMapper;
 import com.phenikaa.userservice.repository.UserRepository;
+import com.phenikaa.userservice.service.CustomUserDetailsService;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import com.phenikaa.userservice.specification.UserSpecification;
 import com.phenikaa.userservice.filter.DynamicFilterBuilder;
@@ -27,6 +29,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -47,6 +53,7 @@ public class UserServiceImpl implements UserService {
     private final ProfileServiceClient profileServiceClient;
     private final UserMapper userMapper;
     private final UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
 
     @Override
     @Transactional
@@ -70,27 +77,60 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+//    @Override
+//    public AuthenticatedUserResponse verifyUser(LoginRequest request) {
+//        User user = userRepository.findByUsername(request.getUsername())
+//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
+//
+//        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+//            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password!");
+//        }
+//
+//        if (user.getStatus() == 2) {
+//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is blocked!");
+//        }
+//
+//        return new AuthenticatedUserResponse(
+//                user.getUserId(),
+//                user.getUsername(),
+//                user.getRoles().stream()
+//                        .map(role -> role.getRoleName().name())
+//                        .collect(Collectors.toList())
+//        );
+//    }
+
     @Override
     public AuthenticatedUserResponse verifyUser(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
+        // 1. Gửi username + password cho AuthenticationManager
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsername(),
+                        request.getPassword()
+                )
+        );
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password!");
+        // 2. Lấy thông tin user từ Authentication (được DaoAuthenticationProvider xử lý)
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        // 3. Kiểm tra status user (nếu cần)
+        if (userDetails.getUserId() != null) {
+            User user = userRepository.findById(userDetails.getUserId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
+            if (user.getStatus() == 2) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is blocked!");
+            }
         }
 
-        if (user.getStatus() == 2) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is blocked!");
-        }
-
+        // 4. Build response
         return new AuthenticatedUserResponse(
-                user.getUserId(),
-                user.getUsername(),
-                user.getRoles().stream()
-                        .map(role -> role.getRoleName().name())
+                userDetails.getUserId(),
+                userDetails.getUsername(),
+                userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList())
         );
     }
+
 
     @Override
     public List<GetUserResponse> getAllUsers() {

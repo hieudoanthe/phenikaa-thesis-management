@@ -1,21 +1,17 @@
 package com.phenikaa.thesisservice.specification;
 
-import com.phenikaa.thesisservice.dto.request.ThesisFilterRequest;
+import com.phenikaa.thesisservice.dto.request.ThesisSpecificationFilterRequest;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.Predicate;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ThesisSpecification {
-    
-    /**
-     * Tạo specification từ filter request
-     */
-    public static Specification<ProjectTopic> withFilter(ThesisFilterRequest filterRequest) {
+
+    public static Specification<ProjectTopic> withFilter(ThesisSpecificationFilterRequest filterRequest) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             
@@ -67,13 +63,6 @@ public class ThesisSpecification {
             // Lọc theo academic year ID
             if (filterRequest.getAcademicYearId() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("academicYearId"), filterRequest.getAcademicYearId()));
-            }
-            
-            // Lọc theo số lượng sinh viên tối thiểu
-            if (filterRequest.getMinStudents() != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                    root.get("maxStudents"), filterRequest.getMinStudents()
-                ));
             }
             
             // Lọc theo số lượng sinh viên tối đa
@@ -198,9 +187,7 @@ public class ThesisSpecification {
         };
     }
     
-    /**
-     * Tìm kiếm theo pattern đơn giản
-     */
+    // Tìm kiếm theo pattern đơn giản
     public static Specification<ProjectTopic> withSearchPattern(String searchPattern) {
         return (root, query, criteriaBuilder) -> {
             if (!StringUtils.hasText(searchPattern)) {
@@ -225,10 +212,8 @@ public class ThesisSpecification {
             return criteriaBuilder.or(titlePredicate, descPredicate, objPredicate, methodPredicate);
         };
     }
-    
-    /**
-     * Lọc theo giảng viên
-     */
+
+    // Lọc theo giảng viên
     public static Specification<ProjectTopic> withSupervisor(Integer supervisorId) {
         return (root, query, criteriaBuilder) -> {
             if (supervisorId == null) {
@@ -238,9 +223,7 @@ public class ThesisSpecification {
         };
     }
     
-    /**
-     * Lọc theo năm học
-     */
+    // Lọc theo năm học
     public static Specification<ProjectTopic> withAcademicYear(Integer academicYearId) {
         return (root, query, criteriaBuilder) -> {
             if (academicYearId == null) {
@@ -250,9 +233,7 @@ public class ThesisSpecification {
         };
     }
     
-    /**
-     * Lọc theo độ khó
-     */
+    // Lọc theo độ khó
     public static Specification<ProjectTopic> withDifficultyLevel(ProjectTopic.DifficultyLevel difficultyLevel) {
         return (root, query, criteriaBuilder) -> {
             if (difficultyLevel == null) {
@@ -262,9 +243,7 @@ public class ThesisSpecification {
         };
     }
     
-    /**
-     * Lọc theo trạng thái đề tài
-     */
+    // Lọc theo trạng thái đề tài
     public static Specification<ProjectTopic> withTopicStatus(ProjectTopic.TopicStatus topicStatus) {
         return (root, query, criteriaBuilder) -> {
             if (topicStatus == null) {
@@ -273,10 +252,8 @@ public class ThesisSpecification {
             return criteriaBuilder.equal(root.get("topicStatus"), topicStatus);
         };
     }
-    
-    /**
-     * Lọc theo trạng thái phê duyệt
-     */
+
+    // Lọc theo trạng thái phê duyệt
     public static Specification<ProjectTopic> withApprovalStatus(ProjectTopic.ApprovalStatus approvalStatus) {
         return (root, query, criteriaBuilder) -> {
             if (approvalStatus == null) {
@@ -285,85 +262,5 @@ public class ThesisSpecification {
             return criteriaBuilder.equal(root.get("approvalStatus"), approvalStatus);
         };
     }
-    
-    /**
-     * Lọc theo số lượng sinh viên
-     */
-    public static Specification<ProjectTopic> withStudentRange(Integer minStudents, Integer maxStudents) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            
-            if (minStudents != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                    root.get("maxStudents"), minStudents
-                ));
-            }
-            
-            if (maxStudents != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(
-                    root.get("maxStudents"), maxStudents
-                ));
-            }
-            
-            if (predicates.isEmpty()) {
-                return criteriaBuilder.conjunction();
-            }
-            
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-    
-    /**
-     * Lọc theo thời gian tạo
-     */
-    public static Specification<ProjectTopic> withCreatedTimeRange(Instant from, Instant to) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            
-            if (from != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                    root.get("createdAt"), from
-                ));
-            }
-            
-            if (to != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(
-                    root.get("createdAt"), to
-                ));
-            }
-            
-            if (predicates.isEmpty()) {
-                return criteriaBuilder.conjunction();
-            }
-            
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-    
-    /**
-     * Lọc theo thời gian cập nhật
-     */
-    public static Specification<ProjectTopic> withUpdatedTimeRange(Instant from, Instant to) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            
-            if (from != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                    root.get("updatedAt"), from
-                ));
-            }
-            
-            if (to != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(
-                    root.get("updatedAt"), to
-                ));
-            }
-            
-            if (predicates.isEmpty()) {
-                return criteriaBuilder.conjunction();
-            }
-            
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
+
 }

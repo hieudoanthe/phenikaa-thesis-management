@@ -6,8 +6,8 @@ import com.phenikaa.thesisservice.dto.request.CreateProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.EditProjectTopicRequest;
 import com.phenikaa.thesisservice.dto.request.NotificationRequest;
 import com.phenikaa.thesisservice.dto.request.UpdateProjectTopicRequest;
-import com.phenikaa.thesisservice.dto.request.ThesisFilterRequest;
-import com.phenikaa.thesisservice.dto.request.ThesisQbeRequest;
+import com.phenikaa.thesisservice.dto.request.ThesisSpecificationFilterRequest;
+import com.phenikaa.thesisservice.dto.request.ThesisQbeFilterRequest;
 import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
 import com.phenikaa.thesisservice.dto.response.GetThesisResponse;
 import com.phenikaa.thesisservice.entity.Register;
@@ -20,12 +20,7 @@ import com.phenikaa.thesisservice.dto.response.ProjectTopicSummaryDto;
 import com.phenikaa.thesisservice.service.interfaces.ThesisService;
 import com.phenikaa.thesisservice.specification.ThesisSpecification;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -198,7 +193,7 @@ public class ThesisServiceImpl implements ThesisService {
         if (projectTopic.isFull()) {
             message = "Đề tài '" + projectTopic.getTitle() + "' đã được duyệt và đã đủ số lượng sinh viên!";
         } else {
-            message = "Đề tài '" + projectTopic.getTitle() + "' đã được duyệt! Còn " + 
+            message = "Đề tài '" + projectTopic.getTitle() + "' đã được duyệt! Còn " +
                      projectTopic.getRemainingStudentSlots() + " chỗ trống.";
         }
 
@@ -217,12 +212,35 @@ public class ThesisServiceImpl implements ThesisService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project topic not found!");
         }
         ProjectTopic projectTopic = projectTopicOpt.get();
+
+        Integer senderId = projectTopic.getSupervisorId();
+
+        SuggestedTopic suggestedTopic = projectTopic.getSuggestedTopics().stream()
+                .filter(st -> st.getSuggestionStatus() == SuggestedTopic.SuggestionStatus.PENDING)
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No pending suggestion found!"));
+
+        Integer receiverId = suggestedTopic.getSuggestedBy();
+
+        // Cập nhật trạng thái đề tài và suggestion sang REJECTED
         projectTopic.setApprovalStatus(ProjectTopic.ApprovalStatus.REJECTED);
+        suggestedTopic.setSuggestionStatus(SuggestedTopic.SuggestionStatus.REJECTED);
+
+        // Lưu thay đổi (cascade sẽ cập nhật SuggestedTopic)
         projectTopicRepository.save(projectTopic);
+
+        String message = "Đề tài '" + projectTopic.getTitle() + "' đã bị từ chối!";
+
+        NotificationRequest notificationRequest = new NotificationRequest(
+                senderId,
+                receiverId,
+                message
+        );
+        notificationServiceClient.sendNotification(notificationRequest);
     }
 
     @Override
-    public Page<GetThesisResponse> filterTheses(ThesisFilterRequest filterRequest) {
+    public Page<GetThesisResponse> filterTheses(ThesisSpecificationFilterRequest filterRequest) {
         // Tạo specification từ filter request
         Specification<ProjectTopic> spec = ThesisSpecification.withFilter(filterRequest);
         
@@ -266,8 +284,7 @@ public class ThesisServiceImpl implements ThesisService {
     }
 
     @Override
-    public Page<GetThesisResponse> filterThesesByQbe(ThesisQbeRequest request) {
-        // Tạo probe từ request (chỉ set các trường scalar để QBE hoạt động đơn giản)
+    public Page<GetThesisResponse> filterThesesByQbe(ThesisQbeFilterRequest request) {
         ProjectTopic probe = ProjectTopic.builder()
                 .topicCode(request.getTopicCode())
                 .title(request.getTitle())
@@ -302,10 +319,10 @@ public class ThesisServiceImpl implements ThesisService {
                 .filter(p -> request.getCreatedTo() == null || (p.getCreatedAt() != null && !p.getCreatedAt().isAfter(request.getCreatedTo())))
                 .filter(p -> request.getUpdatedFrom() == null || (p.getUpdatedAt() != null && !p.getUpdatedAt().isBefore(request.getUpdatedFrom())))
                 .filter(p -> request.getUpdatedTo() == null || (p.getUpdatedAt() != null && !p.getUpdatedAt().isAfter(request.getUpdatedTo())))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
         // Giữ nguyên phân trang tổng thể từ DB; chỉ map phần nội dung đã lọc
-        Page<ProjectTopic> adjustedPage = new org.springframework.data.domain.PageImpl<>(
+        Page<ProjectTopic> adjustedPage = new PageImpl<>(
                 filteredContent,
                 pageable,
                 page.getTotalElements()
@@ -365,33 +382,6 @@ public class ThesisServiceImpl implements ThesisService {
         List<ProjectTopic> theses = projectTopicRepository.findAll(spec);
         return theses.stream()
                 .map(projectTopicMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<GetThesisResponse> getApprovedTopicsBySupervisor(Integer supervisorId) {
-        List<ProjectTopic> approvedTopics = projectTopicRepository.findApprovedTopicsBySupervisor(supervisorId);
-        return approvedTopics.stream()
-                .map(projectTopic -> {
-                    GetThesisResponse dto = projectTopicMapper.toResponse(projectTopic);
-                    
-                    // Set thêm thông tin suggestedBy và registerId nếu có
-                    dto.setSuggestedBy(
-                        projectTopic.getSuggestedTopics().stream()
-                            .findFirst()
-                            .map(SuggestedTopic::getSuggestedBy)
-                            .orElse(null)
-                    );
-                    
-                    dto.setRegisterId(
-                        projectTopic.getRegisters().stream()
-                            .findFirst()
-                            .map(Register::getRegisterId)
-                            .orElse(null)
-                    );
-                    
-                    return dto;
-                })
                 .collect(Collectors.toList());
     }
 
@@ -479,7 +469,7 @@ public class ThesisServiceImpl implements ThesisService {
                 .count();
         
         // Tính toán chính xác hơn
-        int totalInitialCapacity = totalTopics * 4; // Tổng sức chứa ban đầu
+        int totalInitialCapacity = totalTopics * 4;
         int totalAcceptedStudents = supervisorTopics.stream()
                 .mapToInt(ProjectTopic::getAcceptedStudentsCount)
                 .sum();
@@ -502,17 +492,16 @@ public class ThesisServiceImpl implements ThesisService {
         capacityInfo.put("totalInitialCapacity", totalInitialCapacity);
         capacityInfo.put("totalAcceptedStudents", totalAcceptedStudents);
         capacityInfo.put("totalRemainingSlots", totalRemainingSlots);
-        capacityInfo.put("utilizationRate", Math.round(utilizationRate * 100.0) / 100.0); // Làm tròn 2 chữ số thập phân
+        capacityInfo.put("utilizationRate", Math.round(utilizationRate * 100.0) / 100.0);
         capacityInfo.put("remainingRate", Math.round(remainingRate * 100.0) / 100.0);
         capacityInfo.put("message", "Thông tin năng lực giảng viên");
         
         return capacityInfo;
     }
 
-    // ===================== Projection Implementations =====================
     @Override
-    public org.springframework.data.domain.Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+    public Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
         return projectTopicRepository.findSummariesBySupervisorIdAndApprovalStatus(
                 supervisorId,
                 ProjectTopic.ApprovalStatus.APPROVED,
@@ -521,14 +510,14 @@ public class ThesisServiceImpl implements ThesisService {
     }
 
     @Override
-    public org.springframework.data.domain.Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+    public Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
         return projectTopicRepository.findSummaryDtosBySupervisorId(supervisorId, pageable);
     }
 
     @Override
-    public <T> org.springframework.data.domain.Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+    public <T> Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
         return projectTopicRepository.findByApprovalStatus(status, type, pageable);
     }
 }

@@ -2,9 +2,7 @@ package com.phenikaa.thesisservice.projection;
 
 import com.phenikaa.thesisservice.entity.ProjectTopic;
 
-/**
- * Projection giao diện: chỉ lấy một số trường cần thiết của ProjectTopic
- */
+// interface base
 public interface ProjectTopicSummary {
     Integer getTopicId();
     String getTopicCode();

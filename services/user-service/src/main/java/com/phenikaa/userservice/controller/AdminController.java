@@ -24,14 +24,12 @@ public class AdminController {
 
     private final UserService userService;
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/save-user")
     public ResponseEntity<User> createUser(@RequestBody CreateUserRequest createUserRequest) {
         User savedUser = userService.createUser(createUserRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/get-users")
     public List<GetUserResponse> getAllUsers() {
         return userService.getAllUsers();
@@ -44,7 +42,6 @@ public class AdminController {
         return userService.getAllUsers(page, size);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete-user")
     public void deleteUser(@RequestParam Integer userId) {
         userService.deleteUser(userId);
@@ -62,7 +59,6 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/filter-users")
     public ResponseEntity<UserFilterResponse> filterUsers(@RequestBody UserFilterRequest filterRequest) {
         Page<GetUserResponse> filteredUsers = userService.filterUsers(filterRequest);
@@ -70,28 +66,24 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/search-users")
     public ResponseEntity<List<GetUserResponse>> searchUsers(@RequestParam String searchPattern) {
         List<GetUserResponse> users = userService.searchUsersByPattern(searchPattern);
         return ResponseEntity.ok(users);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users-by-role")
     public ResponseEntity<List<GetUserResponse>> getUsersByRole(@RequestParam String roleName) {
         List<GetUserResponse> users = userService.getUsersByRole(roleName);
         return ResponseEntity.ok(users);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users-by-status")
     public ResponseEntity<List<GetUserResponse>> getUsersByStatus(@RequestParam Integer status) {
         List<GetUserResponse> users = userService.getUsersByStatus(status);
         return ResponseEntity.ok(users);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/dynamic-filter-users")
     public ResponseEntity<UserFilterResponse> dynamicFilterUsers(@RequestBody DynamicFilterRequest dynamicFilterRequest) {
         Page<GetUserResponse> filteredUsers = userService.dynamicFilterUsers(dynamicFilterRequest);

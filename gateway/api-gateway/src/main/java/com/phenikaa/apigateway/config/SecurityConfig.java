@@ -70,8 +70,6 @@ public class SecurityConfig {
     @org.springframework.core.annotation.Order(-1)
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOrigins(List.of("http://localhost:5173"));
-//        config.setAllowedOrigins(List.of("https://websocketking.com"));
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("https://websocketking.com");
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

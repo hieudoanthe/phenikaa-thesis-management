@@ -27,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         Set<SimpleGrantedAuthority> authorities = user.getRoles().stream()
                 .filter(Role::getIsActive)
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName().name()))
+                .map(role -> new SimpleGrantedAuthority(role.getRoleName().name()))
                 .collect(Collectors.toSet());
 
         return new CustomUserDetails(user, authorities);
