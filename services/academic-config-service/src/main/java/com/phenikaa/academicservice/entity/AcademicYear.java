@@ -28,15 +28,64 @@ public class AcademicYear {
     private LocalDate endDate;
 
     @Column(name = "status")
-    private Integer status;
+    private Integer status; // Giữ nguyên Integer để tương thích với database cũ
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    public enum Status {
+        ACTIVE(1),     // Đang hoạt động
+        INACTIVE(0),   // Không hoạt động
+        UPCOMING(2);   // Sắp diễn ra
+
+        private final Integer value;
+
+        Status(Integer value) {
+            this.value = value;
+        }
+
+        public Integer getValue() {
+            return value;
+        }
+
+        public static Status fromValue(Integer value) {
+            for (Status status : Status.values()) {
+                if (status.value.equals(value)) {
+                    return status;
+                }
+            }
+            return INACTIVE; // Default
+        }
+    }
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        if (status == null) {
+            status = Status.INACTIVE.getValue();
+        }
+    }
+
+    // Kiểm tra xem năm học có đang active không
+    public boolean isActive() {
+        return Status.ACTIVE.getValue().equals(status);
+    }
+
+    // Kiểm tra xem năm học có thể active không
+    public boolean canActivate() {
+        LocalDate now = LocalDate.now();
+        return now.isAfter(startDate) && now.isBefore(endDate);
+    }
+
+    // Getter cho status enum
+    public Status getStatusEnum() {
+        return Status.fromValue(status);
+    }
+
+    // Setter cho status enum
+    public void setStatusEnum(Status statusEnum) {
+        this.status = statusEnum.getValue();
     }
 }

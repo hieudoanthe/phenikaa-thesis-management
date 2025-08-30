@@ -9,7 +9,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/academic-config")
+@RequestMapping("/api/academic-config-service")
 @RequiredArgsConstructor
 public class BaseController {
 
@@ -23,5 +23,15 @@ public class BaseController {
     @GetMapping("/list-academic-year")
     public List<GetAcademicResponse> getAcademicYears() {
         return academicService.findAll();
+    }
+
+    @GetMapping("/active")
+    public GetAcademicResponse getActiveAcademicYear() {
+        return academicService.getActiveAcademicYear();
+    }
+
+    @PostMapping("/{yearId}/activate")
+    public GetAcademicResponse activateAcademicYear(@PathVariable Integer yearId) {
+        return academicService.activateAcademicYear(yearId);
     }
 }

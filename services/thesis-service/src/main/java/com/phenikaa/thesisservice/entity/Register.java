@@ -54,6 +54,10 @@ public class Register {
         REJECTED
     }
 
+    // Thêm field mới để liên kết với đợt đăng ký
+    @Column(name = "registration_period_id")
+    private Integer registrationPeriodId;
+
     // Relationship với Project Topic
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id")

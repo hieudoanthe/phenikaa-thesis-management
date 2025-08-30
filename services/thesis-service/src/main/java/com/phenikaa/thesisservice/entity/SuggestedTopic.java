@@ -49,6 +49,10 @@ public class SuggestedTopic {
     @JoinColumn(name = "topic_id")
     private ProjectTopic projectTopic;
 
+    // Thêm field mới để liên kết với đợt đăng ký
+    @Column(name = "registration_period_id")
+    private Integer registrationPeriodId;
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();

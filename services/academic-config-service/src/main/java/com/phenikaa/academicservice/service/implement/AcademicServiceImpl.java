@@ -24,6 +24,11 @@ public class AcademicServiceImpl implements AcademicService {
         GetAcademicResponse dto = new GetAcademicResponse();
         dto.setAcademicYearId(entity.getYearId());
         dto.setYearName(entity.getYearName());
+        dto.setStartDate(entity.getStartDate());
+        dto.setEndDate(entity.getEndDate());
+        dto.setStatus(entity.getStatus());
+        dto.setCreatedAt(entity.getCreatedAt());
+        
         return dto;
     }
 
@@ -31,7 +36,16 @@ public class AcademicServiceImpl implements AcademicService {
     public List<GetAcademicResponse> findByYearId(Integer yearId) {
         return academicRepository.findByYearId(yearId)
                 .stream()
-                .map(entity -> new GetAcademicResponse(entity.getYearId(), entity.getYearName()))
+                .map(entity -> {
+                    GetAcademicResponse dto = new GetAcademicResponse();
+                    dto.setAcademicYearId(entity.getYearId());
+                    dto.setYearName(entity.getYearName());
+                    dto.setStartDate(entity.getStartDate());
+                    dto.setEndDate(entity.getEndDate());
+                    dto.setStatus(entity.getStatus());
+                    dto.setCreatedAt(entity.getCreatedAt());
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -39,8 +53,72 @@ public class AcademicServiceImpl implements AcademicService {
     public List<GetAcademicResponse> findAll() {
         return academicRepository.findAll()
                 .stream()
-                .map(e -> new GetAcademicResponse(e.getYearId(), e.getYearName()))
+                .map(entity -> {
+                    GetAcademicResponse dto = new GetAcademicResponse();
+                    dto.setAcademicYearId(entity.getYearId());
+                    dto.setYearName(entity.getYearName());
+                    dto.setStartDate(entity.getStartDate());
+                    dto.setStatus(entity.getStatus());
+                    dto.setEndDate(entity.getEndDate());
+                    dto.setCreatedAt(entity.getCreatedAt());
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public GetAcademicResponse getActiveAcademicYear() {
+        AcademicYear activeYear = academicRepository.findByStatus(AcademicYear.Status.ACTIVE.getValue())
+                .orElse(null);
+        
+        if (activeYear == null) {
+            return null;
+        }
+        
+        GetAcademicResponse dto = new GetAcademicResponse();
+        dto.setAcademicYearId(activeYear.getYearId());
+        dto.setYearName(activeYear.getYearName());
+        dto.setStartDate(activeYear.getStartDate());
+        dto.setEndDate(activeYear.getEndDate());
+        dto.setStatus(activeYear.getStatus());
+        dto.setCreatedAt(activeYear.getCreatedAt());
+        return dto;
+    }
+
+    @Override
+    public GetAcademicResponse activateAcademicYear(Integer yearId) {
+        AcademicYear year = academicRepository.findById(yearId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy năm học với ID: " + yearId));
+        
+        if (!year.canActivate()) {
+            throw new RuntimeException("Năm học này không thể được kích hoạt");
+        }
+        
+        // Deactive tất cả năm học khác
+        deactivateOtherAcademicYears(yearId);
+        
+        // Active năm học được chọn
+        year.setStatus(AcademicYear.Status.ACTIVE.getValue());
+        academicRepository.save(year);
+        
+        GetAcademicResponse dto = new GetAcademicResponse();
+        dto.setAcademicYearId(year.getYearId());
+        dto.setYearName(year.getYearName());
+        dto.setStartDate(year.getStartDate());
+        dto.setEndDate(year.getEndDate());
+        dto.setStatus(year.getStatus());
+        dto.setCreatedAt(year.getCreatedAt());
+        return dto;
+    }
+
+    @Override
+    public void deactivateOtherAcademicYears(Integer yearId) {
+        List<AcademicYear> allYears = academicRepository.findAll();
+        for (AcademicYear year : allYears) {
+            if (!year.getYearId().equals(yearId)) {
+                year.setStatus(AcademicYear.Status.INACTIVE.getValue());
+                academicRepository.save(year);
+            }
+        }
+    }
 }
