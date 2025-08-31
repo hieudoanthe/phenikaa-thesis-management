@@ -582,25 +582,25 @@ public class ThesisServiceImpl implements ThesisService {
         return capacityInfo;
     }
 
-    @Override
-    public Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return projectTopicRepository.findSummariesBySupervisorIdAndApprovalStatus(
-                supervisorId,
-                ProjectTopic.ApprovalStatus.APPROVED,
-                pageable
-        );
-    }
+//    @Override
+//    public Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size) {
+//        Pageable pageable = PageRequest.of(page, size);
+//        return projectTopicRepository.findSummariesBySupervisorIdAndApprovalStatus(
+//                supervisorId,
+//                ProjectTopic.ApprovalStatus.APPROVED,
+//                pageable
+//        );
+//    }
 
-    @Override
-    public Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return projectTopicRepository.findSummaryDtosBySupervisorId(supervisorId, pageable);
-    }
-
-    @Override
-    public <T> Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return projectTopicRepository.findByApprovalStatus(status, type, pageable);
-    }
+//    @Override
+//    public Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size) {
+//        Pageable pageable = PageRequest.of(page, size);
+//        return projectTopicRepository.findSummaryDtosBySupervisorId(supervisorId, pageable);
+//    }
+//
+//    @Override
+//    public <T> Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size) {
+//        Pageable pageable = PageRequest.of(page, size);
+//        return projectTopicRepository.findByApprovalStatus(status, type, pageable);
+//    }
 }

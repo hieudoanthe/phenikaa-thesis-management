@@ -44,4 +44,8 @@ public interface ProjectTopicRepository extends JpaRepository<ProjectTopic, Inte
 
     @Query("SELECT COUNT(p) FROM ProjectTopic p WHERE p.supervisorId = ?1 AND p.approvalStatus = 'APPROVED'")
     Long countApprovedTopicsBySupervisor(Integer supervisorId);
+    
+    // Lấy tất cả đề tài có trạng thái APPROVED với phân trang
+    @EntityGraph(attributePaths = {"suggestedTopics", "registers"})
+    Page<ProjectTopic> findByApprovalStatus(ProjectTopic.ApprovalStatus approvalStatus, Pageable pageable);
 }

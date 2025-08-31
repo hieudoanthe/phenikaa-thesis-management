@@ -1,5 +1,5 @@
 server:
-  port: 8089
+  port: 8084
 
 spring:
   application:
@@ -8,24 +8,11 @@ spring:
     active: dev
   config:
     import: "configserver:"
-  cloud:
-    config:
-      uri: http://localhost:8888
-      fail-fast: true
-      retry:
-        initial-interval: 1000
-        max-attempts: 6
-        multiplier: 1.2
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    fetch-registry: true
-    register-with-eureka: true
-
+# Logging
 logging:
   level:
-    org.springframework: INFO
+    com.phenikaa.evalservice: DEBUG
+    org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE

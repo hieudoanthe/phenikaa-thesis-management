@@ -22,4 +22,7 @@ public interface RegisterRepository extends JpaRepository<Register, Integer> {
 
     // Kiểm tra xem sinh viên đã đăng ký trong đợt đăng ký chưa
     boolean existsByStudentIdAndRegistrationPeriodId(Integer studentId, Integer registrationPeriodId);
+    
+    // Lấy danh sách đăng ký theo đợt đăng ký
+    List<Register> findByRegistrationPeriodId(Integer registrationPeriodId);
 }

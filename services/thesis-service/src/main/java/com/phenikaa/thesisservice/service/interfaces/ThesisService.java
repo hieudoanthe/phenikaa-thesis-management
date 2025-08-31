@@ -44,8 +44,7 @@ public interface ThesisService {
     boolean canTopicBeApproved(Integer topicId);
     Map<String, Object> getSupervisorCapacityInfo(Integer supervisorId);
 
-    // Projection APIs
-    Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size);
-    Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size);
-    <T> Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size);
+//    Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size);
+//    Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size);
+//    <T> Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size);
 }

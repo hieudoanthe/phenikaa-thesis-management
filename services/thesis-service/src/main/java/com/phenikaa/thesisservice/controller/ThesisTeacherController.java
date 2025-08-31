@@ -44,37 +44,37 @@ public class ThesisTeacherController {
         return thesisService.findAll();
     }
 
-    @GetMapping("/projection/interface/supervisor/{supervisorId}")
-    public ResponseEntity<Page<ProjectTopicSummary>> getInterfaceProjections(
-            @PathVariable Integer supervisorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Page<ProjectTopicSummary> result = thesisService.getTopicSummariesBySupervisor(supervisorId, page, size);
-        return ResponseEntity.ok(result);
-    }
+//    @GetMapping("/projection/interface/supervisor/{supervisorId}")
+//    public ResponseEntity<Page<ProjectTopicSummary>> getInterfaceProjections(
+//            @PathVariable Integer supervisorId,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size) {
+//        Page<ProjectTopicSummary> result = thesisService.getTopicSummariesBySupervisor(supervisorId, page, size);
+//        return ResponseEntity.ok(result);
+//    }
 
-    @GetMapping("/projection/dto/supervisor/{supervisorId}")
-    public ResponseEntity<Page<ProjectTopicSummaryDto>> getDtoProjections(
-            @PathVariable Integer supervisorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Page<ProjectTopicSummaryDto> result = thesisService.getTopicSummaryDtosBySupervisor(supervisorId, page, size);
-        return ResponseEntity.ok(result);
-    }
+//    @GetMapping("/projection/dto/supervisor/{supervisorId}")
+//    public ResponseEntity<Page<ProjectTopicSummaryDto>> getDtoProjections(
+//            @PathVariable Integer supervisorId,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size) {
+//        Page<ProjectTopicSummaryDto> result = thesisService.getTopicSummaryDtosBySupervisor(supervisorId, page, size);
+//        return ResponseEntity.ok(result);
+//    }
 
-    @GetMapping("/projection/dynamic/approval/{approvalStatus}")
-    public ResponseEntity<Page<ProjectTopicSummary>> getDynamicProjections(
-            @PathVariable String approvalStatus,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        try {
-            ProjectTopic.ApprovalStatus status = ProjectTopic.ApprovalStatus.valueOf(approvalStatus.toUpperCase());
-            Page<ProjectTopicSummary> result = thesisService.getTopicsByApprovalStatusWithProjection(status, ProjectTopicSummary.class, page, size);
-            return ResponseEntity.ok(result);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
+//    @GetMapping("/projection/dynamic/approval/{approvalStatus}")
+//    public ResponseEntity<Page<ProjectTopicSummary>> getDynamicProjections(
+//            @PathVariable String approvalStatus,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size) {
+//        try {
+//            ProjectTopic.ApprovalStatus status = ProjectTopic.ApprovalStatus.valueOf(approvalStatus.toUpperCase());
+//            Page<ProjectTopicSummary> result = thesisService.getTopicsByApprovalStatusWithProjection(status, ProjectTopicSummary.class, page, size);
+//            return ResponseEntity.ok(result);
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.badRequest().build();
+//        }
+//    }
 
     @GetMapping("/get-topic-by-{teacherId}/paged")
     public ResponseEntity<Page<GetThesisResponse>> getTopicsByTeacherId(

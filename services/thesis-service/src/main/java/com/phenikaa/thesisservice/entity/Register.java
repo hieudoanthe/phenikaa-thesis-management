@@ -21,10 +21,10 @@ public class Register {
     private Integer registerId;
 
     @Column(name = "student_id")
-    private Integer studentId; // Reference to ProfileService
+    private Integer studentId;
 
     @Column(name = "group_id")
-    private Integer groupId; // Reference to GroupService
+    private Integer groupId;
 
     @Column(name = "register_type")
     @Enumerated(EnumType.STRING)
@@ -42,7 +42,7 @@ public class Register {
     private Instant approvedAt;
 
     @Column(name = "approved_by")
-    private Integer approvedBy; // Reference to UserService
+    private Integer approvedBy;
 
     @Column(name = "register_status")
     @Enumerated(EnumType.STRING)
@@ -54,11 +54,9 @@ public class Register {
         REJECTED
     }
 
-    // Thêm field mới để liên kết với đợt đăng ký
     @Column(name = "registration_period_id")
     private Integer registrationPeriodId;
 
-    // Relationship với Project Topic
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id")
     private ProjectTopic projectTopic;
