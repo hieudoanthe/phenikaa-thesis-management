@@ -256,15 +256,9 @@ public class ThesisServiceImpl implements ThesisService {
 
         // Lưu thay đổi (cascade sẽ cập nhật SuggestedTopic)
         projectTopicRepository.save(projectTopic);
-
-        // KHÔNG giảm currentStudents vì đề tài bị từ chối, sinh viên chưa được nhận vào
-        System.out.println("Đề tài bị từ chối - KHÔNG giảm currentStudents vì sinh viên chưa được nhận vào");
         
         // HOÀN TRẢ slot khi từ chối đề tài (tăng maxStudents lên 1)
         if (suggestedTopic.getRegistrationPeriodId() != null) {
-            System.out.println("=== HOÀN TRẢ SLOT KHI TỪ CHỐI ===");
-            System.out.println("Lecturer ID: " + projectTopic.getSupervisorId());
-            System.out.println("Period ID: " + suggestedTopic.getRegistrationPeriodId());
             
             // Lấy capacity hiện tại để debug
             LecturerCapacity currentCapacity = lecturerCapacityRepository

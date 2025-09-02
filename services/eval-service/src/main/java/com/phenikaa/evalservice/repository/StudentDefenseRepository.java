@@ -47,4 +47,13 @@ public interface StudentDefenseRepository extends JpaRepository<StudentDefense, 
     // Tìm sinh viên chưa có điểm
     @Query("SELECT sd FROM StudentDefense sd WHERE sd.score IS NULL AND sd.status = 'COMPLETED'")
     List<StudentDefense> findStudentsWithoutScore();
+
+    // Kiểm tra sinh viên đã được gán vào buổi bảo vệ chưa
+    boolean existsByDefenseSession_SessionIdAndStudentId(Integer sessionId, Integer studentId);
+
+    // Tìm assignment của sinh viên trong buổi bảo vệ
+    Optional<StudentDefense> findByDefenseSession_SessionIdAndStudentId(Integer sessionId, Integer studentId);
+
+    // Tìm danh sách sinh viên đã gán theo thứ tự bảo vệ
+    List<StudentDefense> findByDefenseSession_SessionIdOrderByDefenseOrder(Integer sessionId);
 }

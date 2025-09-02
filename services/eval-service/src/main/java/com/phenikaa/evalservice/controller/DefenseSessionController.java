@@ -2,7 +2,9 @@ package com.phenikaa.evalservice.controller;
 
 import com.phenikaa.evalservice.dto.DefenseSessionDto;
 import com.phenikaa.evalservice.entity.DefenseSession;
+import com.phenikaa.evalservice.entity.StudentDefense;
 import com.phenikaa.evalservice.service.DefenseSessionService;
+import com.phenikaa.evalservice.service.StudentAssignmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/eval-service/admin/sessions")
@@ -19,6 +23,7 @@ import java.util.List;
 public class DefenseSessionController {
 
     private final DefenseSessionService defenseSessionService;
+    private final StudentAssignmentService studentAssignmentService;
 
     /**
      * Lấy tất cả buổi bảo vệ
@@ -123,19 +128,7 @@ public class DefenseSessionController {
         }
     }
 
-    /**
-     * Lấy các buổi bảo vệ có thể thêm sinh viên
-     */
-    @GetMapping("/available")
-    public ResponseEntity<List<DefenseSessionDto>> getAvailableSessions() {
-        try {
-            List<DefenseSessionDto> sessions = defenseSessionService.getAvailableSessions();
-            return ResponseEntity.ok(sessions);
-        } catch (Exception e) {
-            log.error("Lỗi khi lấy buổi bảo vệ có sẵn: ", e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+
 
     /**
      * Lấy buổi bảo vệ theo địa điểm
@@ -192,6 +185,124 @@ public class DefenseSessionController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("Lỗi khi xóa buổi bảo vệ ID {}: ", sessionId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ========== STUDENT ASSIGNMENT ENDPOINTS ==========
+
+    /**
+     * Gán sinh viên vào buổi bảo vệ
+     */
+    @PostMapping("/{sessionId}/students")
+    public ResponseEntity<Map<String, Object>> assignStudentToSession(
+            @PathVariable Integer sessionId,
+            @RequestBody Map<String, Object> request) {
+        try {
+            Integer studentId = (Integer) request.get("studentId");
+            Integer topicId = (Integer) request.get("topicId");
+            Integer supervisorId = (Integer) request.get("supervisorId");
+            String studentName = (String) request.get("studentName");
+            String studentMajor = (String) request.get("studentMajor");
+            String topicTitle = (String) request.get("topicTitle");
+
+            if (studentId == null || topicId == null) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "studentId và topicId là bắt buộc"));
+            }
+
+            boolean success = studentAssignmentService.assignStudentToSession(
+                sessionId, studentId, topicId, supervisorId, studentName, studentMajor, topicTitle);
+
+            if (success) {
+                return ResponseEntity.ok(Map.of("success", true, "message", "Gán sinh viên thành công"));
+            } else {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Không thể gán sinh viên vào buổi bảo vệ"));
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi gán sinh viên vào buổi bảo vệ {}: ", sessionId, e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("success", false, "message", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Hủy gán sinh viên khỏi buổi bảo vệ
+     */
+    @DeleteMapping("/{sessionId}/students/{studentId}")
+    public ResponseEntity<Map<String, Object>> unassignStudentFromSession(
+            @PathVariable Integer sessionId,
+            @PathVariable Integer studentId) {
+        try {
+            boolean success = studentAssignmentService.unassignStudentFromSession(sessionId, studentId);
+
+            if (success) {
+                return ResponseEntity.ok(Map.of("success", true, "message", "Hủy gán sinh viên thành công"));
+            } else {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Không thể hủy gán sinh viên"));
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi hủy gán sinh viên {} khỏi buổi bảo vệ {}: ", studentId, sessionId, e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("success", false, "message", "Lỗi hệ thống: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Lấy danh sách sinh viên đã được gán vào buổi bảo vệ
+     */
+    @GetMapping("/{sessionId}/students")
+    public ResponseEntity<List<Map<String, Object>>> getAssignedStudents(@PathVariable Integer sessionId) {
+        try {
+            List<StudentDefense> assignments = studentAssignmentService.getAssignedStudents(sessionId);
+            List<Map<String, Object>> result = assignments.stream()
+                .map(assignment -> {
+                    Map<String, Object> map = Map.of(
+                        "studentId", assignment.getStudentId(),
+                        "studentName", assignment.getStudentName(),
+                        "studentMajor", assignment.getStudentMajor(),
+                        "topicId", assignment.getTopicId(),
+                        "topicTitle", assignment.getTopicTitle(),
+                        "supervisorId", assignment.getSupervisorId(),
+                        "defenseOrder", assignment.getDefenseOrder(),
+                        "status", assignment.getStatus().toString()
+                    );
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy danh sách sinh viên đã gán cho buổi bảo vệ {}: ", sessionId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Lấy danh sách buổi bảo vệ có thể gán thêm sinh viên
+     */
+    @GetMapping("/available")
+    public ResponseEntity<List<DefenseSessionDto>> getAvailableSessions() {
+        try {
+            List<DefenseSession> availableSessions = studentAssignmentService.getAvailableSessions();
+            List<DefenseSessionDto> result = availableSessions.stream()
+                .map(session -> DefenseSessionDto.builder()
+                    .sessionId(session.getSessionId())
+                    .sessionName(session.getSessionName())
+                    .defenseDate(session.getDefenseDate())
+                    .startTime(session.getStartTime())
+                    .endTime(session.getEndTime())
+                    .location(session.getLocation())
+                    .maxStudents(session.getMaxStudents())
+                    .status(session.getStatus())
+                    .build())
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy danh sách buổi bảo vệ có sẵn: ", e);
             return ResponseEntity.internalServerError().build();
         }
     }

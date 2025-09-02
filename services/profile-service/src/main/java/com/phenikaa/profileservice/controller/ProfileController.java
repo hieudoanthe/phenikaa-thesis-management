@@ -92,7 +92,7 @@ public class ProfileController {
         return profileService.updateStudentProfile(updateRequest, userId, avtFile);
     }
 
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
     @GetMapping("/student/get-all-teachers")
     public ResponseEntity<List<GetTeacherProfileResponse>> getAllTeacherProfiles() {
         List<GetTeacherProfileResponse> response = profileService.getAllTeacherProfiles();

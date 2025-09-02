@@ -15,6 +15,30 @@ import java.util.Map;
 public interface ThesisServiceClient {
 
     /**
+     * Lấy danh sách sinh viên đã đăng ký đề tài theo đợt đăng ký
+     */
+    @GetMapping("/api/thesis-service/student-period/registered/{periodId}")
+    List<Map<String, Object>> getRegisteredStudentsByPeriod(@PathVariable String periodId);
+
+    /**
+     * Lấy danh sách sinh viên đã đề xuất đề tài theo đợt đăng ký
+     */
+    @GetMapping("/api/thesis-service/student-period/suggested/{periodId}")
+    List<Map<String, Object>> getSuggestedStudentsByPeriod(@PathVariable String periodId);
+
+    /**
+     * Lấy danh sách tất cả sinh viên (đăng ký + đề xuất) theo đợt đăng ký
+     */
+    @GetMapping("/api/thesis-service/student-period/all/{periodId}")
+    List<Map<String, Object>> getAllStudentsByPeriod(@PathVariable String periodId);
+
+    /**
+     * Lấy danh sách sinh viên theo đợt đăng ký (alias cho /all/{periodId})
+     */
+    @GetMapping("/api/thesis-service/student-period/{periodId}")
+    List<Map<String, Object>> getStudentsByPeriod(@PathVariable String periodId);
+
+    /**
      * Lấy thông tin đề tài theo ID
      */
     @GetMapping("/api/thesis-service/topics/{topicId}")
@@ -49,10 +73,4 @@ public interface ThesisServiceClient {
      */
     @GetMapping("/api/thesis-service/admin/current")
     Map<String, Object> getCurrentPeriod();
-
-    /**
-     * Lấy danh sách đề tài được đề xuất và đã duyệt
-     */
-    @GetMapping("/api/thesis-service/suggested-topics/approved")
-    List<Map<String, Object>> getApprovedSuggestedTopics();
 }
