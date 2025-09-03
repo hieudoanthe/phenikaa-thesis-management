@@ -1,6 +1,7 @@
 package com.phenikaa.communicationservice.service.implement;
 
-import com.phenikaa.communicationservice.broadcaster.NotificationBroadcaster;
+//import com.phenikaa.communicationservice.broadcaster.NotificationBroadcaster;
+import com.phenikaa.communicationservice.broadcaster.NotificationPublisher;
 import com.phenikaa.communicationservice.entity.Notification;
 import com.phenikaa.communicationservice.repository.NotificationRepository;
 import com.phenikaa.communicationservice.service.interfaces.NotificationService;
@@ -18,8 +19,9 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
-    private final NotificationBroadcaster notificationBroadcaster;
+    private final NotificationPublisher notificationBroadcaster;
     private final ReactiveMongoTemplate mongoTemplate;
+//    private final NotificationBroadcaster notificationBroadcaster;
 
     @Override
     public Mono<Notification> createNotification(Integer senderId, Integer receiverId, String message) {

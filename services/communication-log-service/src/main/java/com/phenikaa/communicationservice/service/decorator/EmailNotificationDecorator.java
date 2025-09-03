@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phenikaa.communicationservice.client.UserServiceClient;
 import com.phenikaa.communicationservice.dto.request.NotificationRequest;
 import jakarta.mail.internet.MimeMessage;
-import com.phenikaa.communicationservice.service.NotificationExecutionService;
+import com.phenikaa.communicationservice.service.implement.NotificationExecutionServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -23,11 +23,11 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
     private final JavaMailSender mailSender;
     private final ObjectMapper objectMapper;
     private final UserServiceClient userServiceClient;
-    private final NotificationExecutionService executionService;
+    private final NotificationExecutionServiceImpl executionService;
 
     // Constructor cho Spring autowiring
     @Autowired
-    public EmailNotificationDecorator(JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient, NotificationExecutionService executionService) {
+    public EmailNotificationDecorator(JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient, NotificationExecutionServiceImpl executionService) {
         super();
         this.mailSender = mailSender;
         this.objectMapper = objectMapper;
@@ -36,7 +36,7 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
     }
 
     // Constructor cho decorator chain
-    public EmailNotificationDecorator(NotificationDecorator wrapped, JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient, NotificationExecutionService executionService) {
+    public EmailNotificationDecorator(NotificationDecorator wrapped, JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient, NotificationExecutionServiceImpl executionService) {
         super(wrapped);
         this.mailSender = mailSender;
         this.objectMapper = objectMapper;

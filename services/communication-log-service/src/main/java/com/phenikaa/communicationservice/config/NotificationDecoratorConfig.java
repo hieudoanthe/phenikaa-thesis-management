@@ -3,7 +3,7 @@ package com.phenikaa.communicationservice.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phenikaa.communicationservice.client.UserServiceClient;
 import com.phenikaa.communicationservice.service.decorator.EmailNotificationDecorator;
-import com.phenikaa.communicationservice.service.NotificationExecutionService;
+import com.phenikaa.communicationservice.service.implement.NotificationExecutionServiceImpl;
 import com.phenikaa.communicationservice.service.decorator.NotificationDecorator;
 import com.phenikaa.communicationservice.service.decorator.NotificationServiceAdapter;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +21,7 @@ public class NotificationDecoratorConfig {
             JavaMailSender mailSender,
             ObjectMapper objectMapper,
             UserServiceClient userServiceClient,
-            NotificationExecutionService executionService) {
+            NotificationExecutionServiceImpl executionService) {
 
         // Chain: Email -> WebSocket (base service)
         NotificationDecorator chain = notificationServiceAdapter;

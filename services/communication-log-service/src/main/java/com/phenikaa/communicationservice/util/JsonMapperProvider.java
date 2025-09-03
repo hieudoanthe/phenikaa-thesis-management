@@ -3,7 +3,9 @@ package com.phenikaa.communicationservice.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.Getter;
 
+@Getter
 public final class JsonMapperProvider {
     private final ObjectMapper mapper;
 
@@ -21,7 +23,4 @@ public final class JsonMapperProvider {
         return Holder.INSTANCE;
     }
 
-    public ObjectMapper getMapper() {
-        return mapper;
-    }
 }

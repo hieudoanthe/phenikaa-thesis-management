@@ -1,6 +1,7 @@
 package com.phenikaa.communicationservice.handler;
 
-import com.phenikaa.communicationservice.broadcaster.NotificationBroadcaster;
+import com.phenikaa.communicationservice.broadcaster.NotificationPublisher;
+//import com.phenikaa.communicationservice.broadcaster.NotificationBroadcaster;
 import com.phenikaa.communicationservice.entity.Notification;
 import com.phenikaa.communicationservice.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class NotificationWebSocketHandler implements WebSocketHandler {
     private final NotificationRepository notificationRepository;
-    private final NotificationBroadcaster broadcaster;
+    private final NotificationPublisher broadcaster;
+//    private final NotificationBroadcaster broadcaster;
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {

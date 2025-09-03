@@ -1,5 +1,6 @@
-package com.phenikaa.communicationservice.service;
+package com.phenikaa.communicationservice.service.implement;
 
+import com.phenikaa.communicationservice.service.interfaces.NotificationExecutionService;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
@@ -7,11 +8,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 @Service
-public class NotificationExecutionService {
+public class NotificationExecutionServiceImpl implements NotificationExecutionService {
 
     private final ExecutorService notificationExecutor;
 
-    public NotificationExecutionService(ExecutorService notificationExecutor) {
+    public NotificationExecutionServiceImpl(ExecutorService notificationExecutor) {
         this.notificationExecutor = notificationExecutor;
     }
 
