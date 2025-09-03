@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectEvaluation {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "evaluation_id")
@@ -21,17 +22,37 @@ public class ProjectEvaluation {
     @Column(name = "topic_id", nullable = false)
     private Integer topicId;
 
+    @Column(name = "student_id", nullable = false)
+    private Integer studentId;
+
     @Column(name = "evaluator_id", nullable = false)
     private Integer evaluatorId;
 
-    @Column(name = "score")
-    private Float score;
+    @Column(name = "evaluation_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private EvaluationType evaluationType;
+
+    // Điểm số theo từng tiêu chí (0-10)
+    @Column(name = "content_score")
+    private Float contentScore; // Điểm nội dung
+
+    @Column(name = "presentation_score")
+    private Float presentationScore; // Điểm thuyết trình
+
+    @Column(name = "technical_score")
+    private Float technicalScore; // Điểm kỹ thuật
+
+    @Column(name = "innovation_score")
+    private Float innovationScore; // Điểm sáng tạo
+
+    @Column(name = "defense_score")
+    private Float defenseScore; // Điểm bảo vệ (chỉ cho hội đồng)
+
+    @Column(name = "total_score")
+    private Float totalScore; // Tổng điểm (0-10)
 
     @Column(name = "comments", columnDefinition = "TEXT")
     private String comments;
-
-    @Column(name = "evaluation_type")
-    private Integer evaluationType;
 
     @Column(name = "evaluated_at")
     private LocalDateTime evaluatedAt;
@@ -43,7 +64,23 @@ public class ProjectEvaluation {
     private LocalDateTime updatedAt;
 
     @Column(name = "evaluation_status")
-    private Integer evaluationStatus;
+    @Enumerated(EnumType.STRING)
+    private EvaluationStatus evaluationStatus;
+
+    // Enum cho loại đánh giá
+    public enum EvaluationType {
+        SUPERVISOR,     // Giảng viên hướng dẫn (25%)
+        REVIEWER,       // Giảng viên phản biện (50%)
+        COMMITTEE       // Hội đồng chấm (25%)
+    }
+
+    // Enum cho trạng thái đánh giá
+    public enum EvaluationStatus {
+        PENDING,        // Chờ chấm
+        IN_PROGRESS,    // Đang chấm
+        COMPLETED,      // Hoàn thành
+        CANCELLED       // Hủy bỏ
+    }
 
     @PrePersist
     protected void onCreate() {
@@ -54,10 +91,30 @@ public class ProjectEvaluation {
         if (updatedAt == null) {
             updatedAt = now;
         }
+        if (evaluationStatus == null) {
+            evaluationStatus = EvaluationStatus.PENDING;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    // Method để tính tổng điểm
+    public void calculateTotalScore() {
+        if (evaluationType == EvaluationType.COMMITTEE) {
+            // Hội đồng: có thêm điểm bảo vệ
+            if (contentScore != null && presentationScore != null && 
+                technicalScore != null && innovationScore != null && defenseScore != null) {
+                this.totalScore = (contentScore + presentationScore + technicalScore + innovationScore + defenseScore) / 5;
+            }
+        } else {
+            // GVHD và GVPB: không có điểm bảo vệ
+            if (contentScore != null && presentationScore != null && 
+                technicalScore != null && innovationScore != null) {
+                this.totalScore = (contentScore + presentationScore + technicalScore + innovationScore) / 4;
+            }
+        }
     }
 }

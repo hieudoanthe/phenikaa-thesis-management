@@ -6,8 +6,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableFeignClients
-public class EvaluationService {
+public class EvaluationServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(EvaluationService.class, args);
+        SpringApplication.run(EvaluationServiceApplication.class, args);
     }
 }

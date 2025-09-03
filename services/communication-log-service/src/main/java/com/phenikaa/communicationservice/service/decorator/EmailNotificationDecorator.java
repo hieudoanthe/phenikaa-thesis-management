@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phenikaa.communicationservice.client.UserServiceClient;
 import com.phenikaa.communicationservice.dto.request.NotificationRequest;
 import jakarta.mail.internet.MimeMessage;
+import com.phenikaa.communicationservice.service.NotificationExecutionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -23,22 +23,25 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
     private final JavaMailSender mailSender;
     private final ObjectMapper objectMapper;
     private final UserServiceClient userServiceClient;
+    private final NotificationExecutionService executionService;
 
     // Constructor cho Spring autowiring
     @Autowired
-    public EmailNotificationDecorator(JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient) {
+    public EmailNotificationDecorator(JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient, NotificationExecutionService executionService) {
         super();
         this.mailSender = mailSender;
         this.objectMapper = objectMapper;
         this.userServiceClient = userServiceClient;
+        this.executionService = executionService;
     }
 
     // Constructor cho decorator chain
-    public EmailNotificationDecorator(NotificationDecorator wrapped, JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient) {
+    public EmailNotificationDecorator(NotificationDecorator wrapped, JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient, NotificationExecutionService executionService) {
         super(wrapped);
         this.mailSender = mailSender;
         this.objectMapper = objectMapper;
         this.userServiceClient = userServiceClient;
+        this.executionService = executionService;
     }
 
     @Override
@@ -48,7 +51,7 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
         // Chỉ gửi email cho các loại thông báo quan trọng
         if (shouldSendEmail(request.getType())) {
             log.info("Should send email for type: {}", request.getType());
-            sendEmailNotificationAsync(request);
+            this.triggerEmailNotificationAsync(request);
         } else {
             log.info("Skipping email for type: {}", request.getType());
         }
@@ -69,7 +72,7 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
             // Chỉ gửi email cho các loại thông báo quan trọng
             if (shouldSendEmail(notificationRequest.getType())) {
                 log.info("Should send email for type: {}", notificationRequest.getType());
-                sendEmailNotificationAsync(notificationRequest);
+                this.triggerEmailNotificationAsync(notificationRequest);
             } else {
                 log.info("Skipping email for type: {}", notificationRequest.getType());
             }
@@ -105,26 +108,25 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
     /**
      * Gửi email notification bất đồng bộ
      */
-    @Async
-    public void sendEmailNotificationAsync(NotificationRequest request) {
+    public void triggerEmailNotificationAsync(NotificationRequest request) {
         log.info("Starting async email notification for receiver: {}", request.getReceiverId());
 
-        // Sử dụng CompletableFuture để xử lý reactive call
-        CompletableFuture<String> emailFuture = userServiceClient.getUsernameById(request.getReceiverId())
+        CompletableFuture<Void> flow = userServiceClient.getUsernameById(request.getReceiverId())
                 .toFuture()
                 .exceptionally(throwable -> {
                     log.error("Error getting username from user-service: {}", throwable.getMessage());
                     return "";
-                });
+                })
+                .thenAcceptAsync(username -> {
+                    if (username != null && !username.isEmpty()) {
+                        log.info("Retrieved receiver email: {}", username);
+                        sendEmailToUser(username, request);
+                    } else {
+                        log.warn("No email found for receiver ID: {}", request.getReceiverId());
+                    }
+                }, executionService.executor());
 
-        emailFuture.thenAccept(username -> {
-            if (username != null && !username.isEmpty()) {
-                log.info("Retrieved receiver email: {}", username);
-                sendEmailToUser(username, request);
-            } else {
-                log.warn("No email found for receiver ID: {}", request.getReceiverId());
-            }
-        }).exceptionally(throwable -> {
+        flow.exceptionally(throwable -> {
             log.error("Error in email notification process: {}", throwable.getMessage());
             return null;
         });

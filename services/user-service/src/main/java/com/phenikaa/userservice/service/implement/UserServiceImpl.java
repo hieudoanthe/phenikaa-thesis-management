@@ -77,28 +77,6 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
-//    @Override
-//    public AuthenticatedUserResponse verifyUser(LoginRequest request) {
-//        User user = userRepository.findByUsername(request.getUsername())
-//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
-//
-//        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-//            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password!");
-//        }
-//
-//        if (user.getStatus() == 2) {
-//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is blocked!");
-//        }
-//
-//        return new AuthenticatedUserResponse(
-//                user.getUserId(),
-//                user.getUsername(),
-//                user.getRoles().stream()
-//                        .map(role -> role.getRoleName().name())
-//                        .collect(Collectors.toList())
-//        );
-//    }
-
     @Override
     public AuthenticatedUserResponse verifyUser(LoginRequest request) {
         // 1. Gửi username + password cho AuthenticationManager
@@ -283,20 +261,40 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
+//    @Override
+//    public Page<GetUserResponse> dynamicFilterUsers(DynamicFilterRequest dynamicFilterRequest) {
+//        // Validate request
+//        List<String> validationErrors = DynamicQueryBuilder.validateRequest(dynamicFilterRequest);
+//        if (!validationErrors.isEmpty()) {
+//            throw new ResponseStatusException(
+//                HttpStatus.BAD_REQUEST,
+//                "Validation errors: " + String.join(", ", validationErrors)
+//            );
+//        }
+//
+//        Specification<User> spec = DynamicFilterBuilder.buildSpecification(dynamicFilterRequest);
+//
+//        Pageable pageable = DynamicQueryBuilder.buildPageable(dynamicFilterRequest);
+//
+//        Page<User> userPage = userRepository.findAll(spec, pageable);
+//
+//        return userPage.map(userMapper::toDTO);
+//    }
+
     @Override
     public Page<GetUserResponse> dynamicFilterUsers(DynamicFilterRequest dynamicFilterRequest) {
         // Validate request
-        List<String> validationErrors = DynamicQueryBuilder.validateRequest(dynamicFilterRequest);
+        List<String> validationErrors = DynamicQueryBuilder.getInstance().validateRequest(dynamicFilterRequest);
         if (!validationErrors.isEmpty()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST, 
-                "Validation errors: " + String.join(", ", validationErrors)
+                    HttpStatus.BAD_REQUEST,
+                    "Validation errors: " + String.join(", ", validationErrors)
             );
         }
 
         Specification<User> spec = DynamicFilterBuilder.buildSpecification(dynamicFilterRequest);
 
-        Pageable pageable = DynamicQueryBuilder.buildPageable(dynamicFilterRequest);
+        Pageable pageable = DynamicQueryBuilder.getInstance().buildPageable(dynamicFilterRequest);
 
         Page<User> userPage = userRepository.findAll(spec, pageable);
 
