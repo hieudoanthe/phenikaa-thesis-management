@@ -55,4 +55,10 @@ public class InternalUserController {
     public List<GetUserResponse> getUsersByIds(@RequestBody List<Integer> userIds) {
         return userService.getUserByIds(userIds);
     }
+
+    @GetMapping("/get-username/{userId}")
+    public ResponseEntity<String> getUsername(@PathVariable Integer userId) {
+        GetUserResponse user = userService.getUserById(userId);
+        return ResponseEntity.ok(user.getUsername());
+    }
 }

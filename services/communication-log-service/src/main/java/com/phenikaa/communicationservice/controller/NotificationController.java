@@ -2,8 +2,10 @@ package com.phenikaa.communicationservice.controller;
 
 import com.phenikaa.communicationservice.dto.request.NotificationRequest;
 import com.phenikaa.communicationservice.entity.Notification;
+import com.phenikaa.communicationservice.service.decorator.NotificationDecorator;
 import com.phenikaa.communicationservice.service.interfaces.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -11,17 +13,32 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/notifications")
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final NotificationDecorator notificationDecorator;
 
     @PostMapping("/send")
-    public Mono<Notification> send(@RequestBody NotificationRequest req) {
-        return notificationService.createNotification(
-                req.getSenderId(),
-                req.getReceiverId(),
-                req.getMessage()
-        );
+    public ResponseEntity<String> send(@RequestBody NotificationRequest req) {
+        log.info("NotificationController.send called with request: {}", req);
+//        public Mono<Notification> send(@RequestBody NotificationRequest req) {
+//            return notificationService.createNotification(
+//                    req.getSenderId(),
+//                    req.getReceiverId(),
+//                    req.getMessage()
+//            );
+        try {
+            // Sử dụng NotificationDecorator để gửi thông báo (bao gồm email + WebSocket)
+            notificationDecorator.sendNotification(req);
+            
+            log.info("Notification sent successfully via decorator");
+            return ResponseEntity.ok("Notification sent successfully");
+            
+        } catch (Exception e) {
+            log.error("Error sending notification: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Error sending notification: " + e.getMessage());
+        }
     }
 
     @PutMapping("/mark-all-read/{receiverId}")

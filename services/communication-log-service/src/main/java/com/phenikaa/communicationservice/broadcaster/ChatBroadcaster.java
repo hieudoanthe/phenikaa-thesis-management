@@ -1,4 +1,4 @@
-package com.phenikaa.communicationservice.config;
+package com.phenikaa.communicationservice.broadcaster;
 
 import com.phenikaa.communicationservice.entity.ChatMessage;
 import org.springframework.data.redis.connection.ReactiveSubscription;

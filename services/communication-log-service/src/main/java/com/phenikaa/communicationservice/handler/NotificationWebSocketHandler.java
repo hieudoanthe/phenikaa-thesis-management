@@ -1,5 +1,6 @@
-package com.phenikaa.communicationservice.config;
+package com.phenikaa.communicationservice.handler;
 
+import com.phenikaa.communicationservice.broadcaster.NotificationBroadcaster;
 import com.phenikaa.communicationservice.entity.Notification;
 import com.phenikaa.communicationservice.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,7 @@
 package com.phenikaa.communicationservice.config;
 
+import com.phenikaa.communicationservice.handler.ChatWebSocketHandler;
+import com.phenikaa.communicationservice.handler.NotificationWebSocketHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.HandlerMapping;

@@ -361,6 +361,7 @@ public class StudentAssignmentService {
             notificationRequest.put("senderId", 0); // 0 = System
             notificationRequest.put("receiverId", studentId);
             notificationRequest.put("message", message);
+            notificationRequest.put("type", "ASSIGNMENT");
 
             // Gửi thông báo qua communication-service
             try {
@@ -393,6 +394,7 @@ public class StudentAssignmentService {
             notificationRequest.put("senderId", 0); // 0 = System
             notificationRequest.put("receiverId", studentId);
             notificationRequest.put("message", message);
+            notificationRequest.put("type", "UNASSIGNMENT"); // ✅ Set type để gửi email
 
             // Gửi thông báo qua communication-service
             try {

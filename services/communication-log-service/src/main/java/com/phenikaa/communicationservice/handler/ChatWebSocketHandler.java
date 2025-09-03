@@ -1,8 +1,9 @@
-package com.phenikaa.communicationservice.config;
+package com.phenikaa.communicationservice.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.phenikaa.communicationservice.broadcaster.ChatBroadcaster;
 import com.phenikaa.communicationservice.entity.ChatMessage;
 import com.phenikaa.communicationservice.service.interfaces.ChatService;
 import org.springframework.stereotype.Component;

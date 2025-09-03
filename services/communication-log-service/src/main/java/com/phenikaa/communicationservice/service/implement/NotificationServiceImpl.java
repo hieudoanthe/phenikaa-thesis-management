@@ -1,6 +1,6 @@
 package com.phenikaa.communicationservice.service.implement;
 
-import com.phenikaa.communicationservice.config.NotificationBroadcaster;
+import com.phenikaa.communicationservice.broadcaster.NotificationBroadcaster;
 import com.phenikaa.communicationservice.entity.Notification;
 import com.phenikaa.communicationservice.repository.NotificationRepository;
 import com.phenikaa.communicationservice.service.interfaces.NotificationService;

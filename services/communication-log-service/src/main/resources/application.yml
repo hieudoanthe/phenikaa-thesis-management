@@ -16,6 +16,17 @@ spring:
         initial-interval: 1000
         max-attempts: 6
         multiplier: 1.2
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: thehieu0814@gmail.com
+    password: uzsg awsr wyud xegd
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 logging:
   level:
