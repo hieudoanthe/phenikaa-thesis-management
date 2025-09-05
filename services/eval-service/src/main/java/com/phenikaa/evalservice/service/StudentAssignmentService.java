@@ -361,7 +361,7 @@ public class StudentAssignmentService {
             notificationRequest.put("senderId", 0); // 0 = System
             notificationRequest.put("receiverId", studentId);
             notificationRequest.put("message", message);
-            notificationRequest.put("type", "ASSIGNMENT");
+            notificationRequest.put("type", "IMPORTANT");
 
             // Gửi thông báo qua communication-service
             try {

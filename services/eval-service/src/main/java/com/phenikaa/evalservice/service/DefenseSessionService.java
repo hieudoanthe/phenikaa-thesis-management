@@ -3,8 +3,10 @@ package com.phenikaa.evalservice.service;
 import com.phenikaa.evalservice.dto.DefenseSessionDto;
 import com.phenikaa.evalservice.entity.DefenseSession;
 import com.phenikaa.evalservice.entity.DefenseSchedule;
+import com.phenikaa.evalservice.entity.DefenseCommittee;
 import com.phenikaa.evalservice.repository.DefenseSessionRepository;
 import com.phenikaa.evalservice.repository.DefenseScheduleRepository;
+import com.phenikaa.evalservice.repository.DefenseCommitteeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class DefenseSessionService {
 
     private final DefenseSessionRepository defenseSessionRepository;
     private final DefenseScheduleRepository defenseScheduleRepository;
+    private final DefenseCommitteeRepository defenseCommitteeRepository;
 
     /**
      * Tạo buổi bảo vệ mới
@@ -47,6 +50,20 @@ public class DefenseSessionService {
 
         DefenseSession savedSession = defenseSessionRepository.save(session);
         log.info("Đã tạo buổi bảo vệ với ID: {}", savedSession.getSessionId());
+        
+        // Tạo hội đồng chấm điểm nếu có danh sách thành viên
+        if (sessionDto.getCommitteeMembers() != null && !sessionDto.getCommitteeMembers().isEmpty()) {
+            createDefenseCommittees(savedSession, sessionDto.getCommitteeMembers(), DefenseCommittee.CommitteeRole.MEMBER);
+            log.info("Đã tạo {} thành viên hội đồng cho buổi bảo vệ {}", 
+                    sessionDto.getCommitteeMembers().size(), savedSession.getSessionId());
+        }
+        
+        // Tạo giảng viên phản biện nếu có danh sách
+        if (sessionDto.getReviewerMembers() != null && !sessionDto.getReviewerMembers().isEmpty()) {
+            createDefenseCommittees(savedSession, sessionDto.getReviewerMembers(), DefenseCommittee.CommitteeRole.REVIEWER);
+            log.info("Đã tạo {} giảng viên phản biện cho buổi bảo vệ {}", 
+                    sessionDto.getReviewerMembers().size(), savedSession.getSessionId());
+        }
         
         return DefenseSessionDto.fromEntity(savedSession);
     }
@@ -186,5 +203,22 @@ public class DefenseSessionService {
         return sessions.stream()
                 .map(DefenseSessionDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Tạo hội đồng chấm điểm cho buổi bảo vệ
+     */
+    private void createDefenseCommittees(DefenseSession session, List<Integer> lecturerIds, DefenseCommittee.CommitteeRole role) {
+        for (Integer lecturerId : lecturerIds) {
+            DefenseCommittee committee = DefenseCommittee.builder()
+                    .defenseSession(session)
+                    .lecturerId(lecturerId)
+                    .role(role)
+                    .build();
+            
+            defenseCommitteeRepository.save(committee);
+            log.info("Đã tạo thành viên hội đồng: lecturerId={}, sessionId={}, role={}", 
+                    lecturerId, session.getSessionId(), role);
+        }
     }
 }

@@ -12,7 +12,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/defense-qna")
+@RequestMapping("/api/eval-service/teacher/defense-qna")
 @RequiredArgsConstructor
 @Slf4j
 public class DefenseQnAController {

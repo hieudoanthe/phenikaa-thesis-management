@@ -31,6 +31,10 @@ public class DefenseSessionDto {
     private Integer currentStudents;
     private List<DefenseCommitteeDto> committees;
     private List<StudentDefenseDto> students;
+    
+    // Dữ liệu từ frontend để tạo hội đồng
+    private List<Integer> committeeMembers; // List of lecturer IDs
+    private List<Integer> reviewerMembers; // List of reviewer lecturer IDs
 
     // Convert từ Entity
     public static DefenseSessionDto fromEntity(DefenseSession entity) {

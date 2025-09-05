@@ -35,7 +35,8 @@ public class DefenseCommittee {
         CHAIRMAN,      // Chủ tịch hội đồng
         SECRETARY,     // Thư ký
         MEMBER,        // Thành viên
-        SUPERVISOR     // Giảng viên hướng dẫn
+        SUPERVISOR,    // Giảng viên hướng dẫn
+        REVIEWER       // Giảng viên phản biện
     }
 
     @Column(name = "specialization")
@@ -78,7 +79,7 @@ public class DefenseCommittee {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (status == null) {
-            status = CommitteeStatus.INVITED;
+            status = CommitteeStatus.CONFIRMED;
         }
         if (role == null) {
             role = CommitteeRole.MEMBER;

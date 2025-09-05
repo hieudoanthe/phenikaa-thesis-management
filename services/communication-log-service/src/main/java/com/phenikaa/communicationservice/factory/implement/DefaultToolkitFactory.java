@@ -1,4 +1,4 @@
-package com.phenikaa.communicationservice.factory.impl;
+package com.phenikaa.communicationservice.factory.implement;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phenikaa.communicationservice.client.UserServiceClient;

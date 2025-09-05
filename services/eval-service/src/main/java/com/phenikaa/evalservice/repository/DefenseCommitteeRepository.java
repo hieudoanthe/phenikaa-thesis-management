@@ -1,6 +1,7 @@
 package com.phenikaa.evalservice.repository;
 
 import com.phenikaa.evalservice.entity.DefenseCommittee;
+import com.phenikaa.evalservice.entity.DefenseSession;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -33,4 +34,7 @@ public interface DefenseCommitteeRepository extends JpaRepository<DefenseCommitt
 
     // Tìm hội đồng theo buổi và vai trò
     Optional<DefenseCommittee> findByDefenseSession_SessionIdAndRole(Integer sessionId, DefenseCommittee.CommitteeRole role);
+    
+    // Tìm hội đồng theo buổi và giảng viên
+    Optional<DefenseCommittee> findByDefenseSessionAndLecturerId(DefenseSession defenseSession, Integer lecturerId);
 }
