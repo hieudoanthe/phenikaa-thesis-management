@@ -31,7 +31,7 @@ spring:
         - id: thesis-service
           uri: lb://thesis-service
           predicates:
-            - Path=/api/lecturer/thesis/**, /api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**
+            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**
 
         - id: assign-service
           uri: lb://assign-service
@@ -53,6 +53,10 @@ spring:
           predicates:
             - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**
 
+        - id: submission-service
+          uri: lb://submission-service
+          predicates:
+            - Path=/api/submission-service/**,
 
         - id: communication-log-service
           uri: lb://communication-log-service
@@ -73,7 +77,7 @@ eureka:
 
 jwt:
   secret: VHJlbmRvaW5heW5ndW9pZGFuZ2RldHJhbnRyb25nbmFodGFsYW5ndW9pZGFzYW5zYW5nYm90aG9pZ2lhbmRlY2hhbXNvY2JhblRob2lnaWFuY3VhYWljdW5nZGV1ZGFuZ3F1eW5odW5oYWVkZW10aG9pZ2lhbmN1YW5ndW95ZGFuaGNob2JhbmNvbmdnaW9uZ2h1dmllY2RlbWNhdGhlZ2lvaWN1YWJhbnRoYW5jaGlhc2VjdW5nYmFu
-  expiration: 86400000 # 1 ngày (tính bằng milliseconds)
+  expiration: 86400000
   refresh-expiration: 604800000
 
 debug: true

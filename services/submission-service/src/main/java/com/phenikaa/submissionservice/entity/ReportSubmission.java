@@ -52,6 +52,15 @@ public class ReportSubmission {
     @Column(name = "is_final")
     private Boolean isFinal;
 
+    @Column(name = "version")
+    private Integer version = 1;
+
+    @Column(name = "parent_submission_id")
+    private Integer parentSubmissionId;
+
+    @Column(name = "change_log", columnDefinition = "TEXT")
+    private String changeLog;
+
     @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Feedback> feedbacks;
 }

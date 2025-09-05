@@ -48,6 +48,61 @@ public class ProjectEvaluation {
     @Column(name = "defense_score")
     private Float defenseScore; // Điểm bảo vệ (chỉ cho hội đồng)
 
+    // Các trường điểm mới cho từng vai trò
+    // Hội đồng (COMMITTEE) - 6 tiêu chí
+    @Column(name = "presentation_clarity_score")
+    private Float presentationClarityScore; // Trình bày nội dung (0-0.5)
+
+    @Column(name = "reviewer_qa_score")
+    private Float reviewerQaScore; // Trả lời câu hỏi GVPB (0-1.5)
+
+    @Column(name = "committee_qa_score")
+    private Float committeeQaScore; // Trả lời câu hỏi hội đồng (0-1.5)
+
+    @Column(name = "attitude_score")
+    private Float attitudeScore; // Tinh thần, thái độ (0-1)
+
+    @Column(name = "content_implementation_score")
+    private Float contentImplementationScore; // Thực hiện nội dung đề tài (0-4.5)
+
+    @Column(name = "related_issues_score")
+    private Float relatedIssuesScore; // Mối liên hệ vấn đề liên quan (0-1)
+
+    // Giảng viên phản biện (REVIEWER) - 5 tiêu chí
+    @Column(name = "format_score")
+    private Float formatScore; // Hình thức trình bày (0-1.5)
+
+    @Column(name = "content_quality_score")
+    private Float contentQualityScore; // Thực hiện nội dung đề tài (0-4)
+
+    @Column(name = "related_issues_reviewer_score")
+    private Float relatedIssuesReviewerScore; // Mối liên hệ vấn đề liên quan (0-2)
+
+    @Column(name = "practical_application_score")
+    private Float practicalApplicationScore; // Tính ứng dụng thực tiễn (0-2)
+
+    @Column(name = "bonus_score")
+    private Float bonusScore; // Điểm thưởng (0-0.5)
+
+    // Giảng viên hướng dẫn (SUPERVISOR) - 6 tiêu chí
+    @Column(name = "student_attitude_score")
+    private Float studentAttitudeScore; // Ý thức, thái độ sinh viên (0-1)
+
+    @Column(name = "problem_solving_score")
+    private Float problemSolvingScore; // Khả năng xử lý vấn đề (0-1)
+
+    @Column(name = "format_supervisor_score")
+    private Float formatSupervisorScore; // Hình thức trình bày (0-1.5)
+
+    @Column(name = "content_implementation_supervisor_score")
+    private Float contentImplementationSupervisorScore; // Thực hiện nội dung đề tài (0-4.5)
+
+    @Column(name = "related_issues_supervisor_score")
+    private Float relatedIssuesSupervisorScore; // Mối liên hệ vấn đề liên quan (0-1)
+
+    @Column(name = "practical_application_supervisor_score")
+    private Float practicalApplicationSupervisorScore; // Tính ứng dụng thực tiễn (0-1)
+
     @Column(name = "total_score")
     private Float totalScore; // Tổng điểm (0-10)
 
@@ -101,19 +156,33 @@ public class ProjectEvaluation {
         updatedAt = LocalDateTime.now();
     }
 
-    // Method để tính tổng điểm
+    // Method để tính tổng điểm theo vai trò
     public void calculateTotalScore() {
         if (evaluationType == EvaluationType.COMMITTEE) {
-            // Hội đồng: có thêm điểm bảo vệ
-            if (contentScore != null && presentationScore != null && 
-                technicalScore != null && innovationScore != null && defenseScore != null) {
-                this.totalScore = (contentScore + presentationScore + technicalScore + innovationScore + defenseScore) / 5;
+            // Hội đồng: 6 tiêu chí (tổng 10 điểm)
+            if (presentationClarityScore != null && reviewerQaScore != null && 
+                committeeQaScore != null && attitudeScore != null && 
+                contentImplementationScore != null && relatedIssuesScore != null) {
+                this.totalScore = presentationClarityScore + reviewerQaScore + 
+                                committeeQaScore + attitudeScore + 
+                                contentImplementationScore + relatedIssuesScore;
             }
-        } else {
-            // GVHD và GVPB: không có điểm bảo vệ
-            if (contentScore != null && presentationScore != null && 
-                technicalScore != null && innovationScore != null) {
-                this.totalScore = (contentScore + presentationScore + technicalScore + innovationScore) / 4;
+        } else if (evaluationType == EvaluationType.REVIEWER) {
+            // Giảng viên phản biện: 5 tiêu chí (tổng 10 điểm)
+            if (formatScore != null && contentQualityScore != null && 
+                relatedIssuesReviewerScore != null && practicalApplicationScore != null && 
+                bonusScore != null) {
+                this.totalScore = formatScore + contentQualityScore + 
+                                relatedIssuesReviewerScore + practicalApplicationScore + bonusScore;
+            }
+        } else if (evaluationType == EvaluationType.SUPERVISOR) {
+            // Giảng viên hướng dẫn: 6 tiêu chí (tổng 10 điểm)
+            if (studentAttitudeScore != null && problemSolvingScore != null && 
+                formatSupervisorScore != null && contentImplementationSupervisorScore != null && 
+                relatedIssuesSupervisorScore != null && practicalApplicationSupervisorScore != null) {
+                this.totalScore = studentAttitudeScore + problemSolvingScore + 
+                                formatSupervisorScore + contentImplementationSupervisorScore + 
+                                relatedIssuesSupervisorScore + practicalApplicationSupervisorScore;
             }
         }
     }

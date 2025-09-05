@@ -89,6 +89,7 @@ public class EvaluationController {
 
     /**
      * Tính điểm trung bình cuối cùng: (GVHD x1 + GVPB x2 + HĐ x1) / 4
+     * Trong đó HĐ chỉ được tính khi có đủ 3 thành viên hội đồng chấm điểm
      */
     @GetMapping("/topic/{topicId}/final-score")
     public ResponseEntity<FinalScoreResponse> getFinalScore(@PathVariable Integer topicId) {

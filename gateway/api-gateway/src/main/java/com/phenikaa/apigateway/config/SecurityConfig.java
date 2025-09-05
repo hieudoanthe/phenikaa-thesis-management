@@ -37,8 +37,11 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // API of Authentication
                         .pathMatchers("/api/auth/**").permitAll()
+                        // API for All requests
                         .pathMatchers("/internal/users/**").permitAll()
+                        //
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/eval-service/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/eval-service/student/**").hasRole("STUDENT")
@@ -51,10 +54,14 @@ public class SecurityConfig {
                         .pathMatchers("/api/profile-service/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .pathMatchers("/api/assign-service/**").hasAnyRole("STUDENT", "TEACHER")
                         .pathMatchers("/api/academic-config-service/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+
+                        // API of Chat and Notifications
+                        .pathMatchers("/api/submission-service/**").permitAll()
                         .pathMatchers("/notifications/**").permitAll()
-                        .pathMatchers("/ws/notifications/**").permitAll()
                         .pathMatchers("/chat/**").permitAll()
+                        // Chat and Notifications by WebSocket
                         .pathMatchers("/ws/chat/**").permitAll()
+                        .pathMatchers("/ws/notifications/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)

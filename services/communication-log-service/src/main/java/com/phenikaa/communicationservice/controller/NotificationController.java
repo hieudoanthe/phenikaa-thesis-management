@@ -24,18 +24,7 @@ public class NotificationController {
     @PostMapping("/send")
     public ResponseEntity<String> send(@RequestBody NotificationRequest req) {
         log.info("NotificationController.send called with request: {}", req);
-//        public Mono<Notification> send(@RequestBody NotificationRequest req) {
-//            return notificationService.createNotification(
-//                    req.getSenderId(),
-//                    req.getReceiverId(),
-//                    req.getMessage()
-//            );
         try {
-//            // Sử dụng NotificationDecorator để gửi thông báo (bao gồm email + WebSocket)
-//            notificationDecorator.sendNotification(req);
-//
-//            log.info("Notification sent successfully via decorator");
-
             // Abstract Factory: tạo bộ công cụ theo type nếu có, fallback decorator chain mặc định
             var toolkit = toolkitRegistry.resolve(req.getType());
             if (toolkit != null && toolkit.decoratorChain() != null) {

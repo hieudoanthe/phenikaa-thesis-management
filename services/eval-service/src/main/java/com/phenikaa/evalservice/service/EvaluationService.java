@@ -47,6 +47,9 @@ public class EvaluationService {
             throw new RuntimeException("Evaluator is not authorized to submit this evaluation");
         }
 
+        // 1) Validate scores based on role-specific criteria
+        validateScoresByRole(request);
+
         // Kiểm tra xem đã có đánh giá chưa
         var existingEvaluation = evaluationRepository
                 .findByTopicIdAndEvaluatorIdAndEvaluationType(
@@ -70,17 +73,8 @@ public class EvaluationService {
             evaluation.setEvaluationStatus(ProjectEvaluation.EvaluationStatus.IN_PROGRESS);
         }
         
-        // Cập nhật điểm số
-        evaluation.setContentScore(request.getContentScore());
-        evaluation.setPresentationScore(request.getPresentationScore());
-        evaluation.setTechnicalScore(request.getTechnicalScore());
-        evaluation.setInnovationScore(request.getInnovationScore());
-        // Chỉ cho phép defenseScore khi loại đánh giá là COMMITTEE
-        if (request.getEvaluationType() == ProjectEvaluation.EvaluationType.COMMITTEE) {
-            evaluation.setDefenseScore(request.getDefenseScore());
-        } else {
-            evaluation.setDefenseScore(null);
-        }
+        // Cập nhật điểm số theo vai trò
+        mapScoresByRole(request, evaluation);
         evaluation.setComments(request.getComments());
         
         // Tính tổng điểm
@@ -193,15 +187,32 @@ public class EvaluationService {
                 .filter(sd -> sd.getDefenseSession() != null)
                 .collect(Collectors.toList());
         log.info("Role-based: {} supervisor assignments for evaluatorId={}", supervisorAssignments.size(), evaluatorId);
+        
+        // Debug: Log chi tiết supervisor assignments
+        for (var sa : supervisorAssignments) {
+            log.info("DEBUG: Supervisor assignment topicId={}, studentId={}, supervisorId={}, sessionId={}", 
+                sa.getTopicId(), sa.getStudentId(), sa.getSupervisorId(), 
+                sa.getDefenseSession() != null ? sa.getDefenseSession().getSessionId() : "NULL");
+        }
 
         // 2) Thành viên hội đồng: lấy các session mà giảng viên thuộc hội đồng
         var allCommittees = defenseCommitteeRepository.findByLecturerId(evaluatorId);
+        log.info("DEBUG: All committees for evaluatorId={}: {}", evaluatorId, allCommittees.stream()
+                .map(dc -> "sessionId=" + (dc.getDefenseSession() != null ? dc.getDefenseSession().getSessionId() : "NULL") + 
+                           ", role=" + dc.getRole())
+                .collect(Collectors.toList()));
+        
         var committeeSessions = allCommittees.stream()
                 .map(DefenseCommittee::getDefenseSession)
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toSet());
         log.info("Role-based: {} committee sessions for evaluatorId={}", committeeSessions.size(), evaluatorId);
 
+        log.info("DEBUG: All student defenses: {}", allStudentDefenses.stream()
+                .map(sd -> "topicId=" + sd.getTopicId() + 
+                           ", sessionId=" + (sd.getDefenseSession() != null ? sd.getDefenseSession().getSessionId() : "NULL"))
+                .collect(Collectors.toList()));
+        
         var committeeAssignments = allStudentDefenses.stream()
                 .filter(sd -> sd.getDefenseSession() != null &&
                         committeeSessions.stream().anyMatch(cs -> cs.getSessionId().equals(sd.getDefenseSession().getSessionId())))
@@ -216,19 +227,34 @@ public class EvaluationService {
         var committeeTasks = new ArrayList<EvaluationResponse>();
         var reviewerTasks = new ArrayList<EvaluationResponse>();
         
+        log.info("DEBUG: Creating tasks for {} assignments", committeeAssignments.size());
+        
         for (var assignment : committeeAssignments) {
-            // Xác định vai trò trong hội đồng để gán loại nhiệm vụ
-            var role = allCommittees.stream()
+            // Lấy TẤT CẢ roles của evaluator trong session này
+            var rolesInSession = allCommittees.stream()
                     .filter(dc -> dc.getDefenseSession() != null &&
-                            dc.getDefenseSession().getSessionId().equals(assignment.getDefenseSession().getSessionId()))
-                    .findFirst()
+                            dc.getDefenseSession().getSessionId().equals(assignment.getDefenseSession().getSessionId()) &&
+                            dc.getLecturerId().equals(evaluatorId))
                     .map(DefenseCommittee::getRole)
-                    .orElse(DefenseCommittee.CommitteeRole.MEMBER);
+                    .collect(Collectors.toSet());
 
-            if (role == DefenseCommittee.CommitteeRole.REVIEWER) {
-                reviewerTasks.add(buildTaskFromStudentDefense(assignment, evaluatorId, ProjectEvaluation.EvaluationType.REVIEWER));
-            } else {
-                committeeTasks.add(buildTaskFromStudentDefense(assignment, evaluatorId, ProjectEvaluation.EvaluationType.COMMITTEE));
+            log.info("DEBUG: Assignment topicId={}, sessionId={}, roles={}, evaluatorId={}", 
+                assignment.getTopicId(), 
+                assignment.getDefenseSession().getSessionId(), 
+                rolesInSession, 
+                evaluatorId);
+
+            // Tạo task cho từng role
+            for (var role : rolesInSession) {
+                if (role == DefenseCommittee.CommitteeRole.REVIEWER) {
+                    log.info("DEBUG: Creating REVIEWER task for topicId={}", assignment.getTopicId());
+                    reviewerTasks.add(buildTaskFromStudentDefense(assignment, evaluatorId, ProjectEvaluation.EvaluationType.REVIEWER));
+                } else if (role == DefenseCommittee.CommitteeRole.MEMBER ||
+                           role == DefenseCommittee.CommitteeRole.CHAIRMAN ||
+                           role == DefenseCommittee.CommitteeRole.SECRETARY) {
+                    log.info("DEBUG: Creating COMMITTEE task for topicId={}", assignment.getTopicId());
+                    committeeTasks.add(buildTaskFromStudentDefense(assignment, evaluatorId, ProjectEvaluation.EvaluationType.COMMITTEE));
+                }
             }
         }
 
@@ -239,12 +265,22 @@ public class EvaluationService {
             all.putIfAbsent(key, er);
         };
         
+        log.info("DEBUG: Before deduplication - supervisorTasks={}, committeeTasks={}, reviewerTasks={}", 
+            supervisorTasks.size(), committeeTasks.size(), reviewerTasks.size());
+        
         supervisorTasks.forEach(put);
         committeeTasks.forEach(put);
         reviewerTasks.forEach(put);
 
         var result = all.values().stream().collect(Collectors.toList());
         log.info("Returning {} total tasks for evaluatorId={}", result.size(), evaluatorId);
+        
+        // Debug: Log final tasks
+        for (var task : result) {
+            log.info("DEBUG: Final task topicId={}, evaluationType={}, studentId={}", 
+                task.getTopicId(), task.getEvaluationType(), task.getStudentId());
+        }
+        
         return result;
     }
 
@@ -334,6 +370,7 @@ public class EvaluationService {
     
     /**
      * Tính điểm trung bình cuối cùng theo công thức: (GVHD x1 + GVPB x2 + HĐ x1) / 4
+     * Trong đó HĐ chỉ được tính khi có đủ 3 thành viên hội đồng chấm điểm
      */
     public FinalScoreResponse calculateFinalScore(Integer topicId) {
         log.info("Calculating final score for topic: {}", topicId);
@@ -349,7 +386,7 @@ public class EvaluationService {
         // Tính điểm trung bình cho từng loại đánh giá
         Double supervisorScore = getAverageScoreByType(evaluations, ProjectEvaluation.EvaluationType.SUPERVISOR);
         Double reviewerScore = getAverageScoreByType(evaluations, ProjectEvaluation.EvaluationType.REVIEWER);
-        Double committeeScore = getAverageScoreByType(evaluations, ProjectEvaluation.EvaluationType.COMMITTEE);
+        Double committeeScore = getCommitteeScoreWithTop3Members(evaluations);
         
         // Tính điểm cuối cùng: (GVHD x1 + GVPB x2 + HĐ x1) / 4
         Double finalScore = null;
@@ -398,6 +435,31 @@ public class EvaluationService {
                 .sum();
         
         return sum / typeEvaluations.size();
+    }
+    
+    /**
+     * Tính điểm hội đồng: chỉ tính khi có đủ 3 thành viên hội đồng chấm điểm
+     * Điểm hội đồng = (điểm thành viên 1 + điểm thành viên 2 + điểm thành viên 3) ÷ 3
+     */
+    private Double getCommitteeScoreWithTop3Members(List<ProjectEvaluation> evaluations) {
+        List<ProjectEvaluation> committeeEvaluations = evaluations.stream()
+                .filter(e -> e.getEvaluationType() == ProjectEvaluation.EvaluationType.COMMITTEE && e.getTotalScore() != null)
+                .collect(Collectors.toList());
+        
+        // Chỉ tính điểm hội đồng khi có đủ 3 thành viên chấm điểm
+        if (committeeEvaluations.size() < 3) {
+            log.info("Committee score not calculated: need 3 members, got {}", committeeEvaluations.size());
+            return null;
+        }
+        
+        // Tính trung bình điểm của 3 thành viên hội đồng
+        double averageScore = committeeEvaluations.stream()
+                .mapToDouble(ProjectEvaluation::getTotalScore)
+                .average()
+                .orElse(0.0);
+        
+        log.info("Committee score calculated: {} members, average: {}", committeeEvaluations.size(), averageScore);
+        return averageScore;
     }
     
     /**
@@ -516,5 +578,103 @@ public class EvaluationService {
         }
         
         return result;
+    }
+
+    /**
+     * Validate scores based on role-specific criteria
+     */
+    private void validateScoresByRole(EvaluationRequest request) {
+        var type = request.getEvaluationType();
+        
+        if (type == ProjectEvaluation.EvaluationType.COMMITTEE) {
+            // Hội đồng: 6 tiêu chí
+            validateScoreRange(request.getPresentationClarityScore(), 0.0f, 0.5f, "Trình bày nội dung");
+            validateScoreRange(request.getReviewerQaScore(), 0.0f, 1.5f, "Trả lời câu hỏi GVPB");
+            validateScoreRange(request.getCommitteeQaScore(), 0.0f, 1.5f, "Trả lời câu hỏi hội đồng");
+            validateScoreRange(request.getAttitudeScore(), 0.0f, 1.0f, "Tinh thần, thái độ");
+            validateScoreRange(request.getContentImplementationScore(), 0.0f, 4.5f, "Thực hiện nội dung đề tài");
+            validateScoreRange(request.getRelatedIssuesScore(), 0.0f, 1.0f, "Mối liên hệ vấn đề liên quan");
+        } else if (type == ProjectEvaluation.EvaluationType.REVIEWER) {
+            // Giảng viên phản biện: 5 tiêu chí
+            validateScoreRange(request.getFormatScore(), 0.0f, 1.5f, "Hình thức trình bày");
+            validateScoreRange(request.getContentQualityScore(), 0.0f, 4.0f, "Thực hiện nội dung đề tài");
+            validateScoreRange(request.getRelatedIssuesReviewerScore(), 0.0f, 2.0f, "Mối liên hệ vấn đề liên quan");
+            validateScoreRange(request.getPracticalApplicationScore(), 0.0f, 2.0f, "Tính ứng dụng thực tiễn");
+            validateScoreRange(request.getBonusScore(), 0.0f, 0.5f, "Điểm thưởng");
+        } else if (type == ProjectEvaluation.EvaluationType.SUPERVISOR) {
+            // Giảng viên hướng dẫn: 6 tiêu chí
+            validateScoreRange(request.getStudentAttitudeScore(), 0.0f, 1.0f, "Ý thức, thái độ sinh viên");
+            validateScoreRange(request.getProblemSolvingScore(), 0.0f, 1.0f, "Khả năng xử lý vấn đề");
+            validateScoreRange(request.getFormatSupervisorScore(), 0.0f, 1.5f, "Hình thức trình bày");
+            validateScoreRange(request.getContentImplementationSupervisorScore(), 0.0f, 4.5f, "Thực hiện nội dung đề tài");
+            validateScoreRange(request.getRelatedIssuesSupervisorScore(), 0.0f, 1.0f, "Mối liên hệ vấn đề liên quan");
+            validateScoreRange(request.getPracticalApplicationSupervisorScore(), 0.0f, 1.0f, "Tính ứng dụng thực tiễn");
+        }
+    }
+
+    private void validateScoreRange(Float score, float min, float max, String fieldName) {
+        if (score != null && (score < min || score > max)) {
+            throw new IllegalArgumentException(String.format("%s phải trong khoảng %.1f - %.1f điểm", fieldName, min, max));
+        }
+    }
+
+    /**
+     * Map scores from request to entity based on role
+     */
+    private void mapScoresByRole(EvaluationRequest request, ProjectEvaluation evaluation) {
+        var type = request.getEvaluationType();
+        
+        // Clear old scores first
+        clearAllScores(evaluation);
+        
+        if (type == ProjectEvaluation.EvaluationType.COMMITTEE) {
+            // Hội đồng: 6 tiêu chí
+            evaluation.setPresentationClarityScore(request.getPresentationClarityScore());
+            evaluation.setReviewerQaScore(request.getReviewerQaScore());
+            evaluation.setCommitteeQaScore(request.getCommitteeQaScore());
+            evaluation.setAttitudeScore(request.getAttitudeScore());
+            evaluation.setContentImplementationScore(request.getContentImplementationScore());
+            evaluation.setRelatedIssuesScore(request.getRelatedIssuesScore());
+        } else if (type == ProjectEvaluation.EvaluationType.REVIEWER) {
+            // Giảng viên phản biện: 5 tiêu chí
+            evaluation.setFormatScore(request.getFormatScore());
+            evaluation.setContentQualityScore(request.getContentQualityScore());
+            evaluation.setRelatedIssuesReviewerScore(request.getRelatedIssuesReviewerScore());
+            evaluation.setPracticalApplicationScore(request.getPracticalApplicationScore());
+            evaluation.setBonusScore(request.getBonusScore());
+        } else if (type == ProjectEvaluation.EvaluationType.SUPERVISOR) {
+            // Giảng viên hướng dẫn: 6 tiêu chí
+            evaluation.setStudentAttitudeScore(request.getStudentAttitudeScore());
+            evaluation.setProblemSolvingScore(request.getProblemSolvingScore());
+            evaluation.setFormatSupervisorScore(request.getFormatSupervisorScore());
+            evaluation.setContentImplementationSupervisorScore(request.getContentImplementationSupervisorScore());
+            evaluation.setRelatedIssuesSupervisorScore(request.getRelatedIssuesSupervisorScore());
+            evaluation.setPracticalApplicationSupervisorScore(request.getPracticalApplicationSupervisorScore());
+        }
+    }
+
+    private void clearAllScores(ProjectEvaluation evaluation) {
+        // Clear committee scores
+        evaluation.setPresentationClarityScore(null);
+        evaluation.setReviewerQaScore(null);
+        evaluation.setCommitteeQaScore(null);
+        evaluation.setAttitudeScore(null);
+        evaluation.setContentImplementationScore(null);
+        evaluation.setRelatedIssuesScore(null);
+        
+        // Clear reviewer scores
+        evaluation.setFormatScore(null);
+        evaluation.setContentQualityScore(null);
+        evaluation.setRelatedIssuesReviewerScore(null);
+        evaluation.setPracticalApplicationScore(null);
+        evaluation.setBonusScore(null);
+        
+        // Clear supervisor scores
+        evaluation.setStudentAttitudeScore(null);
+        evaluation.setProblemSolvingScore(null);
+        evaluation.setFormatSupervisorScore(null);
+        evaluation.setContentImplementationSupervisorScore(null);
+        evaluation.setRelatedIssuesSupervisorScore(null);
+        evaluation.setPracticalApplicationSupervisorScore(null);
     }
 }

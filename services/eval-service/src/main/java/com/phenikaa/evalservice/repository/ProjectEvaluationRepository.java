@@ -44,4 +44,11 @@ public interface ProjectEvaluationRepository extends JpaRepository<ProjectEvalua
     // Lấy đánh giá theo loại và topic
     @Query("SELECT pe FROM ProjectEvaluation pe WHERE pe.topicId = :topicId AND pe.evaluationType = :evaluationType")
     List<ProjectEvaluation> findByTopicIdAndEvaluationTypeList(@Param("topicId") Integer topicId, @Param("evaluationType") ProjectEvaluation.EvaluationType evaluationType);
+    
+    // Thống kê - đếm theo loại đánh giá
+    long countByEvaluationType(ProjectEvaluation.EvaluationType evaluationType);
+    
+    // Thống kê - điểm trung bình tổng
+    @Query("SELECT AVG(pe.totalScore) FROM ProjectEvaluation pe WHERE pe.totalScore IS NOT NULL")
+    Double findAverageScore();
 }
