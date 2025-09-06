@@ -1,10 +1,12 @@
 package com.phenikaa.submissionservice.service;
 
-import com.phenikaa.submissionservice.client.NotificationServiceClient;
+import com.phenikaa.submissionservice.client.CommunicationServiceClient;
 import com.phenikaa.submissionservice.dto.request.ReportSubmissionRequest;
 import com.phenikaa.submissionservice.dto.response.ReportSubmissionResponse;
 import com.phenikaa.submissionservice.entity.ReportSubmission;
+import com.phenikaa.submissionservice.exception.ReportSubmissionException;
 import com.phenikaa.submissionservice.repository.ReportSubmissionRepository;
+import com.phenikaa.submissionservice.service.interfaces.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,14 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,10 +27,11 @@ import java.util.stream.Collectors;
 public class ReportSubmissionService {
     
     private final ReportSubmissionRepository reportSubmissionRepository;
-    private final NotificationServiceClient notificationServiceClient;
+    private final CommunicationServiceClient communicationServiceClient;
+    private final CloudinaryService cloudinaryService;
     
-    // Upload directory
-    private static final String UPLOAD_DIR = "uploads/reports";
+    // Constants
+    private static final String SUBMISSION_NOT_FOUND_MSG = "Không tìm thấy báo cáo với ID: ";
     
     /**
      * Tạo báo cáo mới
@@ -57,8 +55,8 @@ public class ReportSubmissionService {
             
             // Xử lý file upload
             if (file != null && !file.isEmpty()) {
-                String filePath = handleFileUpload(file, request.getTopicId());
-                submission.setFilePath(filePath);
+                String fileUrl = handleFileUpload(file, request.getTopicId());
+                submission.setFilePath(fileUrl);
             }
             
             ReportSubmission savedSubmission = reportSubmissionRepository.save(submission);
@@ -71,7 +69,7 @@ public class ReportSubmissionService {
             
         } catch (Exception e) {
             log.error("Error creating report submission: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể tạo báo cáo: " + e.getMessage());
+            throw new ReportSubmissionException("Không thể tạo báo cáo: " + e.getMessage(), e);
         }
     }
     
@@ -83,7 +81,7 @@ public class ReportSubmissionService {
             log.info("Updating report submission: {}", submissionId);
             
             ReportSubmission submission = reportSubmissionRepository.findById(submissionId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy báo cáo với ID: " + submissionId));
+                    .orElseThrow(() -> new ReportSubmissionException(SUBMISSION_NOT_FOUND_MSG + submissionId));
             
             // Cập nhật thông tin
             submission.setReportTitle(request.getReportTitle());
@@ -98,8 +96,8 @@ public class ReportSubmissionService {
                 if (submission.getFilePath() != null) {
                     deleteFile(submission.getFilePath());
                 }
-                String filePath = handleFileUpload(file, submission.getTopicId());
-                submission.setFilePath(filePath);
+                String fileUrl = handleFileUpload(file, submission.getTopicId());
+                submission.setFilePath(fileUrl);
             }
             
             ReportSubmission savedSubmission = reportSubmissionRepository.save(submission);
@@ -109,7 +107,7 @@ public class ReportSubmissionService {
             
         } catch (Exception e) {
             log.error("Error updating report submission: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể cập nhật báo cáo: " + e.getMessage());
+            throw new ReportSubmissionException("Không thể cập nhật báo cáo: " + e.getMessage(), e);
         }
     }
     
@@ -118,7 +116,7 @@ public class ReportSubmissionService {
      */
     public ReportSubmissionResponse getSubmissionById(Integer submissionId) {
         ReportSubmission submission = reportSubmissionRepository.findById(submissionId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy báo cáo với ID: " + submissionId));
+                .orElseThrow(() -> new ReportSubmissionException(SUBMISSION_NOT_FOUND_MSG + submissionId));
         
         return convertToResponse(submission);
     }
@@ -159,7 +157,7 @@ public class ReportSubmissionService {
             log.info("Deleting report submission: {}", submissionId);
             
             ReportSubmission submission = reportSubmissionRepository.findById(submissionId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy báo cáo với ID: " + submissionId));
+                    .orElseThrow(() -> new ReportSubmissionException(SUBMISSION_NOT_FOUND_MSG + submissionId));
             
             // Xóa file nếu có
             if (submission.getFilePath() != null) {
@@ -171,7 +169,7 @@ public class ReportSubmissionService {
             
         } catch (Exception e) {
             log.error("Error deleting report submission: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể xóa báo cáo: " + e.getMessage());
+            throw new ReportSubmissionException("Không thể xóa báo cáo: " + e.getMessage(), e);
         }
     }
     
@@ -183,7 +181,7 @@ public class ReportSubmissionService {
             log.info("Updating submission status: {} to {}", submissionId, status);
             
             ReportSubmission submission = reportSubmissionRepository.findById(submissionId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy báo cáo với ID: " + submissionId));
+                    .orElseThrow(() -> new ReportSubmissionException(SUBMISSION_NOT_FOUND_MSG + submissionId));
             
             submission.setStatus(status);
             ReportSubmission savedSubmission = reportSubmissionRepository.save(submission);
@@ -193,43 +191,74 @@ public class ReportSubmissionService {
             
         } catch (Exception e) {
             log.error("Error updating submission status: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể cập nhật trạng thái báo cáo: " + e.getMessage());
+            throw new ReportSubmissionException("Không thể cập nhật trạng thái báo cáo: " + e.getMessage(), e);
         }
     }
     
     /**
-     * Xử lý upload file
+     * Xử lý upload file lên Cloudinary
      */
-    private String handleFileUpload(MultipartFile file, Integer topicId) throws IOException {
-        // Tạo thư mục nếu chưa có
-        Path uploadPath = Paths.get(UPLOAD_DIR, "topic_" + topicId);
-        Files.createDirectories(uploadPath);
-        
-        // Tạo tên file unique
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = originalFilename != null ? 
-                originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
-        String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
-        
-        // Lưu file
-        Path filePath = uploadPath.resolve(uniqueFilename);
-        Files.copy(file.getInputStream(), filePath);
-        
-        return filePath.toString();
+    private String handleFileUpload(MultipartFile file, Integer topicId) {
+        try {
+            // Validate file size (ví dụ: max 50MB)
+            if (file.getSize() > 300 * 1024 * 1024) {
+                throw new ReportSubmissionException("File quá lớn. Kích thước tối đa là 50MB");
+            }
+
+            // Validate file type (tùy chọn)
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isEmpty()) {
+                throw new ReportSubmissionException("Tên file không hợp lệ");
+            }
+
+            String folderName = "thesis-reports/topic_" + topicId;
+            return cloudinaryService.uploadFile(file, folderName);
+        } catch (Exception e) {
+            log.error("Error uploading file to Cloudinary: {}", e.getMessage(), e);
+            throw new ReportSubmissionException("Không thể upload file: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Xóa file từ Cloudinary
+     */
+    private void deleteFile(String fileUrl) {
+        try {
+            // Extract public_id from Cloudinary URL
+            // URL format: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/filename.ext
+            String publicId = extractPublicIdFromUrl(fileUrl);
+            if (publicId != null) {
+                cloudinaryService.deleteFile(publicId);
+                log.info("File deleted from Cloudinary: {}", publicId);
+            }
+        } catch (Exception e) {
+            log.error("Error deleting file from Cloudinary: {}", e.getMessage());
+        }
     }
     
     /**
-     * Xóa file
+     * Extract public_id from Cloudinary URL
      */
-    private void deleteFile(String filePath) {
+    private String extractPublicIdFromUrl(String fileUrl) {
         try {
-            Path path = Paths.get(filePath);
-            if (Files.exists(path)) {
-                Files.delete(path);
-                log.info("File deleted: {}", filePath);
+            if (fileUrl == null || !fileUrl.contains("cloudinary.com")) {
+                return null;
             }
-        } catch (IOException e) {
-            log.error("Error deleting file: {}", e.getMessage());
+            
+            // Extract the part after /upload/ and before the file extension
+            String[] parts = fileUrl.split("/upload/");
+            if (parts.length > 1) {
+                String pathWithVersion = parts[1];
+                // Remove version prefix (v1234567890/)
+                String[] pathParts = pathWithVersion.split("/", 2);
+                if (pathParts.length > 1) {
+                    return pathParts[1].split("\\.")[0]; // Remove file extension
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Error extracting public_id from URL: {}", e.getMessage());
+            return null;
         }
     }
     
@@ -285,7 +314,7 @@ public class ReportSubmissionService {
                 )
             );
             
-            notificationServiceClient.sendNotification(notification);
+            communicationServiceClient.sendNotification(notification);
             log.info("Notification sent for submission: {}", submission.getSubmissionId());
             
         } catch (Exception e) {
