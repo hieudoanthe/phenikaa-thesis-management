@@ -1,8 +1,8 @@
 package com.phenikaa.communicationservice.service.implement;
 
 import com.phenikaa.communicationservice.client.UserServiceClient;
-import com.phenikaa.communicationservice.entity.ChatMessage;
-import com.phenikaa.communicationservice.service.interfaces.ChatService;
+import com.phenikaa.communicationservice.dto.response.ConversationResponse;
+import com.phenikaa.communicationservice.service.interfaces.ConversationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
@@ -14,36 +14,27 @@ import org.springframework.data.mongodb.core.aggregation.SortOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
+import java.time.Instant;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
-import static org.springframework.data.mongodb.core.query.Query.query;
 
 @Service
 @RequiredArgsConstructor
-public class ChatServiceImpl implements ChatService {
+public class ConversationServiceImpl implements ConversationService {
 
     private final ReactiveMongoTemplate mongoTemplate;
     private final UserServiceClient userServiceClient;
 
-    public <T extends ChatMessage> Mono<T> saveMessage(T message) {
-        return mongoTemplate.save(message);
-    }
-    
-    public Flux<ChatMessage> getChatHistory(String user1, String user2) {
-        return mongoTemplate.find(
-                query(where("senderId").in(user1, user2)
-                        .and("receiverId").in(user1, user2))
-                        .with(Sort.by(Sort.Direction.ASC, "timestamp")),
-                ChatMessage.class
-        );
+    @Override
+    public Flux<ConversationResponse> getUserConversations(String userId) {
+        return getUserConversationsWithDetails(userId);
     }
 
     @Override
-    public Flux<Map<String, Object>> getUserConversations(String userId) {
+    public Flux<ConversationResponse> getUserConversationsWithDetails(String userId) {
         // Tạo aggregation pipeline để lấy danh sách conversations của user
         MatchOperation matchOperation = Aggregation.match(
             new Criteria().orOperator(
@@ -89,6 +80,10 @@ public class ChatServiceImpl implements ChatService {
                     .distinct()
                     .toList();
 
+                if (partnerIds.isEmpty()) {
+                    return Flux.empty();
+                }
+
                 // Lấy thông tin user cho tất cả partners
                 return userServiceClient.getUsersByIds(partnerIds.toArray(new String[0]))
                     .collectMap(user -> (String) user.get("userId"))
@@ -101,41 +96,19 @@ public class ChatServiceImpl implements ChatService {
                                 
                                 Map<String, Object> userInfo = userMap.getOrDefault(partnerId, Map.of());
                                 
-                                Map<String, Object> conversation = new HashMap<>();
-                                conversation.put("partnerId", partnerId);
-                                conversation.put("partnerName", userInfo.getOrDefault("fullName", "Unknown User"));
-                                conversation.put("partnerEmail", userInfo.getOrDefault("email", ""));
-                                conversation.put("partnerAvatar", userInfo.getOrDefault("avt", ""));
-                                conversation.put("lastMessage", conv.get("lastMessage"));
-                                conversation.put("lastMessageTime", conv.get("lastMessageTime"));
-                                conversation.put("messageCount", conv.get("messageCount"));
-                                conversation.put("unreadCount", 0);
-                                conversation.put("conversationId", partnerId); // Sử dụng partnerId làm conversationId
-                                
-                                return conversation;
+                                return ConversationResponse.builder()
+                                    .partnerId(partnerId)
+                                    .partnerName((String) userInfo.getOrDefault("fullName", "Unknown User"))
+                                    .partnerEmail((String) userInfo.getOrDefault("email", ""))
+                                    .partnerAvatar((String) userInfo.getOrDefault("avt", ""))
+                                    .lastMessage((String) conv.get("lastMessage"))
+                                    .lastMessageTime((Instant) conv.get("lastMessageTime"))
+                                    .messageCount(((Number) conv.get("messageCount")).longValue())
+                                    .unreadCount(0L)
+                                    .conversationId(partnerId)
+                                    .build();
                             })
                     );
             });
     }
-
-    @Override
-    public Flux<Map<String, Object>> getRecentMessages(String userId) {
-        // Lấy 20 tin nhắn gần nhất của user
-        return mongoTemplate.find(
-            query(where("senderId").is(userId)
-                .orOperator(where("receiverId").is(userId)))
-                .with(Sort.by(Sort.Direction.DESC, "timestamp"))
-                .limit(20),
-            ChatMessage.class
-        ).map(message -> {
-            Map<String, Object> messageMap = new HashMap<>();
-            messageMap.put("id", message.getId());
-            messageMap.put("senderId", message.getSenderId());
-            messageMap.put("receiverId", message.getReceiverId());
-            messageMap.put("content", message.getContent());
-            messageMap.put("timestamp", message.getTimestamp());
-            return messageMap;
-        });
-    }
-
 }

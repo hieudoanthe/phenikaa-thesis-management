@@ -61,7 +61,7 @@ spring:
         - id: communication-log-service
           uri: lb://communication-log-service
           predicates:
-            - Path=/notifications/**, /chat/**
+            - Path=/notifications/**, /chat/**, /api/communication-log-service/**
 
         - id: communication-log-service-ws
           uri: lb:ws://communication-log-service

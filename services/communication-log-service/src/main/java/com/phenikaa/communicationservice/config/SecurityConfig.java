@@ -16,9 +16,10 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> {}) // Enable CORS
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers("/**").permitAll()
-                        .anyExchange().denyAll()
+                        .anyExchange().permitAll()
                 )
                 .build();
     }
