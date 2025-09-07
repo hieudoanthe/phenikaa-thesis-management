@@ -2,13 +2,12 @@ package com.phenikaa.evalservice.service;
 
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.phenikaa.evalservice.client.ThesisServiceClient;
-import com.phenikaa.evalservice.client.UserServiceClient;
+import com.phenikaa.evalservice.client.ProfileServiceClient;
 import com.phenikaa.evalservice.dto.request.ComprehensiveEvaluationPDFRequest;
 import com.phenikaa.evalservice.dto.response.QnAResponse;
 import com.phenikaa.evalservice.entity.ProjectEvaluation;
 import com.phenikaa.evalservice.exception.PDFGenerationException;
 import com.phenikaa.evalservice.repository.ProjectEvaluationRepository;
-import com.phenikaa.evalservice.service.DefenseQnAService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,6 @@ public class ComprehensiveEvaluationPDFService {
     
     private static final String STUDENT_PREFIX = "Sinh viên ";
     private static final String TOPIC_PREFIX = "Đề tài ";
-    private static final String FULL_NAME_KEY = "fullName";
     private static final String MASTER_TITLE = "Thạc sĩ";
     private static final String DEPARTMENT_NAME = "Khoa Hệ thống thông tin";
     private static final String EVALUATION_NOTE = "(Điểm từng tiêu chí và điểm cuối cùng làm tròn đến 1 chữ số thập phân)";
@@ -35,7 +33,7 @@ public class ComprehensiveEvaluationPDFService {
     private final ProjectEvaluationRepository evaluationRepository;
     private final DefenseQnAService qnAService;
     private final ThesisServiceClient thesisServiceClient;
-    private final UserServiceClient userServiceClient;
+    private final ProfileServiceClient profileServiceClient;
     
     /**
      * Tạo PDF tổng hợp đánh giá từ tất cả người chấm
@@ -173,18 +171,26 @@ public class ComprehensiveEvaluationPDFService {
             }
 
             try {
-                // Lấy thông tin sinh viên từ user-service
-                Map<String, Object> userInfo = userServiceClient.getUserById(firstEvaluation.getStudentId());
-                if (userInfo != null && !userInfo.isEmpty()) {
-                    request.setStudentName((String) userInfo.get(FULL_NAME_KEY));
-                    request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
+                // Lấy thông tin sinh viên từ profile-service
+                Map<String, Object> studentProfile = profileServiceClient.getStudentProfile(firstEvaluation.getStudentId());
+                if (studentProfile != null && !studentProfile.isEmpty()) {
+                    String fullName = (String) studentProfile.get("fullName");
+                    if (fullName != null && !fullName.trim().isEmpty()) {
+                        request.setStudentName(fullName);
+                        request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
+                        log.info("Successfully fetched student name: {} for studentId: {}", fullName, firstEvaluation.getStudentId());
+                    } else {
+                        log.warn("Full name is null or empty for studentId: {}", firstEvaluation.getStudentId());
+                        request.setStudentName(STUDENT_PREFIX + firstEvaluation.getStudentId());
+                        request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
+                    }
                 } else {
-                    log.warn("Could not fetch user info for studentId: {}", firstEvaluation.getStudentId());
+                    log.warn("Could not fetch student profile for studentId: {}", firstEvaluation.getStudentId());
                     request.setStudentName(STUDENT_PREFIX + firstEvaluation.getStudentId());
                     request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
                 }
             } catch (Exception e) {
-                log.warn("Error fetching user info for studentId {}: {}", firstEvaluation.getStudentId(), e.getMessage());
+                log.warn("Error fetching student profile for studentId {}: {}", firstEvaluation.getStudentId(), e.getMessage());
                 request.setStudentName(STUDENT_PREFIX + firstEvaluation.getStudentId());
                 request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
             }
@@ -202,20 +208,31 @@ public class ComprehensiveEvaluationPDFService {
     private ComprehensiveEvaluationPDFRequest.CommitteeMember createCommitteeMember(ProjectEvaluation evaluation, String role) {
         ComprehensiveEvaluationPDFRequest.CommitteeMember member = new ComprehensiveEvaluationPDFRequest.CommitteeMember();
         
-        // Lấy thông tin giảng viên từ user-service
+        // Lấy thông tin giảng viên từ profile-service
         try {
-            Map<String, Object> evaluatorInfo = userServiceClient.getUserById(evaluation.getEvaluatorId());
-            if (evaluatorInfo != null && !evaluatorInfo.isEmpty()) {
-                member.setName((String) evaluatorInfo.get(FULL_NAME_KEY));
-                member.setTitle(MASTER_TITLE); // Có thể lấy từ user info nếu có
-                member.setDepartment(DEPARTMENT_NAME); // Có thể lấy từ user info nếu có
+            Map<String, Object> teacherProfile = profileServiceClient.getTeacherProfile(evaluation.getEvaluatorId());
+            if (teacherProfile != null && !teacherProfile.isEmpty()) {
+                String fullName = (String) teacherProfile.get("fullName");
+                if (fullName != null && !fullName.trim().isEmpty()) {
+                    member.setName(fullName);
+                    member.setTitle(MASTER_TITLE); // Có thể lấy từ profile nếu có
+                    String department = (String) teacherProfile.get("department");
+                    member.setDepartment(department != null ? department : DEPARTMENT_NAME);
+                    log.info("Successfully fetched teacher name: {} for evaluatorId: {}", fullName, evaluation.getEvaluatorId());
+                } else {
+                    log.warn("Full name is null or empty for evaluatorId: {}", evaluation.getEvaluatorId());
+                    member.setName("ThS. " + role);
+                    member.setTitle(MASTER_TITLE);
+                    member.setDepartment(DEPARTMENT_NAME);
+                }
             } else {
+                log.warn("Could not fetch teacher profile for evaluatorId: {}", evaluation.getEvaluatorId());
                 member.setName("ThS. " + role);
                 member.setTitle(MASTER_TITLE);
                 member.setDepartment(DEPARTMENT_NAME);
             }
         } catch (Exception e) {
-            log.warn("Error fetching evaluator info for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
+            log.warn("Error fetching teacher profile for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
             member.setName("ThS. " + role);
             member.setTitle(MASTER_TITLE);
             member.setDepartment(DEPARTMENT_NAME);
@@ -238,23 +255,34 @@ public class ComprehensiveEvaluationPDFService {
     private ComprehensiveEvaluationPDFRequest.Reviewer createReviewer(ProjectEvaluation evaluation) {
         ComprehensiveEvaluationPDFRequest.Reviewer reviewer = new ComprehensiveEvaluationPDFRequest.Reviewer();
         
-        // Lấy thông tin giảng viên từ user-service
+        // Lấy thông tin giảng viên từ profile-service
         try {
-            Map<String, Object> evaluatorInfo = userServiceClient.getUserById(evaluation.getEvaluatorId());
-            if (evaluatorInfo != null && !evaluatorInfo.isEmpty()) {
-                reviewer.setName((String) evaluatorInfo.get("fullName"));
-                reviewer.setTitle("Thạc sĩ"); // Có thể lấy từ user info nếu có
-                reviewer.setDepartment("Khoa Hệ thống thông tin"); // Có thể lấy từ user info nếu có
+            Map<String, Object> teacherProfile = profileServiceClient.getTeacherProfile(evaluation.getEvaluatorId());
+            if (teacherProfile != null && !teacherProfile.isEmpty()) {
+                String fullName = (String) teacherProfile.get("fullName");
+                if (fullName != null && !fullName.trim().isEmpty()) {
+                    reviewer.setName(fullName);
+                    reviewer.setTitle(MASTER_TITLE); // Có thể lấy từ profile nếu có
+                    String department = (String) teacherProfile.get("department");
+                    reviewer.setDepartment(department != null ? department : DEPARTMENT_NAME);
+                    log.info("Successfully fetched reviewer name: {} for evaluatorId: {}", fullName, evaluation.getEvaluatorId());
+                } else {
+                    log.warn("Full name is null or empty for evaluatorId: {}", evaluation.getEvaluatorId());
+                    reviewer.setName("ThS. Giảng viên phản biện");
+                    reviewer.setTitle(MASTER_TITLE);
+                    reviewer.setDepartment(DEPARTMENT_NAME);
+                }
             } else {
+                log.warn("Could not fetch teacher profile for evaluatorId: {}", evaluation.getEvaluatorId());
                 reviewer.setName("ThS. Giảng viên phản biện");
-                reviewer.setTitle("Thạc sĩ");
-                reviewer.setDepartment("Khoa Hệ thống thông tin");
+                reviewer.setTitle(MASTER_TITLE);
+                reviewer.setDepartment(DEPARTMENT_NAME);
             }
         } catch (Exception e) {
-            log.warn("Error fetching evaluator info for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
+            log.warn("Error fetching teacher profile for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
             reviewer.setName("ThS. Giảng viên phản biện");
-            reviewer.setTitle("Thạc sĩ");
-            reviewer.setDepartment("Khoa Hệ thống thông tin");
+            reviewer.setTitle(MASTER_TITLE);
+            reviewer.setDepartment(DEPARTMENT_NAME);
         }
         
         reviewer.setPresentationFormatScore(evaluation.getFormatScore());
@@ -273,23 +301,34 @@ public class ComprehensiveEvaluationPDFService {
     private ComprehensiveEvaluationPDFRequest.Supervisor createSupervisor(ProjectEvaluation evaluation) {
         ComprehensiveEvaluationPDFRequest.Supervisor supervisor = new ComprehensiveEvaluationPDFRequest.Supervisor();
         
-        // Lấy thông tin giảng viên từ user-service
+        // Lấy thông tin giảng viên từ profile-service
         try {
-            Map<String, Object> evaluatorInfo = userServiceClient.getUserById(evaluation.getEvaluatorId());
-            if (evaluatorInfo != null && !evaluatorInfo.isEmpty()) {
-                supervisor.setName((String) evaluatorInfo.get("fullName"));
-                supervisor.setTitle("Thạc sĩ"); // Có thể lấy từ user info nếu có
-                supervisor.setDepartment("Khoa Hệ thống thông tin"); // Có thể lấy từ user info nếu có
+            Map<String, Object> teacherProfile = profileServiceClient.getTeacherProfile(evaluation.getEvaluatorId());
+            if (teacherProfile != null && !teacherProfile.isEmpty()) {
+                String fullName = (String) teacherProfile.get("fullName");
+                if (fullName != null && !fullName.trim().isEmpty()) {
+                    supervisor.setName(fullName);
+                    supervisor.setTitle(MASTER_TITLE); // Có thể lấy từ profile nếu có
+                    String department = (String) teacherProfile.get("department");
+                    supervisor.setDepartment(department != null ? department : DEPARTMENT_NAME);
+                    log.info("Successfully fetched supervisor name: {} for evaluatorId: {}", fullName, evaluation.getEvaluatorId());
+                } else {
+                    log.warn("Full name is null or empty for evaluatorId: {}", evaluation.getEvaluatorId());
+                    supervisor.setName("ThS. Giảng viên hướng dẫn");
+                    supervisor.setTitle(MASTER_TITLE);
+                    supervisor.setDepartment(DEPARTMENT_NAME);
+                }
             } else {
+                log.warn("Could not fetch teacher profile for evaluatorId: {}", evaluation.getEvaluatorId());
                 supervisor.setName("ThS. Giảng viên hướng dẫn");
-                supervisor.setTitle("Thạc sĩ");
-                supervisor.setDepartment("Khoa Hệ thống thông tin");
+                supervisor.setTitle(MASTER_TITLE);
+                supervisor.setDepartment(DEPARTMENT_NAME);
             }
         } catch (Exception e) {
-            log.warn("Error fetching evaluator info for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
+            log.warn("Error fetching teacher profile for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
             supervisor.setName("ThS. Giảng viên hướng dẫn");
-            supervisor.setTitle("Thạc sĩ");
-            supervisor.setDepartment("Khoa Hệ thống thông tin");
+            supervisor.setTitle(MASTER_TITLE);
+            supervisor.setDepartment(DEPARTMENT_NAME);
         }
         
         supervisor.setAttitudeScore(evaluation.getStudentAttitudeScore());
@@ -304,7 +343,7 @@ public class ComprehensiveEvaluationPDFService {
     }
     
     /**
-     * Tạo HTML content cho PDF tổng hợp
+     * Tạo HTML content cho PDF tổng hợp với 9 trang
      */
     private String generateComprehensiveEvaluationHTML(ComprehensiveEvaluationPDFRequest request) {
         try {
@@ -318,6 +357,65 @@ public class ComprehensiveEvaluationPDFService {
             html.append(getCSSStyles());
             html.append("</head>");
             html.append("<body>");
+        
+            // ========== TRANG 1-2: BIÊN BẢN ĐÁNH GIÁ ==========
+            html.append(generateMinutesPage(request));
+            
+            // ========== TRANG 3: PHIẾU ĐÁNH GIÁ HỘI ĐỒNG - CHỦ TỊCH ==========
+            if (request.getChairman() != null) {
+                html.append(generateCommitteeEvaluationFormPage(request.getChairman(), "CHỦ TỊCH HỘI ĐỒNG", request));
+            }
+            
+            // ========== TRANG 4: PHIẾU ĐÁNH GIÁ HỘI ĐỒNG - THƯ KÝ ==========
+            if (request.getSecretary() != null) {
+                html.append(generateCommitteeEvaluationFormPage(request.getSecretary(), "THƯ KÝ", request));
+            }
+            
+            // ========== TRANG 5: PHIẾU ĐÁNH GIÁ HỘI ĐỒNG - THÀNH VIÊN ==========
+            if (request.getMember() != null) {
+                html.append(generateCommitteeEvaluationFormPage(request.getMember(), "THÀNH VIÊN HỘI ĐỒNG", request));
+            }
+            
+            // ========== TRANG 6: PHIẾU ĐÁNH GIÁ PHẢN BIỆN ==========
+            if (request.getReviewer() != null) {
+                html.append(generateReviewerEvaluationFormPage(request.getReviewer(), request));
+            }
+            
+            // ========== TRANG 7: NHẬN XÉT PHẢN BIỆN ==========
+            if (request.getReviewer() != null) {
+                html.append(generateReviewerCommentsPage(request.getReviewer(), request));
+            }
+            
+            // ========== TRANG 8: PHIẾU ĐÁNH GIÁ HƯỚNG DẪN ==========
+            if (request.getSupervisor() != null) {
+                html.append(generateSupervisorEvaluationFormPage(request.getSupervisor(), request));
+            }
+            
+            // ========== TRANG 9: NHẬN XÉT HƯỚNG DẪN ==========
+            if (request.getSupervisor() != null) {
+                html.append(generateSupervisorCommentsPage(request.getSupervisor(), request));
+            }
+        
+            html.append("</body>");
+            html.append("</html>");
+        
+            return html.toString();
+        } catch (PDFGenerationException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error generating HTML content: {}", e.getMessage(), e);
+            throw new PDFGenerationException("Không thể tạo HTML content: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Tạo trang biên bản đánh giá (Trang 1-2)
+     */
+    private String generateMinutesPage(ComprehensiveEvaluationPDFRequest request) {
+        StringBuilder html = new StringBuilder();
+        
+        // Page break
+        html.append("<div class='page-break'></div>");
         
         // Header
         html.append("<div class='header'>");
@@ -333,128 +431,495 @@ public class ComprehensiveEvaluationPDFService {
         
         // Title
         html.append("<div class='title'>");
-        html.append("<h1>BÁO CÁO TỔNG HỢP ĐÁNH GIÁ ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP</h1>");
+        html.append("<h1>BIÊN BẢN ĐÁNH GIÁ ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP</h1>");
         html.append("</div>");
         
         // Section I: General Information
         html.append("<div class='section'>");
-        html.append("<h2>I. THÔNG TIN CHUNG</h2>");
+        html.append("<h2>I. THÔNG TIN CHUNG (HĐ 2)</h2>");
         html.append("<table class='info-table'>");
+        html.append("<tr><td>Thời gian:</td><td>từ <span class='underline'>2 giờ 20</span> đến <span class='underline'>1 giờ 50</span> ngày <span class='underline'>19/8/2025</span></td></tr>");
+        html.append("<tr><td>Địa điểm:</td><td>A7-204, Đại học Phenikaa</td></tr>");
         html.append("<tr><td>Họ tên sinh viên:</td><td>").append(request.getStudentName()).append("</td></tr>");
         html.append("<tr><td>Mã SV:</td><td>").append(request.getStudentIdNumber()).append("</td></tr>");
         html.append("<tr><td>Lớp:</td><td>").append(request.getClassName()).append("</td></tr>");
-        html.append("<tr><td>Ngành (CTĐT):</td><td>").append(request.getMajor()).append("</td></tr>");
+        html.append("<tr><td>Ngành:</td><td>").append(request.getMajor()).append("</td></tr>");
         html.append("<tr><td>Khóa:</td><td>").append(request.getBatch()).append("</td></tr>");
         html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
+        html.append("<tr><td>Giảng viên hướng dẫn:</td><td>").append(request.getSupervisor() != null ? request.getSupervisor().getName() : "ThS. Nguyễn Thành Trung").append("</td></tr>");
         html.append("</table>");
         html.append("</div>");
         
-        // Section II: Committee Evaluations
-        if (request.getChairman() != null || request.getSecretary() != null || request.getMember() != null) {
+        // Section II: Committee Members
             html.append("<div class='section'>");
-            html.append("<h2>II. ĐÁNH GIÁ CỦA HỘI ĐỒNG CHẤM THI</h2>");
-            html.append("<p class='note'>(Điểm từng tiêu chí và điểm cuối cùng làm tròn đến 1 chữ số thập phân)</p>");
-            
-            // Chairman evaluation
+        html.append("<h2>II. THÀNH PHẦN</h2>");
+        html.append("<table class='info-table'>");
             if (request.getChairman() != null) {
-                html.append("<div class='evaluator-section'>");
-                html.append("<h3>1. Thành viên hội đồng: ").append(request.getChairman().getName()).append("</h3>");
-                html.append(generateCommitteeEvaluationTable(request.getChairman()));
-                html.append("</div>");
+            html.append("<tr><td>").append(request.getChairman().getName()).append(":</td><td>Chủ tịch</td></tr>");
             }
-            
-            // Secretary evaluation
             if (request.getSecretary() != null) {
-                html.append("<div class='evaluator-section'>");
-                html.append("<h3>2. Thành viên hội đồng: ").append(request.getSecretary().getName()).append("</h3>");
-                html.append(generateCommitteeEvaluationTable(request.getSecretary()));
+            html.append("<tr><td>").append(request.getSecretary().getName()).append(":</td><td>Thư ký</td></tr>");
+        }
+        if (request.getMember() != null) {
+            html.append("<tr><td>").append(request.getMember().getName()).append(":</td><td>Giảng viên phản biện</td></tr>");
+        }
+        html.append("</table>");
                 html.append("</div>");
-            }
-            
-            // Member evaluation
-            if (request.getMember() != null) {
-                html.append("<div class='evaluator-section'>");
-                html.append("<h3>3. Thành viên hội đồng: ").append(request.getMember().getName()).append("</h3>");
-                html.append(generateCommitteeEvaluationTable(request.getMember()));
-                html.append("</div>");
-            }
-            
-            html.append("</div>");
-        }
         
-        // Section III: Reviewer Evaluation
-        if (request.getReviewer() != null) {
-            html.append("<div class='section'>");
-            html.append("<h2>III. ĐÁNH GIÁ CỦA GIẢNG VIÊN PHẢN BIỆN</h2>");
-            html.append("<p class='note'>(Điểm từng tiêu chí và điểm cuối cùng làm tròn đến 1 chữ số thập phân)</p>");
-            html.append("<div class='evaluator-section'>");
-            html.append("<h3>Giảng viên phản biện: ").append(request.getReviewer().getName()).append("</h3>");
-            html.append(generateReviewerEvaluationTable(request.getReviewer()));
-            html.append("</div>");
-            html.append("</div>");
-        }
-        
-        // Section IV: Supervisor Evaluation
-        if (request.getSupervisor() != null) {
-            html.append("<div class='section'>");
-            html.append("<h2>IV. ĐÁNH GIÁ CỦA GIẢNG VIÊN HƯỚNG DẪN</h2>");
-            html.append("<p class='note'>(Điểm từng tiêu chí và điểm cuối cùng làm tròn đến 1 chữ số thập phân)</p>");
-            html.append("<div class='evaluator-section'>");
-            html.append("<h3>Giảng viên hướng dẫn: ").append(request.getSupervisor().getName()).append("</h3>");
-            html.append(generateSupervisorEvaluationTable(request.getSupervisor()));
-            html.append("</div>");
-            html.append("</div>");
-        }
-        
-        // Section V: Q&A
+        // Section III: Q&A Summary
+        html.append("<div class='section'>");
+        html.append("<h2>III. TỔNG HỢP CÂU HỎI CỦA THÀNH VIÊN HỘI ĐỒNG</h2>");
         if (request.getQnaData() != null && !request.getQnaData().isEmpty()) {
-            html.append("<div class='section'>");
-            html.append("<h2>V. TỔNG HỢP CÂU HỎI VÀ TRẢ LỜI</h2>");
-            html.append("<div class='qna-section'>");
-            
             for (int i = 0; i < request.getQnaData().size(); i++) {
-                ComprehensiveEvaluationPDFRequest.QnAData qna = request.getQnaData().get(i);
-                html.append("<div class='qna-item'>");
-                html.append("<div class='question'>");
-                html.append("<strong>Câu hỏi ").append(i + 1).append(":</strong> ");
-                html.append("<span>").append(qna.getQuestion()).append("</span>");
-                html.append("<span class='questioner'> - ").append(qna.getQuestionerName()).append("</span>");
-                html.append("</div>");
-                html.append("<div class='answer'>");
-                html.append("<strong>Trả lời:</strong> ");
-                html.append("<span>").append(qna.getAnswer() != null ? qna.getAnswer() : "Chưa trả lời").append("</span>");
-                html.append("</div>");
-                html.append("</div>");
+                html.append("<p>").append(i + 1).append(". ").append(request.getQnaData().get(i).getQuestion()).append("</p>");
             }
-            
-            html.append("</div>");
-            html.append("</div>");
+        } else {
+            html.append("<p>1. ................................................................................</p>");
+            html.append("<p>2. ................................................................................</p>");
+            html.append("<p>3. ................................................................................</p>");
         }
+        html.append("</div>");
+        
+        // Section IV: Student Answers
+        html.append("<div class='section'>");
+        html.append("<h2>IV. TỔNG HỢP NỘI DUNG TRẢ LỜI CỦA SINH VIÊN</h2>");
+        if (request.getQnaData() != null && !request.getQnaData().isEmpty()) {
+            for (int i = 0; i < request.getQnaData().size(); i++) {
+                String answer = request.getQnaData().get(i).getAnswer();
+                html.append("<p>").append(i + 1).append(". ").append(answer != null ? answer : "................................................................................").append("</p>");
+            }
+        } else {
+            html.append("<p>1. ................................................................................</p>");
+            html.append("<p>2. ................................................................................</p>");
+            html.append("<p>3. ................................................................................</p>");
+        }
+                html.append("</div>");
+        
+        // Page break for second page
+        html.append("<div class='page-break'></div>");
+        
+        // Section V: Council Evaluation Content
+        html.append("<div class='section'>");
+        html.append("<h2>V. NỘI DUNG ĐÁNH GIÁ CỦA HỘI ĐỒNG</h2>");
+        html.append("<p><strong>1. Ý nghĩa của đồ án/khóa luận:</strong></p>");
+        html.append("<p>có ý nghĩa thực tiễn</p>");
+        html.append("<p><strong>2. Về nội dung, kết cấu của đồ án/khóa luận:</strong></p>");
+        html.append("<p>Đảm bảo kết cấu 3 chương chính</p>");
+        html.append("<p><strong>3. Phương pháp nghiên cứu:</strong></p>");
+        html.append("<p>Đảm bảo</p>");
+        html.append("<p><strong>4. Các kết quả nghiên cứu đạt được:</strong></p>");
+        html.append("<p>Xây dựng được website bán hàng có chức năng đưa hàng đã hưởng</p>");
+        html.append("<p><strong>5. Những ưu điểm, nhược điểm và nội dung cần bổ sung, chỉnh sửa:</strong></p>");
+        html.append("<p>- Phân quyền cho Admin cần hoàn thiện</p>");
+        html.append("<p>- Cần kiểm thử HT</p>");
+        html.append("<p>- Sửa lại các lỗi chính tả</p>");
+        html.append("<p>- Hoàn thiện tính năng cần thiết</p>");
+        html.append("</div>");
+        
+        // Section VI: Final Score
+        html.append("<div class='section'>");
+        html.append("<h2>VI. ĐIỂM KẾT LUẬN</h2>");
+        html.append("<p><strong>Điểm kết luận:</strong> <span class='underline'>9</span></p>");
+        html.append("<p><strong>Bằng chữ:</strong> <span class='underline'>Chín phẩy</span></p>");
+        html.append("</div>");
+        
+        // Signatures
+        html.append("<div class='signature-section'>");
+        html.append("<div class='signature-left'>");
+        html.append("<p><strong>CHỦ TỊCH HỘI ĐỒNG</strong></p>");
+        html.append("<p>(Ký, ghi rõ họ tên)</p>");
+        html.append("<div class='signature-space'></div>");
+        if (request.getChairman() != null) {
+            html.append("<p>").append(request.getChairman().getName()).append("</p>");
+        }
+        html.append("</div>");
+        html.append("<div class='signature-right'>");
+        html.append("<p><strong>THƯ KÝ</strong></p>");
+        html.append("<p>(Ký, ghi rõ họ tên)</p>");
+        html.append("<div class='signature-space'></div>");
+        if (request.getSecretary() != null) {
+            html.append("<p>").append(request.getSecretary().getName()).append("</p>");
+        }
+        html.append("</div>");
+        html.append("</div>");
+        
+        // Footer
+        html.append("<div class='footer'>");
+        html.append("<p>BM.ĐT.19.17 (02-15/05/2025)-BL: 5 năm</p>");
+            html.append("</div>");
+        
+        return html.toString();
+    }
+    
+    /**
+     * Tạo trang phiếu đánh giá hội đồng
+     */
+    private String generateCommitteeEvaluationFormPage(ComprehensiveEvaluationPDFRequest.CommitteeMember member, String role, ComprehensiveEvaluationPDFRequest request) {
+        StringBuilder html = new StringBuilder();
+        
+        // Page break
+        html.append("<div class='page-break'></div>");
+        
+        // Header
+        html.append("<div class='header'>");
+        html.append("<div class='header-left'>");
+        html.append("<p><strong>BỘ GIÁO DỤC VÀ ĐÀO TẠO</strong></p>");
+        html.append("<p><strong>ĐẠI HỌC PHENIKAA</strong></p>");
+        html.append("</div>");
+        html.append("<div class='header-right'>");
+        html.append("<p><strong>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>");
+        html.append("<p><strong>Độc lập - Tự do - Hạnh phúc</strong></p>");
+        html.append("</div>");
+        html.append("</div>");
+        
+        // Title
+        html.append("<div class='title'>");
+        html.append("<h1>PHIẾU ĐÁNH GIÁ ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP</h1>");
+        html.append("<h1>CỦA THÀNH VIÊN HỘI ĐỒNG</h1>");
+        html.append("</div>");
+        
+        // Section I: General Information
+            html.append("<div class='section'>");
+        html.append("<h2>I. THÔNG TIN CHUNG (HĐ 2)</h2>");
+        html.append("<table class='info-table'>");
+        html.append("<tr><td>Người đánh giá:</td><td>").append(member.getName()).append("</td></tr>");
+        html.append("<tr><td>Đơn vị công tác:</td><td>").append(member.getDepartment()).append("</td></tr>");
+        html.append("<tr><td>Học hàm, học vị:</td><td>").append(member.getTitle()).append("</td></tr>");
+        html.append("<tr><td>Họ tên sinh viên:</td><td>").append(request.getStudentName()).append("</td></tr>");
+        html.append("<tr><td>Mã SV:</td><td>").append(request.getStudentIdNumber()).append("</td></tr>");
+        html.append("<tr><td>Ngành (CTĐT):</td><td>").append(request.getMajor()).append("</td></tr>");
+        html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
+        html.append("</table>");
+            html.append("</div>");
+        
+        // Section II: Evaluation
+        html.append("<div class='section'>");
+        html.append("<h2>II. ĐÁNH GIÁ</h2>");
+        html.append("<p class='note'>").append(EVALUATION_NOTE).append("</p>");
+        html.append(generateCommitteeEvaluationTable(member));
+            html.append("</div>");
+        
+        // Section III: Comments
+            html.append("<div class='section'>");
+        html.append("<h2>III. NHẬN XÉT</h2>");
+        html.append("<div class='comments-box'>");
+        html.append("<p>").append(member.getComments() != null ? member.getComments() : "Đồng ý").append("</p>");
+            html.append("</div>");
+            html.append("</div>");
         
         // Footer
         html.append("<div class='footer'>");
         html.append("<div class='signature-section'>");
         html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
-        html.append("<p><strong>TRƯỞNG KHOA</strong></p>");
+        html.append("<p><strong>").append(role).append("</strong></p>");
         html.append("<p>(Ký, ghi rõ họ tên)</p>");
         html.append("<div class='signature-space'></div>");
-        html.append("<p>PGS.TS. Nguyễn Văn A</p>");
+        html.append("<p>").append(member.getName()).append("</p>");
         html.append("</div>");
         html.append("<div class='form-info'>");
         html.append("<p>BM.ĐT.19.16 (02-15/05/2025)-BL: 5 năm</p>");
         html.append("</div>");
         html.append("</div>");
         
-        html.append("</body>");
-        html.append("</html>");
+        return html.toString();
+    }
+    
+    /**
+     * Tạo trang phiếu đánh giá phản biện
+     */
+    private String generateReviewerEvaluationFormPage(ComprehensiveEvaluationPDFRequest.Reviewer reviewer, ComprehensiveEvaluationPDFRequest request) {
+        StringBuilder html = new StringBuilder();
+        
+        // Page break
+        html.append("<div class='page-break'></div>");
+        
+        // Header
+        html.append("<div class='header'>");
+        html.append("<div class='header-left'>");
+        html.append("<p><strong>BỘ GIÁO DỤC VÀ ĐÀO TẠO</strong></p>");
+        html.append("<p><strong>ĐẠI HỌC PHENIKAA</strong></p>");
+        html.append("</div>");
+        html.append("<div class='header-right'>");
+        html.append("<p><strong>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>");
+        html.append("<p><strong>Độc lập - Tự do - Hạnh phúc</strong></p>");
+        html.append("</div>");
+        html.append("</div>");
+        
+        // Title
+        html.append("<div class='title'>");
+        html.append("<h1>PHIẾU ĐÁNH GIÁ ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP</h1>");
+        html.append("<h1>CỦA GIẢNG VIÊN PHẢN BIỆN</h1>");
+        html.append("</div>");
+        
+        // Section I: General Information
+            html.append("<div class='section'>");
+        html.append("<h2>I. THÔNG TIN CHUNG</h2>");
+        html.append("<table class='info-table'>");
+        html.append("<tr><td>Người đánh giá:</td><td>").append(reviewer.getName()).append("</td></tr>");
+        html.append("<tr><td>Học hàm, học vị:</td><td>").append(reviewer.getTitle()).append("</td></tr>");
+        html.append("<tr><td>Đơn vị công tác:</td><td>").append(reviewer.getDepartment()).append("</td></tr>");
+        html.append("<tr><td>Họ tên sinh viên:</td><td>").append(request.getStudentName()).append("</td></tr>");
+        html.append("<tr><td>Mã SV:</td><td>").append(request.getStudentIdNumber()).append("</td></tr>");
+        html.append("<tr><td>Ngành (CTĐT):</td><td>").append(request.getMajor()).append("</td></tr>");
+        html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
+        html.append("</table>");
+        html.append("</div>");
+        
+        // Section II: Evaluation
+        html.append("<div class='section'>");
+        html.append("<h2>II. ĐÁNH GIÁ</h2>");
+        html.append("<p class='note'>").append(EVALUATION_NOTE).append("</p>");
+        html.append(generateReviewerEvaluationTable(reviewer));
+                html.append("</div>");
+        
+        // Section III: Comments
+        html.append("<div class='section'>");
+        html.append("<h2>III. NHẬN XÉT</h2>");
+        html.append("<div class='comments-box'>");
+        html.append("<p>").append(reviewer.getComments() != null ? reviewer.getComments() : "Đồng ý").append("</p>");
+                html.append("</div>");
+                html.append("</div>");
+        
+        // Footer
+        html.append("<div class='footer'>");
+        html.append("<div class='signature-section'>");
+        html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
+        html.append("<p><strong>GIẢNG VIÊN PHẢN BIỆN</strong></p>");
+        html.append("<p>(Ký, ghi rõ họ tên)</p>");
+        html.append("<div class='signature-space'></div>");
+        html.append("<p>").append(reviewer.getName()).append("</p>");
+        html.append("</div>");
+        html.append("<div class='form-info'>");
+        html.append("<p>BM.ĐT.19.15 (02-15/05/2025)-BL: 5 năm</p>");
+        html.append("</div>");
+        html.append("</div>");
         
         return html.toString();
-        } catch (PDFGenerationException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Error generating HTML content: {}", e.getMessage(), e);
-            throw new PDFGenerationException("Không thể tạo HTML content: " + e.getMessage(), e);
-        }
+    }
+    
+    /**
+     * Tạo trang nhận xét phản biện
+     */
+    private String generateReviewerCommentsPage(ComprehensiveEvaluationPDFRequest.Reviewer reviewer, ComprehensiveEvaluationPDFRequest request) {
+        StringBuilder html = new StringBuilder();
+        
+        // Page break
+        html.append("<div class='page-break'></div>");
+        
+        // Header
+        html.append("<div class='header'>");
+        html.append("<div class='header-left'>");
+        html.append("<p><strong>BỘ GIÁO DỤC VÀ ĐÀO TẠO</strong></p>");
+        html.append("<p><strong>ĐẠI HỌC PHENIKAA</strong></p>");
+            html.append("</div>");
+        html.append("<div class='header-right'>");
+        html.append("<p><strong>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>");
+        html.append("<p><strong>Độc lập - Tự do - Hạnh phúc</strong></p>");
+            html.append("</div>");
+        html.append("</div>");
+        
+        // Title
+        html.append("<div class='title'>");
+        html.append("<h1>NHẬN XÉT ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP</h1>");
+        html.append("<h1>CỦA GIẢNG VIÊN PHẢN BIỆN</h1>");
+        html.append("</div>");
+        
+        // Project Information
+        html.append("<div class='section'>");
+        html.append("<table class='info-table'>");
+        html.append("<tr><td>Giảng viên phản biện:</td><td>").append(reviewer.getName()).append("</td></tr>");
+        html.append("<tr><td>Bộ môn:</td><td>Khoa Hệ thống thông tin</td></tr>");
+        html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
+        html.append("<tr><td>Sinh viên thực hiện:</td><td>").append(request.getStudentName()).append("</td></tr>");
+        html.append("<tr><td>Mã SV:</td><td>").append(request.getStudentIdNumber()).append("</td></tr>");
+        html.append("<tr><td>Lớp:</td><td>").append(request.getClassName()).append("</td></tr>");
+        html.append("<tr><td>Giảng viên hướng dẫn:</td><td>").append(request.getSupervisor() != null ? request.getSupervisor().getName() : "ThS. Nguyễn Thành Trung").append("</td></tr>");
+        html.append("</table>");
+        html.append("</div>");
+        
+        // Review Content
+        html.append("<div class='section'>");
+        html.append("<h2>NỘI DUNG NHẬN XÉT</h2>");
+        html.append("<p><strong>1. Nhận xét ĐAKLTN:</strong></p>");
+        html.append("<p><strong>- Bố cục, hình thức trình bày:</strong></p>");
+        html.append("<p>Đồ án gồm 4 chương, nội dung rõ ràng, bố cục trình bày theo quy định của một khóa luận tốt nghiệp</p>");
+        html.append("<p><strong>- Đảm bảo tính cấp thiết, hiện đại, không trùng lặp:</strong></p>");
+        html.append("<p>Đồ án có tính cấp thiết nội dung phù hợp với hiện tại không trùng lặp với các đề tài khác.</p>");
+        html.append("<p><strong>- Nội dung:</strong></p>");
+        html.append("<p><strong>Nhận xét chung</strong></p>");
+        html.append("<p><strong>Mục tiêu:</strong></p>");
+        html.append("<p>Đồ án đặt ra mục tiêu xây dựng một hệ thống phần mềm quản lý toàn diện cho cửa hàng bánh sinh nhật, tối ưu quy trình đặt hàng trực tuyến và cung cấp giao diện quản trị trực quan cho người quản lý.</p>");
+        html.append("<p><strong>Phạm vi:</strong></p>");
+        html.append("<p>Hệ thống được triển khai dưới dạng ứng dụng web, phù hợp cho cửa hàng bánh quy mô nhỏ hoặc vừa. Dữ liệu được quản lý tập trung thông qua MongoDB.</p>");
+        html.append("<p><strong>Đối tượng sử dụng:</strong></p>");
+        html.append("<p>Hệ thống phục vụ hai nhóm đối tượng chính: Quản trị viên (Admin) và Khách hàng.</p>");
+        html.append("<p><strong>Quản trị viên</strong> có các chức năng: quản lý sản phẩm, danh mục, đơn hàng, người dùng, mã giảm giá, bài viết và xem thống kê doanh thu.</p>");
+        html.append("<p><strong>Khách hàng</strong> có thể: xem, tìm kiếm, đặt bánh, theo dõi đơn hàng, thanh toán trực tuyến hoặc khi nhận hàng, và quản lý thông tin cá nhân.</p>");
+        html.append("<p><strong>Công nghệ sử dụng:</strong></p>");
+        html.append("<p><strong>+ Frontend:</strong> Next.js kết hợp TypeScript và Tailwind CSS.</p>");
+        html.append("<p><strong>+ Backend:</strong> NestJS (Node.js framework).</p>");
+        html.append("<p><strong>+ Cơ sở dữ liệu:</strong> MongoDB.</p>");
+        html.append("<p><strong>Bố cục báo cáo:</strong></p>");
+        html.append("<p>Báo cáo đồ án được trình bày rõ ràng với 4 chương chính: Tổng quan đề tài, Phân tích thiết kế hệ thống, Phát triển và triển khai phần mềm, và Kiểm thử phần mềm.</p>");
+        html.append("</div>");
+        
+        // Footer
+        html.append("<div class='footer'>");
+        html.append("<p>BM.DT.19.14 (02-15/05/2025)-BL: 5 năm</p>");
+        html.append("</div>");
+        
+        return html.toString();
+    }
+    
+    /**
+     * Tạo trang phiếu đánh giá hướng dẫn
+     */
+    private String generateSupervisorEvaluationFormPage(ComprehensiveEvaluationPDFRequest.Supervisor supervisor, ComprehensiveEvaluationPDFRequest request) {
+        StringBuilder html = new StringBuilder();
+        
+        // Page break
+        html.append("<div class='page-break'></div>");
+        
+        // Header
+        html.append("<div class='header'>");
+        html.append("<div class='header-left'>");
+        html.append("<p><strong>BỘ GIÁO DỤC VÀ ĐÀO TẠO</strong></p>");
+        html.append("<p><strong>ĐẠI HỌC PHENIKAA</strong></p>");
+        html.append("</div>");
+        html.append("<div class='header-right'>");
+        html.append("<p><strong>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>");
+        html.append("<p><strong>Độc lập - Tự do - Hạnh phúc</strong></p>");
+        html.append("</div>");
+        html.append("</div>");
+        
+        // Title
+        html.append("<div class='title'>");
+        html.append("<h1>PHIẾU ĐÁNH GIÁ ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP</h1>");
+        html.append("<h1>CỦA GIẢNG VIÊN HƯỚNG DẪN</h1>");
+        html.append("</div>");
+        
+        // Section I: General Information
+        html.append("<div class='section'>");
+        html.append("<h2>I. THÔNG TIN CHUNG</h2>");
+        html.append("<table class='info-table'>");
+        html.append("<tr><td>Người đánh giá:</td><td>").append(supervisor.getName()).append("</td></tr>");
+        html.append("<tr><td>Học hàm, học vị:</td><td>").append(supervisor.getTitle()).append("</td></tr>");
+        html.append("<tr><td>Đơn vị công tác:</td><td>").append(supervisor.getDepartment()).append("</td></tr>");
+        html.append("<tr><td>Họ tên sinh viên:</td><td>").append(request.getStudentName()).append("</td></tr>");
+        html.append("<tr><td>Mã SV:</td><td>").append(request.getStudentIdNumber()).append("</td></tr>");
+        html.append("<tr><td>Ngành:</td><td>").append(request.getMajor()).append("</td></tr>");
+        html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
+        html.append("</table>");
+        html.append("</div>");
+        
+        // Section II: Evaluation
+        html.append("<div class='section'>");
+        html.append("<h2>II. ĐÁNH GIÁ</h2>");
+        html.append("<p class='note'>").append(EVALUATION_NOTE).append("</p>");
+        html.append(generateSupervisorEvaluationTable(supervisor));
+        html.append("</div>");
+        
+        // Section III: Comments
+        html.append("<div class='section'>");
+        html.append("<h2>III. NHẬN XÉT</h2>");
+        html.append("<div class='comments-box'>");
+        html.append("<p>").append(supervisor.getComments() != null ? supervisor.getComments() : "Đồng ý").append("</p>");
+        html.append("</div>");
+        html.append("</div>");
+        
+        // Footer
+        html.append("<div class='footer'>");
+        html.append("<div class='signature-section'>");
+        html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
+        html.append("<p><strong>GIẢNG VIÊN HƯỚNG DẪN</strong></p>");
+        html.append("<p>(Ký, ghi rõ họ tên)</p>");
+        html.append("<div class='signature-space'></div>");
+        html.append("<p>").append(supervisor.getName()).append("</p>");
+        html.append("</div>");
+        html.append("<div class='form-info'>");
+        html.append("<p>BM.ĐT.19.23 (02-15/05/2025)-BL: 5 năm</p>");
+        html.append("</div>");
+        html.append("</div>");
+        
+        return html.toString();
+    }
+    
+    /**
+     * Tạo trang nhận xét hướng dẫn
+     */
+    private String generateSupervisorCommentsPage(ComprehensiveEvaluationPDFRequest.Supervisor supervisor, ComprehensiveEvaluationPDFRequest request) {
+        StringBuilder html = new StringBuilder();
+        
+        // Page break
+        html.append("<div class='page-break'></div>");
+        
+        // Header
+        html.append("<div class='header'>");
+        html.append("<div class='header-left'>");
+        html.append("<p><strong>BỘ GIÁO DỤC VÀ ĐÀO TẠO</strong></p>");
+        html.append("<p><strong>ĐẠI HỌC PHENIKAA</strong></p>");
+        html.append("</div>");
+        html.append("<div class='header-right'>");
+        html.append("<p><strong>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>");
+        html.append("<p><strong>Độc lập - Tự do - Hạnh phúc</strong></p>");
+        html.append("</div>");
+        html.append("</div>");
+        
+        // Title
+        html.append("<div class='title'>");
+        html.append("<h1>NHẬN XÉT ĐỒ ÁN TỐT NGHIỆP CỦA GIẢNG VIÊN HƯỚNG DẪN</h1>");
+        html.append("</div>");
+        
+        // Project Information
+        html.append("<div class='section'>");
+        html.append("<table class='info-table'>");
+        html.append("<tr><td>Giảng viên hướng dẫn:</td><td>").append(supervisor.getName()).append("</td></tr>");
+        html.append("<tr><td>Khoa:</td><td>Hệ thống thông tin</td></tr>");
+        html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
+        html.append("<tr><td>Sinh viên thực hiện:</td><td>").append(request.getStudentName()).append("</td></tr>");
+        html.append("<tr><td>Lớp:</td><td>").append(request.getClassName()).append("</td></tr>");
+        html.append("</table>");
+        html.append("</div>");
+        
+        // Review Content
+        html.append("<div class='section'>");
+        html.append("<h2>NỘI DUNG NHẬN XÉT</h2>");
+        html.append("<p><strong>I. Nhận xét ĐAKLTN (I. Review of Graduation Project):</strong></p>");
+        html.append("<p>Nhận xét về hình thức: Báo cáo được trình bày khoa học, đúng quy định. Các mục được sắp xếp hợp lý, bảng biểu và hình ảnh minh họa rõ ràng; phần phụ lục cần ghi chi tiết thay vì để đường dẫn truy cập.</p>");
+        html.append("<p>Tính cấp thiết của đề tài: Đề tài mang tính thực tiễn cao, với định hướng áp dụng tại một cơ sở kinh doanh cụ thể.</p>");
+        html.append("<p>Mục tiêu của đề tài: Mục tiêu đề tài được xác định rõ ràng xây dựng một hệ thống quản lý cửa hàng, giúp cơ sở kinh doanh dễ dàng quản lý sản phẩm và doanh thu, tối ưu năng lực vận hành.</p>");
+        html.append("<p>Nội dung của đề tài: Nội dung đề tài bám sát mục tiêu đề ra, bao gồm các phần: khảo sát thực trạng, phân tích yêu cầu, thiết kế hệ thống, triển khai và kiểm thử.</p>");
+        html.append("<p>Tài liệu tham khảo: Có trích dẫn nhưng chưa đầy đủ, cần phải bổ sung.</p>");
+        html.append("<p>Phương pháp nghiên cứu: Quy trình nghiên cứu đảm bảo tính khoa học và có sự kiểm thử để đánh giá kết quả.</p>");
+        html.append("<p>Tính sáng tạo và ứng dụng: Hệ thống có tính ứng dụng cao, có thể triển khai thực tế để hỗ trợ cơ sở kinh doanh</p>");
+        html.append("<p><strong>II. Nhận xét tinh thần và thái độ làm việc của sinh viên:</strong></p>");
+        html.append("<p>Sinh viên có tinh thần chủ động trong việc nghiên cứu và phát triển hệ thống. Trong quá trình thực hiện đồ án, sinh viên đáp ứng đúng tiến độ và yêu cầu đặt ra.</p>");
+        html.append("<p><strong>III. Kết quả đạt được:</strong></p>");
+        html.append("<p>Hệ thống đã hoàn thiện các chức năng chính, bao gồm:</p>");
+        html.append("<p>Quản lý tài khoản người dùng.</p>");
+        html.append("<p>Quản lý thông tin doanh nghiệp và báo cáo tài chính.</p>");
+        html.append("<p>Quản lý thông tin sản phẩm</p>");
+        html.append("<p>Hệ thống hoạt động ổn định, giao diện trực quan, có tiềm năng tiếp tục phát triển để triển khai thực tế để hỗ trợ doanh nghiệp. Tuy nhiên, cần phải hoàn thiện và bổ sung thêm về các chức năng phân tích đa dạng hơn các dữ liệu.</p>");
+        html.append("<p><strong>IV. Kết luận:</strong></p>");
+        html.append("<p>☑ Đồng ý cho bảo vệ:</p>");
+        html.append("<p>☐ Không đồng ý cho bảo vệ:</p>");
+        html.append("</div>");
+        
+        // Footer
+        html.append("<div class='footer'>");
+        html.append("<div class='signature-section'>");
+        html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
+        html.append("<p><strong>GIẢNG VIÊN HƯỚNG DẪN</strong></p>");
+        html.append("<p>(Ký, ghi rõ họ tên)</p>");
+        html.append("<div class='signature-space'></div>");
+        html.append("<p>").append(supervisor.getName()).append("</p>");
+        html.append("</div>");
+        html.append("<div class='form-info'>");
+        html.append("<p>BM.DT.19.14 (02-15/05/2025)-BL: 5 năm</p>");
+        html.append("</div>");
+        html.append("</div>");
+        
+        return html.toString();
     }
     
     /**
@@ -733,6 +1198,10 @@ public class ComprehensiveEvaluationPDFService {
                     font-size: 12px;
                 }
                 
+                .page-break {
+                    page-break-before: always;
+                }
+                
                 .header { 
                     display: table; 
                     width: 100%;
@@ -790,6 +1259,10 @@ public class ComprehensiveEvaluationPDFService {
                     font-style: italic; 
                     font-size: 11px; 
                     margin: 5px 0; 
+                }
+                
+                .underline {
+                    text-decoration: underline;
                 }
                 
                 .info-table, .evaluation-table { 
@@ -879,6 +1352,12 @@ public class ComprehensiveEvaluationPDFService {
                     display: table-cell;
                     width: 70%;
                     text-align: right; 
+                }
+                
+                .signature-left, .signature-right {
+                    display: table-cell;
+                    width: 50%;
+                    text-align: center;
                 }
                 
                 .signature-section p { 

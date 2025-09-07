@@ -1,7 +1,7 @@
 package com.phenikaa.evalservice.controller;
 
 import com.phenikaa.evalservice.client.ThesisServiceClient;
-import com.phenikaa.evalservice.client.UserServiceClient;
+import com.phenikaa.evalservice.client.ProfileServiceClient;
 import com.phenikaa.evalservice.dto.request.ComprehensiveEvaluationPDFRequest;
 import com.phenikaa.evalservice.dto.response.QnAResponse;
 import com.phenikaa.evalservice.entity.ProjectEvaluation;
@@ -32,7 +32,7 @@ public class ComprehensiveEvaluationPDFController {
     private final ProjectEvaluationRepository evaluationRepository;
     private final DefenseQnAService qnAService;
     private final ThesisServiceClient thesisServiceClient;
-    private final UserServiceClient userServiceClient;
+    private final ProfileServiceClient profileServiceClient;
     
     /**
      * Tạo PDF tổng hợp đánh giá với Q&A
@@ -127,9 +127,9 @@ public class ComprehensiveEvaluationPDFController {
                     case COMMITTEE:
                         committeeCount++;
                         if (committeeCount == 1) {
-                            request.setChairman(createCommitteeMember(evaluation, "Chủ tịch hội đồng"));
+                            request.setChairman(createCommitteeMember(evaluation, "Thành viên hội đồng"));
                         } else if (committeeCount == 2) {
-                            request.setSecretary(createCommitteeMember(evaluation, "Thư ký hội đồng"));
+                            request.setSecretary(createCommitteeMember(evaluation, "Thành viên hội đồng"));
                         } else if (committeeCount == 3) {
                             request.setMember(createCommitteeMember(evaluation, "Thành viên hội đồng"));
                         }
@@ -180,18 +180,26 @@ public class ComprehensiveEvaluationPDFController {
             }
 
             try {
-                // Lấy thông tin sinh viên từ user-service
-                Map<String, Object> userInfo = userServiceClient.getUserById(firstEvaluation.getStudentId());
-                if (userInfo != null && !userInfo.isEmpty()) {
-                    request.setStudentName((String) userInfo.get("fullName"));
-                    request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
+                // Lấy thông tin sinh viên từ profile-service
+                Map<String, Object> studentProfile = profileServiceClient.getStudentProfile(firstEvaluation.getStudentId());
+                if (studentProfile != null && !studentProfile.isEmpty()) {
+                    String fullName = (String) studentProfile.get("fullName");
+                    if (fullName != null && !fullName.trim().isEmpty()) {
+                        request.setStudentName(fullName);
+                        request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
+                        log.info("Successfully fetched student name: {} for studentId: {}", fullName, firstEvaluation.getStudentId());
+                    } else {
+                        log.warn("Full name is null or empty for studentId: {}", firstEvaluation.getStudentId());
+                        request.setStudentName("Sinh viên " + firstEvaluation.getStudentId());
+                        request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
+                    }
                 } else {
-                    log.warn("Could not fetch user info for studentId: {}", firstEvaluation.getStudentId());
+                    log.warn("Could not fetch student profile for studentId: {}", firstEvaluation.getStudentId());
                     request.setStudentName("Sinh viên " + firstEvaluation.getStudentId());
                     request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
                 }
             } catch (Exception e) {
-                log.warn("Error fetching user info for studentId {}: {}", firstEvaluation.getStudentId(), e.getMessage());
+                log.warn("Error fetching student profile for studentId {}: {}", firstEvaluation.getStudentId(), e.getMessage());
                 request.setStudentName("Sinh viên " + firstEvaluation.getStudentId());
                 request.setStudentIdNumber("SV" + firstEvaluation.getStudentId());
             }
@@ -208,9 +216,33 @@ public class ComprehensiveEvaluationPDFController {
      */
     private ComprehensiveEvaluationPDFRequest.CommitteeMember createCommitteeMember(ProjectEvaluation evaluation, String role) {
         ComprehensiveEvaluationPDFRequest.CommitteeMember member = new ComprehensiveEvaluationPDFRequest.CommitteeMember();
-        member.setName("ThS. " + role);
+        
+        // Lấy thông tin giảng viên từ profile-service
+        try {
+            Map<String, Object> teacherProfile = profileServiceClient.getTeacherProfile(evaluation.getEvaluatorId());
+            if (teacherProfile != null && !teacherProfile.isEmpty()) {
+                String fullName = (String) teacherProfile.get("fullName");
+                if (fullName != null && !fullName.trim().isEmpty()) {
+                    member.setName(fullName);
+                    log.info("Successfully fetched teacher name: {} for evaluatorId: {}", fullName, evaluation.getEvaluatorId());
+                } else {
+                    log.warn("Full name is null or empty for evaluatorId: {}", evaluation.getEvaluatorId());
+                    member.setName("ThS. " + role);
+                }
+                String department = (String) teacherProfile.get("department");
+                member.setDepartment(department != null ? department : "Khoa Hệ thống thông tin");
+            } else {
+                log.warn("Could not fetch teacher profile for evaluatorId: {}", evaluation.getEvaluatorId());
+                member.setName("ThS. " + role);
+                member.setDepartment("Khoa Hệ thống thông tin");
+            }
+        } catch (Exception e) {
+            log.warn("Error fetching teacher profile for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
+            member.setName("ThS. " + role);
+            member.setDepartment("Khoa Hệ thống thông tin");
+        }
+        
         member.setTitle("Thạc sĩ");
-        member.setDepartment("Khoa Hệ thống thông tin");
         member.setPresentationClarityScore(evaluation.getPresentationClarityScore());
         member.setReviewerQaScore(evaluation.getReviewerQaScore());
         member.setCommitteeQaScore(evaluation.getCommitteeQaScore());
@@ -227,9 +259,33 @@ public class ComprehensiveEvaluationPDFController {
      */
     private ComprehensiveEvaluationPDFRequest.Reviewer createReviewer(ProjectEvaluation evaluation) {
         ComprehensiveEvaluationPDFRequest.Reviewer reviewer = new ComprehensiveEvaluationPDFRequest.Reviewer();
-        reviewer.setName("ThS. Giảng viên phản biện");
+        
+        // Lấy thông tin giảng viên từ profile-service
+        try {
+            Map<String, Object> teacherProfile = profileServiceClient.getTeacherProfile(evaluation.getEvaluatorId());
+            if (teacherProfile != null && !teacherProfile.isEmpty()) {
+                String fullName = (String) teacherProfile.get("fullName");
+                if (fullName != null && !fullName.trim().isEmpty()) {
+                    reviewer.setName(fullName);
+                    log.info("Successfully fetched reviewer name: {} for evaluatorId: {}", fullName, evaluation.getEvaluatorId());
+                } else {
+                    log.warn("Full name is null or empty for evaluatorId: {}", evaluation.getEvaluatorId());
+                    reviewer.setName("ThS. Giảng viên phản biện");
+                }
+                String department = (String) teacherProfile.get("department");
+                reviewer.setDepartment(department != null ? department : "Khoa Hệ thống thông tin");
+            } else {
+                log.warn("Could not fetch teacher profile for evaluatorId: {}", evaluation.getEvaluatorId());
+                reviewer.setName("ThS. Giảng viên phản biện");
+                reviewer.setDepartment("Khoa Hệ thống thông tin");
+            }
+        } catch (Exception e) {
+            log.warn("Error fetching teacher profile for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
+            reviewer.setName("ThS. Giảng viên phản biện");
+            reviewer.setDepartment("Khoa Hệ thống thông tin");
+        }
+        
         reviewer.setTitle("Thạc sĩ");
-        reviewer.setDepartment("Khoa Hệ thống thông tin");
         reviewer.setPresentationFormatScore(evaluation.getFormatScore());
         reviewer.setContentImplementationScore(evaluation.getContentQualityScore());
         reviewer.setRelatedIssuesScore(evaluation.getRelatedIssuesReviewerScore());
@@ -245,9 +301,33 @@ public class ComprehensiveEvaluationPDFController {
      */
     private ComprehensiveEvaluationPDFRequest.Supervisor createSupervisor(ProjectEvaluation evaluation) {
         ComprehensiveEvaluationPDFRequest.Supervisor supervisor = new ComprehensiveEvaluationPDFRequest.Supervisor();
-        supervisor.setName("ThS. Giảng viên hướng dẫn");
+        
+        // Lấy thông tin giảng viên từ profile-service
+        try {
+            Map<String, Object> teacherProfile = profileServiceClient.getTeacherProfile(evaluation.getEvaluatorId());
+            if (teacherProfile != null && !teacherProfile.isEmpty()) {
+                String fullName = (String) teacherProfile.get("fullName");
+                if (fullName != null && !fullName.trim().isEmpty()) {
+                    supervisor.setName(fullName);
+                    log.info("Successfully fetched supervisor name: {} for evaluatorId: {}", fullName, evaluation.getEvaluatorId());
+                } else {
+                    log.warn("Full name is null or empty for evaluatorId: {}", evaluation.getEvaluatorId());
+                    supervisor.setName("ThS. Giảng viên hướng dẫn");
+                }
+                String department = (String) teacherProfile.get("department");
+                supervisor.setDepartment(department != null ? department : "Khoa Hệ thống thông tin");
+            } else {
+                log.warn("Could not fetch teacher profile for evaluatorId: {}", evaluation.getEvaluatorId());
+                supervisor.setName("ThS. Giảng viên hướng dẫn");
+                supervisor.setDepartment("Khoa Hệ thống thông tin");
+            }
+        } catch (Exception e) {
+            log.warn("Error fetching teacher profile for evaluatorId {}: {}", evaluation.getEvaluatorId(), e.getMessage());
+            supervisor.setName("ThS. Giảng viên hướng dẫn");
+            supervisor.setDepartment("Khoa Hệ thống thông tin");
+        }
+        
         supervisor.setTitle("Thạc sĩ");
-        supervisor.setDepartment("Khoa Hệ thống thông tin");
         supervisor.setAttitudeScore(evaluation.getStudentAttitudeScore());
         supervisor.setProblemSolvingScore(evaluation.getProblemSolvingScore());
         supervisor.setPresentationFormatScore(evaluation.getFormatSupervisorScore());
