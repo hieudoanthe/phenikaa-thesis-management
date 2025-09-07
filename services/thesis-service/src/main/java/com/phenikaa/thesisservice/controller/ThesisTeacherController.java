@@ -308,5 +308,17 @@ public class ThesisTeacherController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    // API để lấy thông tin chi tiết topic theo ID
+    @GetMapping("/topics/{topicId}")
+    public ResponseEntity<Map<String, Object>> getTopicById(@PathVariable Integer topicId) {
+        try {
+            Map<String, Object> topicInfo = thesisService.getTopicById(topicId);
+            return ResponseEntity.ok(topicInfo);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Không thể lấy thông tin đề tài"));
+        }
+    }
 }
 

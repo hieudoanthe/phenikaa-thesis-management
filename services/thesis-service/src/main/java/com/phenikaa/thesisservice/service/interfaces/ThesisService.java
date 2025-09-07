@@ -43,6 +43,7 @@ public interface ThesisService {
     Map<String, Object> getTopicStatusInfo(Integer topicId);
     boolean canTopicBeApproved(Integer topicId);
     Map<String, Object> getSupervisorCapacityInfo(Integer supervisorId);
+    Map<String, Object> getTopicById(Integer topicId);
 
 //    Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size);
 //    Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size);

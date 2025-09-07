@@ -41,7 +41,7 @@ public interface ThesisServiceClient {
     /**
      * Lấy thông tin đề tài theo ID
      */
-    @GetMapping("/api/thesis-service/topics/{topicId}")
+    @GetMapping("/api/thesis-service/teacher/topics/{topicId}")
     Map<String, Object> getTopicById(@PathVariable("topicId") Integer topicId);
 
     /**

@@ -597,4 +597,27 @@ public class ThesisServiceImpl implements ThesisService {
 //        Pageable pageable = PageRequest.of(page, size);
 //        return projectTopicRepository.findByApprovalStatus(status, type, pageable);
 //    }
+
+    @Override
+    public Map<String, Object> getTopicById(Integer topicId) {
+        ProjectTopic projectTopic = projectTopicRepository.findById(topicId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project topic not found!"));
+        
+        Map<String, Object> topicInfo = new HashMap<>();
+        topicInfo.put("topicId", projectTopic.getTopicId());
+        topicInfo.put("title", projectTopic.getTitle());
+        topicInfo.put("description", projectTopic.getDescription());
+        topicInfo.put("topicCode", projectTopic.getTopicCode());
+        topicInfo.put("difficultyLevel", projectTopic.getDifficultyLevel());
+        topicInfo.put("topicStatus", projectTopic.getTopicStatus());
+        topicInfo.put("approvalStatus", projectTopic.getApprovalStatus());
+        topicInfo.put("supervisorId", projectTopic.getSupervisorId());
+        topicInfo.put("academicYearId", projectTopic.getAcademicYearId());
+        topicInfo.put("maxStudents", projectTopic.getMaxStudents());
+        topicInfo.put("acceptedStudentsCount", projectTopic.getAcceptedStudentsCount());
+        topicInfo.put("createdAt", projectTopic.getCreatedAt());
+        topicInfo.put("updatedAt", projectTopic.getUpdatedAt());
+        
+        return topicInfo;
+    }
 }
