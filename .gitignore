@@ -36,3 +36,19 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Deployment files ###
+render.yaml
+# docker-compose.yml  # Keep this for local development
+Dockerfile
+*.env
+.env.local
+.env.production
+
+### Logs ###
+*.log
+logs/
+
+### Temporary files ###
+*.tmp
+*.temp

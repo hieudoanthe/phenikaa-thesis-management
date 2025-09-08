@@ -4,7 +4,6 @@ import com.phenikaa.thesisservice.client.ProfileServiceClient;
 import com.phenikaa.thesisservice.dto.request.ChatRequest;
 import com.phenikaa.thesisservice.dto.response.ChatResponse;
 import com.phenikaa.thesisservice.entity.LecturerCapacity;
-import com.phenikaa.thesisservice.entity.ProjectTopic;
 import com.phenikaa.thesisservice.repository.LecturerCapacityRepository;
 import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.service.interfaces.AiChatService;

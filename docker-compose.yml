@@ -1,0 +1,356 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: phenikaa-postgres
+    environment:
+      POSTGRES_DB: phenikaa_thesis
+      POSTGRES_USER: phenikaa_user
+      POSTGRES_PASSWORD: phenikaa_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-setup.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - phenikaa-network
+
+  # MongoDB for Communication Log Service
+  mongodb:
+    image: mongo:7
+    container_name: phenikaa-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: communication_log_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - phenikaa-network
+
+  # Redis for Caching
+  redis:
+    image: redis:7-alpine
+    container_name: phenikaa-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - phenikaa-network
+
+  # Discovery Server
+  discovery-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-discovery
+    command: java -jar discovery-server.jar
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8761
+    networks:
+      - phenikaa-network
+    depends_on:
+      - postgres
+
+  # Config Server
+  config-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-config
+    command: java -jar config-server.jar
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8888
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-gateway
+    command: java -jar api-gateway.jar
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8080
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+
+  # Auth Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-auth
+    command: java -jar auth-service.jar
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8090
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+
+  # User Service
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-user
+    command: java -jar user-service.jar
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8081
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_USERNAME=phenikaa_user
+      - DB_PASSWORD=phenikaa_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=user_db
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+
+  # Thesis Service
+  thesis-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-thesis
+    command: java -jar thesis-service.jar
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8082
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_USERNAME=phenikaa_user
+      - DB_PASSWORD=phenikaa_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=thesis_db
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+
+  # Profile Service
+  profile-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-profile
+    command: java -jar profile-service.jar
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8083
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_USERNAME=phenikaa_user
+      - DB_PASSWORD=phenikaa_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=profile_db
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+
+  # Group Service
+  group-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-group
+    command: java -jar group-service.jar
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8084
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_USERNAME=phenikaa_user
+      - DB_PASSWORD=phenikaa_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=group_db
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+
+  # Assign Service
+  assign-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-assign
+    command: java -jar assign-service.jar
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8085
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_USERNAME=phenikaa_user
+      - DB_PASSWORD=phenikaa_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=assign_db
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+
+  # Submission Service
+  submission-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-submission
+    command: java -jar submission-service.jar
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8086
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_USERNAME=phenikaa_user
+      - DB_PASSWORD=phenikaa_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=submission_db
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+
+  # Academic Config Service
+  academic-config-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-academic
+    command: java -jar academic-config-service.jar
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8087
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_USERNAME=phenikaa_user
+      - DB_PASSWORD=phenikaa_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=academic_db
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+
+  # Communication Log Service
+  communication-log-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-communication
+    command: java -jar communication-log-service.jar
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8088
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - MONGODB_URI=mongodb://mongodb:27017/phenikaa_thesis_connection
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - mongodb
+      - redis
+
+  # Eval Service
+  eval-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phenikaa-eval
+    command: java -jar eval-service.jar
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PORT=8089
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_USERNAME=phenikaa_user
+      - DB_PASSWORD=phenikaa_password
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=evaluation_db
+    networks:
+      - phenikaa-network
+    depends_on:
+      - discovery-server
+      - config-server
+      - postgres
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data:
+
+networks:
+  phenikaa-network:
+    driver: bridge
