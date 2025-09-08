@@ -4,23 +4,14 @@ FROM openjdk:21-jdk-slim as builder
 # Set working directory
 WORKDIR /app
 
-# Copy pom files
-COPY pom.xml .
-COPY common-lib/pom.xml common-lib/
-COPY discovery/discovery-server/pom.xml discovery/discovery-server/
-COPY config/config-server/pom.xml config/config-server/
-COPY gateway/api-gateway/pom.xml gateway/api-gateway/
-COPY services/*/pom.xml services/*/
+# Install Maven
+RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
 
-# Download dependencies
-RUN apt-get update && apt-get install -y maven
-RUN mvn dependency:go-offline -B
-
-# Copy source code
+# Copy entire source (simpler and avoids reactor errors)
 COPY . .
 
 # Build all services
-RUN mvn clean package -DskipTests
+RUN mvn -q clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
