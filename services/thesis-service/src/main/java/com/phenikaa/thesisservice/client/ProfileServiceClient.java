@@ -19,8 +19,8 @@ public interface ProfileServiceClient {
     @PutMapping("/api/profile-service/teacher/decrease-capacity")
     void decreaseTeacherCapacity();
     
-    @GetMapping("/api/profile-service/teacher/{id}")
-    Map<String, Object> getLecturerById(@PathVariable("id") Integer id);
+    @GetMapping("/api/profile-service//teacher/get-profile/{userId}")
+    Map<String, Object> getLecturerById(@PathVariable("userId") Integer userId);
 }
 
 

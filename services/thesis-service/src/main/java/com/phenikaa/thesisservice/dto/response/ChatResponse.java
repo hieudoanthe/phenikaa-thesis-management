@@ -29,6 +29,8 @@ public class ChatResponse {
         private String methodology;
         private String difficultyLevel;
         private String expectedOutcome;
+        private String technologies;
+        private String reason;
     }
     
     @Data
@@ -40,7 +42,6 @@ public class ChatResponse {
         private String lecturerName;
         private String specialization;
         private Integer remainingCapacity;
-        private String email;
         private String phone;
     }
 }

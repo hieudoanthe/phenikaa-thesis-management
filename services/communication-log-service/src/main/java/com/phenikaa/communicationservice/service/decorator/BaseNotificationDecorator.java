@@ -9,7 +9,6 @@ import java.util.Map;
 public abstract class BaseNotificationDecorator implements NotificationDecorator {
     protected final NotificationDecorator wrapped;
 
-    // Default constructor for Lombok
     public BaseNotificationDecorator() {
         this.wrapped = null;
     }
