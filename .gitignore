@@ -41,7 +41,6 @@ build/
 # Keep render.yaml tracked for Render Blueprint deploy
 !render.yaml
 # docker-compose.yml  # Keep this for local development
-Dockerfile
 *.env
 .env.local
 .env.production
