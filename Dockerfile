@@ -10,8 +10,9 @@ RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
 # Copy entire source (simpler and avoids reactor errors)
 COPY . .
 
-# Build all services
-RUN mvn -q clean package -DskipTests
+# Build: install parent POM first to local repo, then build all modules
+RUN mvn -q -N -f pom.xml install \
+ && mvn -q clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
