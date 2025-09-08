@@ -22,8 +22,23 @@ cloudinary:
   api_key: ${CLOUDINARY_API_KEY}
   api_secret: ${CLOUDINARY_API_SECRET}
 
+# File Storage Configuration
+file:
+  storage:
+    type: cloudinary # Options: traditional, nio, cloudinary
+    traditional:
+      base-path: "uploads/traditional"
+      buffer-size: 8192
+    nio:
+      base-path: "uploads/nio"
+      buffer-size: 8192
+    cloudinary:
+      enabled: true
+      backup-local: false # Enable local backup when using Cloudinary
+
 logging:
   level:
     org.springframework: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.phenikaa.submissionservice.service: DEBUG

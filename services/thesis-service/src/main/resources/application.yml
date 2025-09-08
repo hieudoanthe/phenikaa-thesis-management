@@ -23,3 +23,10 @@ logging:
     org.springframework: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# AI Configuration
+ai:
+  gemini:
+    api-key: AIzaSyCUuAhB8wbCCCqrhlTXT83Sbe5c17GTJlU
+    model-name: gemini-1.5-flash
+    temperature: 0.7

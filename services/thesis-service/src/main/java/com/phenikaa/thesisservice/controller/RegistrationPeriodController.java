@@ -120,7 +120,7 @@ public class RegistrationPeriodController {
 
     @GetMapping("/lecturer-capacity/lecturer/{lecturerId}")
     public ResponseEntity<List<LecturerCapacity>> getLecturerCapacitiesByLecturer(@PathVariable Integer lecturerId) {
-        List<LecturerCapacity> capacities = lecturerCapacityRepository.findByLecturerId(lecturerId);
+        List<LecturerCapacity> capacities = lecturerCapacityRepository.findAllByLecturerId(lecturerId);
         return ResponseEntity.ok(capacities);
     }
 }

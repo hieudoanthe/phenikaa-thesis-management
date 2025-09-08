@@ -31,7 +31,7 @@ spring:
         - id: thesis-service
           uri: lb://thesis-service
           predicates:
-            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**
+            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**,
 
         - id: assign-service
           uri: lb://assign-service
