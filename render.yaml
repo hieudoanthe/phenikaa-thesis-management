@@ -2,9 +2,9 @@ services:
   # Discovery Server
   - type: web
     name: discovery-server
-    env: java
-    buildCommand: cd discovery/discovery-server && mvn clean package -DskipTests
-    startCommand: java -jar target/discovery-server-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar discovery-server.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -16,9 +16,9 @@ services:
   # Config Server
   - type: web
     name: config-server
-    env: java
-    buildCommand: cd config/config-server && mvn clean package -DskipTests
-    startCommand: java -jar target/config-server-0.0.1-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar config-server.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -32,9 +32,9 @@ services:
   # API Gateway
   - type: web
     name: api-gateway
-    env: java
-    buildCommand: cd gateway/api-gateway && mvn clean package -DskipTests
-    startCommand: java -jar target/api-gateway-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar api-gateway.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -48,9 +48,9 @@ services:
   # Auth Service
   - type: web
     name: auth-service
-    env: java
-    buildCommand: cd services/auth-service && mvn clean package -DskipTests
-    startCommand: java -jar target/auth-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar auth-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -66,9 +66,9 @@ services:
   # User Service
   - type: web
     name: user-service
-    env: java
-    buildCommand: cd services/user-service && mvn clean package -DskipTests
-    startCommand: java -jar target/user-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar user-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -94,9 +94,9 @@ services:
   # Thesis Service
   - type: web
     name: thesis-service
-    env: java
-    buildCommand: cd services/thesis-service && mvn clean package -DskipTests
-    startCommand: java -jar target/thesis-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar thesis-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -122,9 +122,9 @@ services:
   # Profile Service
   - type: web
     name: profile-service
-    env: java
-    buildCommand: cd services/profile-service && mvn clean package -DskipTests
-    startCommand: java -jar target/profile-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar profile-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -150,9 +150,9 @@ services:
   # Group Service
   - type: web
     name: group-service
-    env: java
-    buildCommand: cd services/group-service && mvn clean package -DskipTests
-    startCommand: java -jar target/group-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar group-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -178,9 +178,9 @@ services:
   # Assign Service
   - type: web
     name: assign-service
-    env: java
-    buildCommand: cd services/assign-service && mvn clean package -DskipTests
-    startCommand: java -jar target/assign-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar assign-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -206,9 +206,9 @@ services:
   # Submission Service
   - type: web
     name: submission-service
-    env: java
-    buildCommand: cd services/submission-service && mvn clean package -DskipTests
-    startCommand: java -jar target/submission-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar submission-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -234,9 +234,9 @@ services:
   # Academic Config Service
   - type: web
     name: academic-config-service
-    env: java
-    buildCommand: cd services/academic-config-service && mvn clean package -DskipTests
-    startCommand: java -jar target/academic-config-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar academic-config-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -262,9 +262,9 @@ services:
   # Communication Log Service
   - type: web
     name: communication-log-service
-    env: java
-    buildCommand: cd services/communication-log-service && mvn clean package -DskipTests
-    startCommand: java -jar target/communication-log-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar communication-log-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -286,9 +286,9 @@ services:
   # Eval Service
   - type: web
     name: eval-service
-    env: java
-    buildCommand: cd services/eval-service && mvn clean package -DskipTests
-    startCommand: java -jar target/eval-service-1.0-SNAPSHOT.jar
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: java -jar eval-service.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
