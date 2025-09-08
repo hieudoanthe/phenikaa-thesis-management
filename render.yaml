@@ -41,7 +41,7 @@ services:
       - key: PORT
         value: 8080
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
+        value: https://discovery-server-kgbm.onrender.com
     healthCheckPath: /actuator/health
     plan: free
 
@@ -56,10 +56,10 @@ services:
         value: prod
       - key: PORT
         value: 8090
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
     healthCheckPath: /actuator/health
     plan: free
 
@@ -74,10 +74,10 @@ services:
         value: prod
       - key: PORT
         value: 8081
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: DB_USERNAME
         value: phenikaa_user
       - key: DB_PASSWORD
@@ -102,10 +102,10 @@ services:
         value: prod
       - key: PORT
         value: 8082
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: DB_USERNAME
         value: phenikaa_user
       - key: DB_PASSWORD
@@ -130,10 +130,10 @@ services:
         value: prod
       - key: PORT
         value: 8083
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: DB_USERNAME
         value: phenikaa_user
       - key: DB_PASSWORD
@@ -158,10 +158,10 @@ services:
         value: prod
       - key: PORT
         value: 8084
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: DB_USERNAME
         value: phenikaa_user
       - key: DB_PASSWORD
@@ -186,10 +186,10 @@ services:
         value: prod
       - key: PORT
         value: 8085
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: DB_USERNAME
         value: phenikaa_user
       - key: DB_PASSWORD
@@ -214,10 +214,10 @@ services:
         value: prod
       - key: PORT
         value: 8086
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: DB_USERNAME
         value: phenikaa_user
       - key: DB_PASSWORD
@@ -242,10 +242,10 @@ services:
         value: prod
       - key: PORT
         value: 8087
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: DB_USERNAME
         value: phenikaa_user
       - key: DB_PASSWORD
@@ -270,10 +270,10 @@ services:
         value: prod
       - key: PORT
         value: 8088
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: MONGODB_URI
         value: mongodb://localhost:27017/phenikaa_thesis_connection
       - key: REDIS_HOST
@@ -294,10 +294,10 @@ services:
         value: prod
       - key: PORT
         value: 8089
-      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: http://discovery-server:8761/eureka/
       - key: SPRING_CLOUD_CONFIG_URI
-        value: http://config-server:8888
+        value: https://config-server-0y4d.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://discovery-server-kgbm.onrender.com
       - key: DB_USERNAME
         value: phenikaa_user
       - key: DB_PASSWORD
