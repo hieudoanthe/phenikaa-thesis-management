@@ -125,7 +125,22 @@ public class AiChatServiceImpl implements AiChatService {
                     - **Lý do chọn**: Tại sao đề tài này phù hợp với yêu cầu của sinh viên
                     
                     **ĐỊNH DẠNG TRẢ VỀ:**
-                    Trả về kết quả theo định dạng JSON với các trường: title, description, objectives, methodology, difficultyLevel, expectedOutcome, technologies, reason
+                    Trả về KẾT QUẢ DUY NHẤT dưới dạng JSON HỢP LỆ (KHÔNG có giải thích kèm theo, KHÔNG markdown, KHÔNG văn bản dư thừa).
+                    Chỉ trả về một object JSON có cấu trúc chính xác:
+                    {
+                      "suggestions": [
+                        {
+                          "title": "...",
+                          "description": "...",
+                          "objectives": "...",
+                          "methodology": "...",
+                          "difficultyLevel": "EASY|MEDIUM|HARD",
+                          "expectedOutcome": "...",
+                          "technologies": "...",
+                          "reason": "..."
+                        }
+                      ]
+                    }
                     """, userMessage, specialization);
 
             UserMessage userMsg = UserMessage.from(prompt);
@@ -699,69 +714,108 @@ public class AiChatServiceImpl implements AiChatService {
 
     private List<ChatResponse.TopicSuggestion> parseTopicSuggestions(String response) {
         List<ChatResponse.TopicSuggestion> suggestions = new ArrayList<>();
-        
         try {
-            // Tìm JSON trong response
-            int jsonStart = response.indexOf("{");
-            int jsonEnd = response.lastIndexOf("}") + 1;
-            
-            if (jsonStart >= 0 && jsonEnd > jsonStart) {
-                String jsonString = response.substring(jsonStart, jsonEnd);
+            // Chuẩn hóa nếu AI trả về theo dạng ```json ... ``` hoặc có markdown
+            String normalized = response;
+            if (normalized != null && normalized.contains("```")) {
+                normalized = normalized
+                        .replace("```json", "```")
+                        .replace("```JSON", "```")
+                        .replace("```", "\n");
+            }
+
+            String source = normalized != null ? normalized : response;
+            if (source == null) source = "";
+
+            // Ưu tiên trích xuất mảng JSON nếu có
+            int arrStart = source.indexOf("[");
+            int arrEnd = source.lastIndexOf("]") + 1;
+            int objStart = source.indexOf("{");
+            int objEnd = source.lastIndexOf("}") + 1;
+
+            String jsonString = null;
+            if (arrStart >= 0 && arrEnd > arrStart) {
+                jsonString = source.substring(arrStart, arrEnd).trim();
+            } else if (objStart >= 0 && objEnd > objStart) {
+                jsonString = source.substring(objStart, objEnd).trim();
+            }
+
+            if (jsonString != null) {
                 log.info("Extracted JSON: {}", jsonString);
-                
-                // Parse JSON đơn giản (có thể cải thiện bằng Jackson/Gson)
                 suggestions = parseJsonTopics(jsonString);
             }
-            
-            // Nếu không parse được JSON, log warning
+
             if (suggestions.isEmpty()) {
                 log.warn("Could not parse JSON from AI response, returning empty suggestions");
             }
-            
         } catch (Exception e) {
             log.error("Error parsing topic suggestions: {}", e.getMessage(), e);
         }
-        
         return suggestions;
     }
     
     private List<ChatResponse.TopicSuggestion> parseJsonTopics(String jsonString) {
         List<ChatResponse.TopicSuggestion> suggestions = new ArrayList<>();
-        
         try {
-            // Parse JSON đơn giản bằng regex (có thể cải thiện bằng Jackson)
-            String[] topicBlocks = jsonString.split("\\{[^}]*\\}");
-            
-            for (String block : topicBlocks) {
-                if (block.contains("title") && block.contains("description")) {
-                    String title = extractField(block, "title");
-                    String description = extractField(block, "description");
-                    String objectives = extractField(block, "objectives");
-                    String methodology = extractField(block, "methodology");
-                    String difficultyLevel = extractField(block, "difficultyLevel");
-                    String expectedOutcome = extractField(block, "expectedOutcome");
-                    String technologies = extractField(block, "technologies");
-                    String reason = extractField(block, "reason");
-                    
-                    if (title != null && !title.isEmpty()) {
-                        suggestions.add(ChatResponse.TopicSuggestion.builder()
-                                .title(title)
-                                .description(description != null ? description : "")
-                                .objectives(objectives != null ? objectives : "")
-                                .methodology(methodology != null ? methodology : "")
-                                .difficultyLevel(difficultyLevel != null ? difficultyLevel : "MEDIUM")
-                                .expectedOutcome(expectedOutcome != null ? expectedOutcome : "")
-                                .technologies(technologies != null ? technologies : "")
-                                .reason(reason != null ? reason : "")
-                                .build());
-                    }
+            // Thử dùng Jackson nếu có trên classpath
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(jsonString);
+                com.fasterxml.jackson.databind.JsonNode arr;
+                if (root.isArray()) {
+                    arr = root;
+                } else {
+                    arr = root.get("suggestions");
                 }
+                if (arr != null && arr.isArray()) {
+                    for (com.fasterxml.jackson.databind.JsonNode node : arr) {
+                        suggestions.add(
+                                ChatResponse.TopicSuggestion.builder()
+                                        .title(node.path("title").asText(""))
+                                        .description(node.path("description").asText(""))
+                                        .objectives(node.path("objectives").isArray() ? node.path("objectives").toString() : node.path("objectives").asText(""))
+                                        .methodology(node.path("methodology").asText(""))
+                                        .difficultyLevel(node.path("difficultyLevel").asText("MEDIUM"))
+                                        .expectedOutcome(node.path("expectedOutcome").asText(""))
+                                        .technologies(node.path("technologies").isArray() ? node.path("technologies").toString() : node.path("technologies").asText(""))
+                                        .reason(node.path("reason").asText(""))
+                                        .build()
+                        );
+                    }
+                    return suggestions;
+                }
+            } catch (Throwable ignore) {
+                // bỏ qua để fallback regex bên dưới
             }
-            
+
+            // Fallback đơn giản bằng regex thô
+            String[] topicBlocks = jsonString.split("\\{\\s*\\\"title\\\"");
+            for (String block : topicBlocks) {
+                if (!block.contains("\"")) continue;
+                String segment = "{\"title\"" + block;
+                String title = extractField(segment, "title");
+                if (title == null || title.isEmpty()) continue;
+                String description = extractField(segment, "description");
+                String objectives = extractField(segment, "objectives");
+                String methodology = extractField(segment, "methodology");
+                String difficultyLevel = extractField(segment, "difficultyLevel");
+                String expectedOutcome = extractField(segment, "expectedOutcome");
+                String technologies = extractField(segment, "technologies");
+                String reason = extractField(segment, "reason");
+                suggestions.add(ChatResponse.TopicSuggestion.builder()
+                        .title(title)
+                        .description(description != null ? description : "")
+                        .objectives(objectives != null ? objectives : "")
+                        .methodology(methodology != null ? methodology : "")
+                        .difficultyLevel(difficultyLevel != null ? difficultyLevel : "MEDIUM")
+                        .expectedOutcome(expectedOutcome != null ? expectedOutcome : "")
+                        .technologies(technologies != null ? technologies : "")
+                        .reason(reason != null ? reason : "")
+                        .build());
+            }
         } catch (Exception e) {
             log.error("Error parsing JSON topics: {}", e.getMessage(), e);
         }
-        
         return suggestions;
     }
     
