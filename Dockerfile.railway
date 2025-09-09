@@ -1,0 +1,122 @@
+# Multi-stage build optimized for Railway deployment
+FROM openjdk:21-jdk-slim as builder
+
+# Set working directory
+WORKDIR /app
+
+# Install Maven and other dependencies
+RUN apt-get update && \
+    apt-get install -y maven curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy entire source
+COPY . .
+
+# Build the project
+RUN mvn -q -N -f pom.xml install && \
+    mvn -q clean package -DskipTests
+
+# Runtime stage
+FROM eclipse-temurin:21-jre
+
+# Install necessary packages
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy built JARs
+COPY --from=builder /app/discovery/discovery-server/target/*.jar discovery-server.jar
+COPY --from=builder /app/config/config-server/target/*.jar config-server.jar
+COPY --from=builder /app/gateway/api-gateway/target/*.jar api-gateway.jar
+COPY --from=builder /app/services/auth-service/target/*.jar auth-service.jar
+COPY --from=builder /app/services/user-service/target/*.jar user-service.jar
+COPY --from=builder /app/services/thesis-service/target/*.jar thesis-service.jar
+COPY --from=builder /app/services/profile-service/target/*.jar profile-service.jar
+COPY --from=builder /app/services/group-service/target/*.jar group-service.jar
+COPY --from=builder /app/services/assign-service/target/*.jar assign-service.jar
+COPY --from=builder /app/services/submission-service/target/*.jar submission-service.jar
+COPY --from=builder /app/services/academic-config-service/target/*.jar academic-config-service.jar
+COPY --from=builder /app/services/communication-log-service/target/*.jar communication-log-service.jar
+COPY --from=builder /app/services/eval-service/target/*.jar eval-service.jar
+
+# Create startup script for all services
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Function to start a service\n\
+start_service() {\n\
+    local jar_file=$1\n\
+    local service_name=$2\n\
+    local port=$3\n\
+    \n\
+    echo "Starting $service_name on port $port..."\n\
+    java -jar $jar_file &\n\
+    local pid=$!\n\
+    echo $pid > ${service_name}.pid\n\
+    \n\
+    # Wait for service to be ready\n\
+    for i in {1..30}; do\n\
+        if curl -f http://localhost:$port/actuator/health >/dev/null 2>&1; then\n\
+            echo "$service_name is ready!"\n\
+            return 0\n\
+        fi\n\
+        sleep 2\n\
+    done\n\
+    \n\
+    echo "Failed to start $service_name"\n\
+    return 1\n\
+}\n\
+\n\
+# Function to stop all services\n\
+cleanup() {\n\
+    echo "Shutting down services..."\n\
+    for pidfile in *.pid; do\n\
+        if [ -f "$pidfile" ]; then\n\
+            pid=$(cat $pidfile)\n\
+            kill $pid 2>/dev/null || true\n\
+            rm -f $pidfile\n\
+        fi\n\
+    done\n\
+    exit 0\n\
+}\n\
+\n\
+# Set up signal handlers\n\
+trap cleanup SIGTERM SIGINT\n\
+\n\
+# Start services in order\n\
+start_service discovery-server.jar "Discovery Server" 8761\n\
+sleep 10\n\
+\n\
+start_service config-server.jar "Config Server" 8888\n\
+sleep 10\n\
+\n\
+start_service api-gateway.jar "API Gateway" 8080\n\
+sleep 10\n\
+\n\
+# Start microservices\n\
+start_service auth-service.jar "Auth Service" 8090 &\n\
+start_service user-service.jar "User Service" 8081 &\n\
+start_service thesis-service.jar "Thesis Service" 8082 &\n\
+start_service profile-service.jar "Profile Service" 8083 &\n\
+start_service group-service.jar "Group Service" 8084 &\n\
+start_service assign-service.jar "Assign Service" 8085 &\n\
+start_service submission-service.jar "Submission Service" 8086 &\n\
+start_service academic-config-service.jar "Academic Config Service" 8087 &\n\
+start_service communication-log-service.jar "Communication Log Service" 8088 &\n\
+start_service eval-service.jar "Eval Service" 8089 &\n\
+\n\
+# Wait for all background processes\n\
+wait' > start-all.sh && chmod +x start-all.sh
+
+# Expose the main API Gateway port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Start all services
+CMD ["./start-all.sh"]

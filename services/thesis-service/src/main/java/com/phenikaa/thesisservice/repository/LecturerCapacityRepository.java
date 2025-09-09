@@ -21,7 +21,13 @@ public interface LecturerCapacityRepository extends JpaRepository<LecturerCapaci
     
     // Tìm capacity của giảng viên (lấy capacity mới nhất)
     @Query("SELECT lc FROM LecturerCapacity lc WHERE lc.lecturerId = :lecturerId ORDER BY lc.createdAt DESC")
-    Optional<LecturerCapacity> findByLecturerId(@Param("lecturerId") Integer lecturerId);
+    List<LecturerCapacity> findByLecturerIdOrderByCreatedAtDesc(@Param("lecturerId") Integer lecturerId);
+    
+    // Wrapper method để lấy capacity mới nhất
+    default Optional<LecturerCapacity> findByLecturerId(Integer lecturerId) {
+        List<LecturerCapacity> capacities = findByLecturerIdOrderByCreatedAtDesc(lecturerId);
+        return capacities.isEmpty() ? Optional.empty() : Optional.of(capacities.get(0));
+    }
     
     // Tìm tất cả capacity trong một đợt đăng ký
     List<LecturerCapacity> findByRegistrationPeriodId(Integer registrationPeriodId);
