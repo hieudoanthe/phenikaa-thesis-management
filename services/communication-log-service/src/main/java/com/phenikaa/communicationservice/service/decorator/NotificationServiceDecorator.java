@@ -16,13 +16,13 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class NotificationServiceAdapter implements NotificationDecorator {
+public class NotificationServiceDecorator implements NotificationDecorator {
 
     private final NotificationService notificationService;
 
     @Override
     public void sendNotification(NotificationRequest request) {
-        log.info("NotificationServiceAdapter.sendNotification called with request: senderId={}, receiverId={}, message={}, type={}",
+        log.info("NotificationServiceDecorator.sendNotification called with request: senderId={}, receiverId={}, message={}, type={}",
                 request.getSenderId(), request.getReceiverId(), request.getMessage(), request.getType());
 
         NotificationComposer composer = NotificationComposerFactory.get(request.getType());
@@ -34,7 +34,7 @@ public class NotificationServiceAdapter implements NotificationDecorator {
                 composedMessage
         ).subscribe();
 
-        log.info("NotificationServiceAdapter: notification persisted & broadcasted");
+        log.info("NotificationServiceDecorator: notification persisted & broadcasted");
     }
 
     @Override

@@ -7,6 +7,5 @@ public interface CloudinaryService {
     void deleteFile(String publicId);
     byte[] downloadFile(String publicId);
     String generateSignedUrl(String publicId);
-    String generateSignedUrlWithExtension(String publicId, String fileExtension);
     byte[] downloadFileDirectly(String publicId);
 }

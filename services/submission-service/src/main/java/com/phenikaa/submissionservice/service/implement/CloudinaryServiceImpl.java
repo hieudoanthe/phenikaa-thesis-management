@@ -3,37 +3,19 @@ package com.phenikaa.submissionservice.service.implement;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.phenikaa.submissionservice.service.interfaces.CloudinaryService;
-import com.phenikaa.submissionservice.service.interfaces.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-@Service("cloudinaryFileService")
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class CloudinaryServiceImpl implements CloudinaryService, FileStorageService {
+public class CloudinaryServiceImpl implements CloudinaryService {
     private final Cloudinary cloudinary;
-    
-    @Value("${file.storage.cloudinary.backup-local:false}")
-    private boolean backupLocal;
-    
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @Qualifier("traditionalFileService")
-    private FileStorageService traditionalService;
-    
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @Qualifier("nioFileService")
-    private FileStorageService nioService;
-
     @Override
     public String uploadFile(MultipartFile file, String folderName) {
         try {
@@ -48,8 +30,9 @@ public class CloudinaryServiceImpl implements CloudinaryService, FileStorageServ
                     "transformation", "f_auto" // Tự động detect format
             );
 
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), options);
-            return uploadResult.get("secure_url").toString();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), options);
+            return String.valueOf(uploadResult.get("secure_url"));
         } catch (IOException e) {
             throw new RuntimeException("Upload failed", e);
         }
@@ -141,7 +124,8 @@ public class CloudinaryServiceImpl implements CloudinaryService, FileStorageServ
             );
             
             // Lấy thông tin file từ Cloudinary
-            Map<String, Object> resource = cloudinary.api().resource(publicId, options);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resource = (Map<String, Object>) (Map<?, ?>) cloudinary.api().resource(publicId, options);
             String secureUrl = (String) resource.get("secure_url");
             
             if (secureUrl == null) {
@@ -171,108 +155,7 @@ public class CloudinaryServiceImpl implements CloudinaryService, FileStorageServ
         }
     }
 
-    // FileStorageService implementation methods
-    @Override
-    public String generateFileUrl(String filePath) {
-        // Extract public_id from Cloudinary URL
-        String publicId = extractPublicIdFromUrl(filePath);
-        if (publicId != null) {
-            return generateSignedUrl(publicId);
-        }
-        return filePath; // Return original path if not a Cloudinary URL
-    }
-    
-    @Override
-    public void streamFile(String filePath, OutputStream outputStream) {
-        try {
-            byte[] fileContent = downloadFile(extractPublicIdFromUrl(filePath));
-            outputStream.write(fileContent);
-        } catch (Exception e) {
-            log.error("Error streaming file: {}", e.getMessage(), e);
-            throw new RuntimeException("Stream failed", e);
-        }
-    }
-    
-    // Hybrid upload method - upload to Cloudinary and optionally backup locally
-    public String uploadFileHybrid(MultipartFile file, String folderName) {
-        // Upload to Cloudinary first
-        String cloudinaryUrl = uploadFile(file, folderName);
-        
-        // Backup to local storage if enabled
-        if (backupLocal) {
-            try {
-                if (nioService != null) {
-                    String localPath = nioService.uploadFile(file, folderName + "/backup");
-                    log.info("File backed up locally using NIO: {}", localPath);
-                } else if (traditionalService != null) {
-                    String localPath = traditionalService.uploadFile(file, folderName + "/backup");
-                    log.info("File backed up locally using Traditional I/O: {}", localPath);
-                }
-            } catch (Exception e) {
-                log.warn("Local backup failed: {}", e.getMessage());
-            }
-        }
-        
-        return cloudinaryUrl;
-    }
-    
-    // Fallback download method - try Cloudinary first, then local
-    public byte[] downloadFileWithFallback(String fileUrl) {
-        try {
-            // Try Cloudinary first
-            String publicId = extractPublicIdFromUrl(fileUrl);
-            if (publicId != null) {
-                return downloadFile(publicId);
-            }
-        } catch (Exception e) {
-            log.warn("Cloudinary download failed, trying local: {}", e.getMessage());
-        }
-        
-        // Fallback to local storage
-        try {
-            if (nioService != null) {
-                return nioService.downloadFile(fileUrl);
-            } else if (traditionalService != null) {
-                return traditionalService.downloadFile(fileUrl);
-            }
-        } catch (Exception e) {
-            log.error("Local download also failed: {}", e.getMessage());
-        }
-        
-        throw new RuntimeException("All download methods failed");
-    }
-    
-    // Extract public_id from Cloudinary URL
-    private String extractPublicIdFromUrl(String fileUrl) {
-        if (fileUrl == null || !fileUrl.contains("cloudinary.com")) {
-            return null;
-        }
-        
-        try {
-            // Extract public_id from URL like: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/filename.ext
-            String[] parts = fileUrl.split("/upload/");
-            if (parts.length > 1) {
-                String pathPart = parts[1];
-                // Remove version if present
-                if (pathPart.startsWith("v")) {
-                    int slashIndex = pathPart.indexOf("/");
-                    if (slashIndex > 0) {
-                        pathPart = pathPart.substring(slashIndex + 1);
-                    }
-                }
-                // Remove file extension
-                int dotIndex = pathPart.lastIndexOf(".");
-                if (dotIndex > 0) {
-                    pathPart = pathPart.substring(0, dotIndex);
-                }
-                return pathPart;
-            }
-        } catch (Exception e) {
-            log.warn("Failed to extract public_id from URL: {}", fileUrl);
-        }
-        
-        return null;
-    }
+    // Adaptee remains focused on Cloudinary only
 
     // Helper method để lấy file extension
     private String getFileExtension(String filename) {
