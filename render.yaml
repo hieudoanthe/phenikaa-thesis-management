@@ -41,7 +41,7 @@ services:
       - key: PORT
         value: 8080
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
+        value: https://discovery-server-kgbm.onrender.com/eureka/
     healthCheckPath: /actuator/health
     plan: free
 
@@ -59,7 +59,7 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
+        value: https://discovery-server-kgbm.onrender.com/eureka/
     healthCheckPath: /actuator/health
     plan: free
 
@@ -77,17 +77,19 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
-      - key: DB_USERNAME
-        value: phenikaa_user
-      - key: DB_PASSWORD
-        value: phenikaa_password
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: user_db
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
+      - key: DATABASE_USERNAME
+        fromDatabase:
+          name: main-db
+          property: phenikaa_user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: main-db
+          property: dZZDsSt1q6K1BUQBR5rFt36hCurlSvDz
     healthCheckPath: /actuator/health
     plan: free
 
@@ -105,17 +107,11 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
-      - key: DB_USERNAME
-        value: phenikaa_user
-      - key: DB_PASSWORD
-        value: phenikaa_password
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: thesis_db
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
     healthCheckPath: /actuator/health
     plan: free
 
@@ -133,17 +129,11 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
-      - key: DB_USERNAME
-        value: phenikaa_user
-      - key: DB_PASSWORD
-        value: phenikaa_password
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: profile_db
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
     healthCheckPath: /actuator/health
     plan: free
 
@@ -161,17 +151,11 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
-      - key: DB_USERNAME
-        value: phenikaa_user
-      - key: DB_PASSWORD
-        value: phenikaa_password
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: group_db
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
     healthCheckPath: /actuator/health
     plan: free
 
@@ -189,17 +173,11 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
-      - key: DB_USERNAME
-        value: phenikaa_user
-      - key: DB_PASSWORD
-        value: phenikaa_password
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: assign_db
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
     healthCheckPath: /actuator/health
     plan: free
 
@@ -217,17 +195,11 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
-      - key: DB_USERNAME
-        value: phenikaa_user
-      - key: DB_PASSWORD
-        value: phenikaa_password
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: submission_db
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
     healthCheckPath: /actuator/health
     plan: free
 
@@ -245,17 +217,11 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
-      - key: DB_USERNAME
-        value: phenikaa_user
-      - key: DB_PASSWORD
-        value: phenikaa_password
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: academic_db
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
     healthCheckPath: /actuator/health
     plan: free
 
@@ -273,15 +239,23 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      # MongoDB Atlas URI
       - key: MONGODB_URI
-        value: mongodb://localhost:27017/phenikaa_thesis_connection
+        value: mongodb+srv://TheHieuDev:BBcUrHKIsHI6PDs6@cluster0-thehieudev.suq9elq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0-TheHieuDev
+      # Redis Upstash URI
       - key: REDIS_HOST
-        value: localhost
+        value: shining-coyote-49592.upstash.io
       - key: REDIS_PORT
         value: 6379
+      - key: REDIS_USERNAME
+        value: default
+      - key: REDIS_PASSWORD
+        value: AcG4AAIncDExMGRiOTIxOTA5Yjk0NjRhOTRlYjUxZTk1NjkyZDFlYXAxNDk1OTI
+
     healthCheckPath: /actuator/health
     plan: free
+
 
   # Eval Service
   - type: web
@@ -297,17 +271,11 @@ services:
       - key: SPRING_CLOUD_CONFIG_URI
         value: https://config-server-0y4d.onrender.com
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-        value: https://discovery-server-kgbm.onrender.com
-      - key: DB_USERNAME
-        value: phenikaa_user
-      - key: DB_PASSWORD
-        value: phenikaa_password
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: evaluation_db
+        value: https://discovery-server-kgbm.onrender.com/eureka/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
     healthCheckPath: /actuator/health
     plan: free
 

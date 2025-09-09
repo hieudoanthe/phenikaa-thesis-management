@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <mirrors>
+    <!-- Mirror Maven Central via repo1 (sometimes more reliable) -->
+    <mirror>
+      <id>repo1</id>
+      <name>Repo1 Maven Central</name>
+      <url>https://repo1.maven.org/maven2</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+    <!-- Optional fast mirror (comment out if not desired) -->
+    <mirror>
+      <id>aliyun-public</id>
+      <name>Aliyun Public Maven</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+
+  <profiles>
+    <profile>
+      <id>increased-timeouts</id>
+      <properties>
+        <!-- Increase Wagon HTTP timeouts (ms) -->
+        <maven.wagon.http.connectionTimeout>60000</maven.wagon.http.connectionTimeout>
+        <maven.wagon.http.readTimeout>120000</maven.wagon.http.readTimeout>
+      </properties>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>increased-timeouts</activeProfile>
+  </activeProfiles>
+
+</settings>
+
+
