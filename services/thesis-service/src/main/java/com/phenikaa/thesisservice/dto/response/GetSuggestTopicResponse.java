@@ -14,4 +14,5 @@ public class GetSuggestTopicResponse {
     private Integer approvedBy;
     private Instant createdAt;
     private Integer topicId;
+    private String title;
 }

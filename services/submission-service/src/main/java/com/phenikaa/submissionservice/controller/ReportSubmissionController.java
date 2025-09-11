@@ -1,10 +1,10 @@
 package com.phenikaa.submissionservice.controller;
 
 import com.phenikaa.submissionservice.dto.request.ReportSubmissionRequest;
+import com.phenikaa.submissionservice.dto.request.SubmissionFilterRequest;
 import com.phenikaa.submissionservice.dto.response.ReportSubmissionResponse;
 import com.phenikaa.submissionservice.service.ReportSubmissionService;
-import com.phenikaa.submissionservice.service.interfaces.CloudinaryService;
-import lombok.RequiredArgsConstructor;
+import com.phenikaa.submissionservice.service.interfaces.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,21 +16,29 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
-import java.net.URL;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/submission-service")
-@RequiredArgsConstructor
 @Slf4j
 public class ReportSubmissionController {
 
     private final ReportSubmissionService reportSubmissionService;
-    private final CloudinaryService cloudinaryService;
+    private final FileStorageService fileStorageService;
 
-    /**
-     * Tạo báo cáo mới
-     */
+    public ReportSubmissionController(
+            ReportSubmissionService reportSubmissionService,
+            @org.springframework.beans.factory.annotation.Qualifier("cloudinaryFileService") FileStorageService fileStorageService
+    ) {
+        this.reportSubmissionService = reportSubmissionService;
+        this.fileStorageService = fileStorageService;
+    }
+
     @PostMapping(value = "/submissions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReportSubmissionResponse> createSubmission(
             @Valid @ModelAttribute ReportSubmissionRequest request,
@@ -45,9 +53,6 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Cập nhật báo cáo
-     */
     @PutMapping(value = "/submissions/{submissionId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReportSubmissionResponse> updateSubmission(
             @PathVariable Integer submissionId,
@@ -63,9 +68,6 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Lấy báo cáo theo ID
-     */
     @GetMapping("/submissions/{submissionId}")
     public ResponseEntity<ReportSubmissionResponse> getSubmissionById(@PathVariable Integer submissionId) {
         try {
@@ -77,9 +79,6 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Lấy báo cáo theo topic
-     */
     @GetMapping("/submissions/topic/{topicId}")
     public ResponseEntity<List<ReportSubmissionResponse>> getSubmissionsByTopic(@PathVariable Integer topicId) {
         try {
@@ -91,9 +90,6 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Lấy báo cáo theo người dùng
-     */
     @GetMapping("/submissions/user/{userId}")
     public ResponseEntity<List<ReportSubmissionResponse>> getSubmissionsByUser(@PathVariable Integer userId) {
         try {
@@ -105,9 +101,6 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Lấy báo cáo với phân trang
-     */
     @GetMapping("/submissions")
     public ResponseEntity<Page<ReportSubmissionResponse>> getSubmissionsWithPagination(Pageable pageable) {
         try {
@@ -119,9 +112,21 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Cập nhật trạng thái báo cáo
-     */
+    @PostMapping("/submissions/filter")
+    public ResponseEntity<Page<ReportSubmissionResponse>> filterSubmissions(
+            @RequestBody SubmissionFilterRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) Integer studentId
+    ) {
+        try {
+            // Nếu không truyền header, có thể lấy từ SecurityContext sau này
+            Page<ReportSubmissionResponse> responses = reportSubmissionService.filterSubmissions(request, studentId);
+            return ResponseEntity.ok(responses);
+        } catch (Exception e) {
+            log.error("Error filtering submissions: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @PutMapping("/submissions/{submissionId}/status")
     public ResponseEntity<ReportSubmissionResponse> updateSubmissionStatus(
             @PathVariable Integer submissionId,
@@ -136,9 +141,6 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Lấy URL file để download
-     */
     @GetMapping("/submissions/{submissionId}/file-url")
     public ResponseEntity<String> getFileUrl(@PathVariable Integer submissionId) {
         try {
@@ -153,9 +155,6 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Lấy file với proper headers để hiển thị đúng loại file
-     */
     @GetMapping("/submissions/{submissionId}/file")
     public ResponseEntity<byte[]> getFile(@PathVariable Integer submissionId) {
         try {
@@ -169,14 +168,14 @@ public class ReportSubmissionController {
             // Thử download trực tiếp từ URL trước
             try {
                 // Sử dụng HTTP client thay vì URL.openStream() để có better error handling
-                java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(submission.getFilePath()))
+                HttpClient client = HttpClient.newHttpClient();
+                HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(submission.getFilePath()))
                     .GET()
                     .build();
                 
-                java.net.http.HttpResponse<byte[]> response = client.send(request, 
-                    java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+                HttpResponse<byte[]> response = client.send(request,
+                    HttpResponse.BodyHandlers.ofByteArray());
                 
                 if (response.statusCode() == 200) {
                     byte[] fileContent = response.body();
@@ -196,22 +195,10 @@ public class ReportSubmissionController {
                     throw new RuntimeException("HTTP error: " + response.statusCode());
                 }
             } catch (Exception directDownloadError) {
-                log.warn("Direct download failed, trying with Cloudinary SDK: {}", directDownloadError.getMessage());
-                
-                // Fallback: sử dụng Cloudinary SDK
-                String publicId = extractPublicIdFromUrl(submission.getFilePath());
-                if (publicId == null) {
-                    log.error("Cannot extract public_id from URL: {}", submission.getFilePath());
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-                }
-
+                log.warn("Direct download failed, trying with storage service: {}", directDownloadError.getMessage());
                 try {
-                    // Lấy file extension từ URL gốc
                     String fileExtension = getFileExtensionFromUrl(submission.getFilePath());
-                    log.info("File extension: {}", fileExtension);
-                    
-                    // Thử download trực tiếp từ Cloudinary API
-                    byte[] fileContent = cloudinaryService.downloadFileDirectly(publicId);
+                    byte[] fileContent = fileStorageService.downloadFile(submission.getFilePath());
 
                     MediaType mediaType = getMediaTypeFromExtension(fileExtension);
 
@@ -222,10 +209,8 @@ public class ReportSubmissionController {
                     return ResponseEntity.ok()
                             .headers(headers)
                             .body(fileContent);
-                } catch (Exception cloudinaryError) {
-                    log.error("Cloudinary direct download also failed: {}", cloudinaryError.getMessage());
-                    
-                    // Final fallback: return error with helpful message
+                } catch (Exception storageError) {
+                    log.error("Storage service download also failed: {}", storageError.getMessage());
                     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                             .body(("Không thể tải file. Vui lòng thử lại sau.").getBytes());
                 }
@@ -236,9 +221,6 @@ public class ReportSubmissionController {
         }
     }
 
-    /**
-     * Xóa báo cáo
-     */
     @DeleteMapping("/submissions/{submissionId}")
     public ResponseEntity<Void> deleteSubmission(@PathVariable Integer submissionId) {
         try {
@@ -294,38 +276,6 @@ public class ReportSubmissionController {
                 return MediaType.IMAGE_GIF;
             default:
                 return MediaType.APPLICATION_OCTET_STREAM;
-        }
-    }
-
-    // Helper method để extract public_id từ Cloudinary URL
-    private String extractPublicIdFromUrl(String fileUrl) {
-        try {
-            log.info("Extracting public_id from URL: {}", fileUrl);
-            
-            if (fileUrl == null || !fileUrl.contains("cloudinary.com")) {
-                log.warn("URL is null or not a Cloudinary URL");
-                return null;
-            }
-            
-            // Extract the part after /upload/ and before the file extension
-            String[] parts = fileUrl.split("/upload/");
-            if (parts.length > 1) {
-                String pathWithVersion = parts[1];
-                log.info("Path with version: {}", pathWithVersion);
-                
-                // Remove version prefix (v1234567890/)
-                String[] pathParts = pathWithVersion.split("/", 2);
-                if (pathParts.length > 1) {
-                    String publicId = pathParts[1].split("\\.")[0]; // Remove file extension
-                    log.info("Extracted public_id: {}", publicId);
-                    return publicId;
-                }
-            }
-            log.warn("Could not extract public_id from URL");
-            return null;
-        } catch (Exception e) {
-            log.error("Error extracting public_id from URL: {}", e.getMessage(), e);
-            return null;
         }
     }
 }

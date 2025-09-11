@@ -1,6 +1,5 @@
 package com.phenikaa.communicationservice.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phenikaa.communicationservice.client.UserServiceClient;
 import com.phenikaa.communicationservice.service.decorator.EmailNotificationDecorator;
 import com.phenikaa.communicationservice.service.decorator.NotificationServiceDecorator;
@@ -19,7 +18,6 @@ public class NotificationDecoratorConfig {
     public NotificationDecorator notificationDecoratorChain(
             NotificationServiceDecorator notificationServiceDecorator,
             JavaMailSender mailSender,
-            ObjectMapper objectMapper,
             UserServiceClient userServiceClient,
             NotificationExecutionServiceImpl executionService) {
 
@@ -27,7 +25,7 @@ public class NotificationDecoratorConfig {
         NotificationDecorator chain = notificationServiceDecorator;
 
         // Thêm Email decorator
-        chain = new EmailNotificationDecorator(chain, mailSender, objectMapper, userServiceClient, executionService);
+        chain = new EmailNotificationDecorator(chain, mailSender, userServiceClient, executionService);
 
         return chain;
     }

@@ -1,25 +1,40 @@
 package com.phenikaa.communicationservice.controller;
 
+import com.phenikaa.communicationservice.client.UserServiceClient;
 import com.phenikaa.communicationservice.dto.request.NotificationRequest;
 import com.phenikaa.communicationservice.entity.Notification;
 import com.phenikaa.communicationservice.factory.NotificationToolkitFactoryRegistry;
 import com.phenikaa.communicationservice.service.decorator.NotificationDecorator;
+import com.phenikaa.communicationservice.service.decorator.NotificationServiceDecorator;
+import com.phenikaa.communicationservice.service.implement.NotificationExecutionServiceImpl;
 import com.phenikaa.communicationservice.service.interfaces.NotificationService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/notifications")
-@RequiredArgsConstructor
 @Slf4j
 public class NotificationController {
 
     private final NotificationService notificationService;
     private final NotificationDecorator notificationDecorator;
     private final NotificationToolkitFactoryRegistry toolkitRegistry;
+
+    public NotificationController(NotificationService notificationService,
+                                NotificationDecorator notificationDecorator,
+                                NotificationServiceDecorator baseAdapter,
+                                JavaMailSender mailSender,
+                                UserServiceClient userServiceClient,
+                                NotificationExecutionServiceImpl executionService) {
+        this.notificationService = notificationService;
+        this.notificationDecorator = notificationDecorator;
+        // Sử dụng Singleton Registry
+        this.toolkitRegistry = NotificationToolkitFactoryRegistry.getInstance(
+            baseAdapter, mailSender, userServiceClient, executionService);
+    }
 
     @PostMapping("/send")
     public ResponseEntity<String> send(@RequestBody NotificationRequest req) {

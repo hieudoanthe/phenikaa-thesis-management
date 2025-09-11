@@ -27,18 +27,18 @@ public class TraditionalFileServiceImpl implements FileStorageService {
             
             String fileName = UUID.randomUUID() + getFileExtension(file.getOriginalFilename());
             File targetFile = new File(uploadDir, fileName);
-            
+
             // Traditional I/O - FileInputStream/FileOutputStream
             try (InputStream inputStream = file.getInputStream();
                  FileOutputStream fos = new FileOutputStream(targetFile)) {
-                
+
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     fos.write(buffer, 0, bytesRead);
                 }
             }
-            
+
             log.info("File uploaded using Traditional I/O: {}", targetFile.getAbsolutePath());
             return targetFile.getAbsolutePath();
             
@@ -47,7 +47,7 @@ public class TraditionalFileServiceImpl implements FileStorageService {
             throw new RuntimeException("Traditional upload failed", e);
         }
     }
-    
+
     @Override
     public byte[] downloadFile(String filePath) {
         try (FileInputStream fis = new FileInputStream(filePath);
@@ -102,58 +102,6 @@ public class TraditionalFileServiceImpl implements FileStorageService {
             log.error("Traditional I/O streaming failed", e);
             throw new RuntimeException("Traditional streaming failed", e);
         }
-    }
-    
-    // Traditional I/O - Text file processing
-    public void processTextFileTraditional(String inputPath, String outputPath) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(inputPath));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
-            
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // Process line
-                String processedLine = processLine(line);
-                writer.write(processedLine);
-                writer.newLine();
-            }
-            log.info("Text file processed using Traditional I/O");
-        } catch (IOException e) {
-            log.error("Traditional I/O text processing failed", e);
-            throw new RuntimeException("Traditional text processing failed", e);
-        }
-    }
-    
-    // Traditional I/O - Binary file processing
-    public void processBinaryFileTraditional(String inputPath, String outputPath) {
-        try (FileInputStream fis = new FileInputStream(inputPath);
-             FileOutputStream fos = new FileOutputStream(outputPath)) {
-            
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                // Process binary data
-                byte[] processedData = processBinaryData(buffer, bytesRead);
-                fos.write(processedData);
-            }
-            log.info("Binary file processed using Traditional I/O");
-        } catch (IOException e) {
-            log.error("Traditional I/O binary processing failed", e);
-            throw new RuntimeException("Traditional binary processing failed", e);
-        }
-    }
-    
-    private String processLine(String line) {
-        // Simple processing example
-        return line.toUpperCase();
-    }
-    
-    private byte[] processBinaryData(byte[] data, int length) {
-        // Simple binary processing example
-        byte[] processed = new byte[length];
-        for (int i = 0; i < length; i++) {
-            processed[i] = (byte) (data[i] ^ 0xFF); // Simple XOR
-        }
-        return processed;
     }
     
     private String getFileExtension(String filename) {

@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class NotificationBroadcaster {
     private final Map<Integer, Sinks.Many<Notification>> sinks = new ConcurrentHashMap<>();
-    private final ReactiveStringRedisTemplate redis; // Jackson để (de)serialize JSON
+    private final ReactiveStringRedisTemplate redis;
     private final ReactiveRedisMessageListenerContainer container;
     private final ObjectMapper mapper = JsonMapperProvider.getInstance().getMapper();
 

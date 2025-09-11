@@ -30,13 +30,23 @@ public class RegisterServiceImpl implements RegisterService {
 
     @Override
     public void registerTopic(RegisterTopicRequest dto, Integer userId) {
-        // Kiểm tra xem có đợt đăng ký nào đang hoạt động không
-        RegistrationPeriod activePeriod = registrationPeriodRepository.findActivePeriod(LocalDateTime.now())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                    "Hiện tại không có đợt đăng ký nào đang diễn ra!"));
+        // Bắt buộc chỉ định registrationPeriodId khi có nhiều đợt song song
+        if (dto.getRegistrationPeriodId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu registrationPeriodId");
+        }
+        RegistrationPeriod period = registrationPeriodRepository.findById(dto.getRegistrationPeriodId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đợt đăng ký không tồn tại"));
+        // Xác thực period đang ACTIVE và trong khoảng thời gian
+        LocalDateTime now = LocalDateTime.now();
+        boolean activeWindow = period.getStatus() == RegistrationPeriod.PeriodStatus.ACTIVE
+                && !now.isBefore(period.getStartDate())
+                && !now.isAfter(period.getEndDate());
+        if (!activeWindow) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đợt đăng ký hiện không mở");
+        }
 
         // Kiểm tra xem sinh viên đã đăng ký trong đợt này chưa
-        if (hasStudentRegisteredInPeriod(userId, activePeriod.getPeriodId())) {
+        if (hasStudentRegisteredInPeriod(userId, period.getPeriodId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
                 "Bạn đã đăng ký đề tài trong đợt này rồi!");
         }
@@ -45,7 +55,7 @@ public class RegisterServiceImpl implements RegisterService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found!"));
 
         // Kiểm tra sức chứa của giảng viên trong đợt đăng ký này
-        if (!canLecturerAcceptMoreStudents(topic.getSupervisorId(), activePeriod.getPeriodId())) {
+        if (!canLecturerAcceptMoreStudents(topic.getSupervisorId(), period.getPeriodId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
                 "Giảng viên đã đạt giới hạn số lượng sinh viên trong đợt đăng ký này!");
         }
@@ -53,13 +63,13 @@ public class RegisterServiceImpl implements RegisterService {
         Register register = registerMapper.toRegister(dto);
         register.setProjectTopic(topic);
         register.setStudentId(userId);
-        register.setRegistrationPeriodId(activePeriod.getPeriodId());
+        register.setRegistrationPeriodId(period.getPeriodId());
 
         // Lưu đăng ký
         registerRepository.save(register);
 
         // Cập nhật sức chứa của giảng viên
-        updateLecturerCapacity(topic.getSupervisorId(), activePeriod.getPeriodId(), true);
+        updateLecturerCapacity(topic.getSupervisorId(), period.getPeriodId(), true);
     }
 
     private boolean hasStudentRegisteredInPeriod(Integer studentId, Integer periodId) {

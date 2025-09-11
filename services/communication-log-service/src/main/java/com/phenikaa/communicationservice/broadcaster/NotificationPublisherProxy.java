@@ -2,6 +2,7 @@ package com.phenikaa.communicationservice.broadcaster;
 
 import com.phenikaa.communicationservice.entity.Notification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 

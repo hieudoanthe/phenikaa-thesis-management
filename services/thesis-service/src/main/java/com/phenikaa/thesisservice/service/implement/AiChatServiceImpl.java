@@ -5,7 +5,6 @@ import com.phenikaa.thesisservice.dto.request.ChatRequest;
 import com.phenikaa.thesisservice.dto.response.ChatResponse;
 import com.phenikaa.thesisservice.entity.LecturerCapacity;
 import com.phenikaa.thesisservice.repository.LecturerCapacityRepository;
-import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.service.interfaces.AiChatService;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
@@ -25,7 +24,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AiChatServiceImpl implements AiChatService {
 
-    private final ProjectTopicRepository projectTopicRepository;
     private final LecturerCapacityRepository lecturerCapacityRepository;
     private final ProfileServiceClient profileServiceClient;
 

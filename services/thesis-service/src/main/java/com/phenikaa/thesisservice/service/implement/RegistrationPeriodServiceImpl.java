@@ -85,8 +85,8 @@ public class RegistrationPeriodServiceImpl implements RegistrationPeriodService 
             System.out.println("Period: " + p.getPeriodId() + " - " + p.getPeriodName() + " - Status: " + p.getStatus() + " - Start: " + p.getStartDate() + " - End: " + p.getEndDate()); // Debug log
         }
         
-        RegistrationPeriod activePeriod = registrationPeriodRepository.findActivePeriod(now)
-                .orElse(null);
+        List<RegistrationPeriod> windowPeriods = registrationPeriodRepository.findActivePeriodsWindow(now);
+        RegistrationPeriod activePeriod = windowPeriods.isEmpty() ? null : windowPeriods.get(0);
         System.out.println("Kết quả tìm đợt đăng ký hiện tại: " + activePeriod); // Debug log
         
         if (activePeriod != null) {
@@ -96,6 +96,11 @@ public class RegistrationPeriodServiceImpl implements RegistrationPeriodService 
         }
         
         return activePeriod;
+    }
+
+    @Override
+    public List<RegistrationPeriod> getAllActivePeriods() {
+        return registrationPeriodRepository.findAllActivePeriods(LocalDateTime.now());
     }
 
     @Override

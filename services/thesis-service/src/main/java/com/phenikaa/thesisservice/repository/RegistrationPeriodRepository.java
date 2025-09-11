@@ -13,9 +13,13 @@ import java.util.Optional;
 @Repository
 public interface RegistrationPeriodRepository extends JpaRepository<RegistrationPeriod, Integer> {
     
-    // Tìm đợt đăng ký đang hoạt động hoặc sắp diễn ra
+    // Tìm các đợt đăng ký đang hoạt động hoặc sắp diễn ra tại thời điểm now
     @Query("SELECT rp FROM RegistrationPeriod rp WHERE (rp.status = 'ACTIVE' OR rp.status = 'UPCOMING') AND rp.startDate <= :now AND rp.endDate >= :now ORDER BY rp.startDate ASC")
-    Optional<RegistrationPeriod> findActivePeriod(@Param("now") LocalDateTime now);
+    List<RegistrationPeriod> findActivePeriodsWindow(@Param("now") LocalDateTime now);
+
+    // Lấy tất cả các đợt đang hoạt động (ACTIVE) tại thời điểm now, cho phép nhiều đợt song song
+    @Query("SELECT rp FROM RegistrationPeriod rp WHERE rp.status = 'ACTIVE' AND rp.startDate <= :now AND rp.endDate >= :now ORDER BY rp.startDate ASC")
+    List<RegistrationPeriod> findAllActivePeriods(@Param("now") LocalDateTime now);
     
     // Tìm đợt đăng ký theo năm học
     List<RegistrationPeriod> findByAcademicYearId(Integer academicYearId);

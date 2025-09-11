@@ -1,6 +1,8 @@
 package com.phenikaa.thesisservice.controller;
 
 import com.phenikaa.thesisservice.dto.response.GetStudentPeriodResponse;
+import com.phenikaa.thesisservice.entity.RegistrationPeriod;
+import com.phenikaa.thesisservice.service.interfaces.RegistrationPeriodService;
 import com.phenikaa.thesisservice.service.interfaces.StudentPeriodService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import java.util.List;
 public class StudentPeriodController {
 
     private final StudentPeriodService studentPeriodService;
+    private final RegistrationPeriodService registrationPeriodService;
 
     /**
      * Lấy danh sách sinh viên đã đăng ký đề tài theo đợt đăng ký
@@ -83,5 +86,12 @@ public class StudentPeriodController {
     public ResponseEntity<List<GetStudentPeriodResponse>> getStudentsByPeriod(
             @PathVariable Integer periodId) {
         return getAllStudentsByPeriod(periodId);
+    }
+
+    // Public cho sinh viên: lấy tất cả đợt ACTIVE hiện tại
+    @GetMapping("/active")
+    public ResponseEntity<List<RegistrationPeriod>> getActivePeriodsForStudents() {
+        List<RegistrationPeriod> periods = registrationPeriodService.getAllActivePeriods();
+        return ResponseEntity.ok(periods);
     }
 }

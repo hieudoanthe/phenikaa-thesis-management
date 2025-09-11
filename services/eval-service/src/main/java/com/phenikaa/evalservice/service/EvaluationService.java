@@ -50,18 +50,18 @@ public class EvaluationService {
         // 1) Validate scores based on role-specific criteria
         validateScoresByRole(request);
 
-        // Kiểm tra xem đã có đánh giá chưa
-        var existingEvaluation = evaluationRepository
-                .findByTopicIdAndEvaluatorIdAndEvaluationType(
-                        request.getTopicId(), 
-                        request.getEvaluatorId(), 
+        // Kiểm tra xem đã có đánh giá chưa (lấy bản ghi mới nhất nếu có nhiều)
+        var existingEvaluations = evaluationRepository
+                .findAllByTopicIdAndEvaluatorIdAndEvaluationTypeOrderByEvaluatedAtDesc(
+                        request.getTopicId(),
+                        request.getEvaluatorId(),
                         request.getEvaluationType()
                 );
-        
+
         ProjectEvaluation evaluation;
-        if (existingEvaluation.isPresent()) {
-            // Cập nhật đánh giá hiện có
-            evaluation = existingEvaluation.get();
+        if (!existingEvaluations.isEmpty()) {
+            // Cập nhật đánh giá hiện có (bản ghi mới nhất)
+            evaluation = existingEvaluations.get(0);
             log.info("Updating existing evaluation: {}", evaluation.getEvaluationId());
         } else {
             // Tạo đánh giá mới
@@ -325,14 +325,15 @@ public class EvaluationService {
             Integer evaluatorId,
             ProjectEvaluation.EvaluationType type
     ) {
-        // Kiểm tra đã có bản ghi chấm chưa
-        var existing = evaluationRepository.findByTopicIdAndEvaluatorIdAndEvaluationType(
-                sd.getTopicId(), evaluatorId, type
-        );
+        // Kiểm tra đã có bản ghi chấm chưa (lấy bản ghi mới nhất nếu có)
+        var existingList = evaluationRepository
+                .findAllByTopicIdAndEvaluatorIdAndEvaluationTypeOrderByEvaluatedAtDesc(
+                        sd.getTopicId(), evaluatorId, type
+                );
 
-        if (existing.isPresent()) {
+        if (!existingList.isEmpty()) {
             // Trả về response của bản ghi đã có
-            return convertToResponse(existing.get());
+            return convertToResponse(existingList.get(0));
         }
 
         // Tạo một EvaluationResponse ở trạng thái nhiệm vụ PENDING

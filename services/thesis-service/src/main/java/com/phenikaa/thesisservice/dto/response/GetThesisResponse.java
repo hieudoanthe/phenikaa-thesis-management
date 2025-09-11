@@ -19,6 +19,7 @@ public class GetThesisResponse {
     private ProjectTopic.DifficultyLevel difficultyLevel;
     private ProjectTopic.TopicStatus topicStatus;
     private ProjectTopic.ApprovalStatus approvalStatus;
+    private String supervisorName;
 
     // Custom Builder Pattern
     public static GetThesisResponseBuilder builder() {
@@ -99,6 +100,11 @@ public class GetThesisResponse {
 
         public GetThesisResponseBuilder approvalStatus(ProjectTopic.ApprovalStatus approvalStatus) {
             response.approvalStatus = approvalStatus;
+            return this;
+        }
+
+        public GetThesisResponseBuilder supervisorName(String supervisorName) {
+            response.supervisorName = supervisorName;
             return this;
         }
 

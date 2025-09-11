@@ -355,6 +355,17 @@ public class ThesisServiceImpl implements ThesisService {
                     .map(Register::getRegisterId)
                     .orElse(null)
             );
+
+            // Bổ sung supervisorName để FE hiển thị ngay không bị nháy
+            try {
+                if (projectTopic.getSupervisorId() != null) {
+                    java.util.Map<String, Object> profile = profileServiceClient.getLecturerById(projectTopic.getSupervisorId());
+                    Object fullName = profile != null ? profile.get("fullName") : null;
+                    if (fullName != null) {
+                        dto.setSupervisorName(fullName.toString());
+                    }
+                }
+            } catch (Exception ignored) {}
             
             return dto;
         });

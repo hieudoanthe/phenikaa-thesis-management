@@ -6,11 +6,13 @@ import com.phenikaa.submissionservice.dto.response.ReportSubmissionResponse;
 import com.phenikaa.submissionservice.entity.ReportSubmission;
 import com.phenikaa.submissionservice.exception.ReportSubmissionException;
 import com.phenikaa.submissionservice.repository.ReportSubmissionRepository;
-import com.phenikaa.submissionservice.service.interfaces.CloudinaryService;
-import lombok.RequiredArgsConstructor;
+import com.phenikaa.submissionservice.service.interfaces.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,17 +20,27 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+import com.phenikaa.submissionservice.dto.request.SubmissionFilterRequest;
+import com.phenikaa.submissionservice.spec.ReportSubmissionSpecification;
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class ReportSubmissionService {
     
     private final ReportSubmissionRepository reportSubmissionRepository;
     private final CommunicationServiceClient communicationServiceClient;
-    private final CloudinaryService cloudinaryService;
+    private final FileStorageService cloudinaryService;
+    
+    public ReportSubmissionService(
+            ReportSubmissionRepository reportSubmissionRepository,
+            CommunicationServiceClient communicationServiceClient,
+            @Qualifier("cloudinaryFileService") FileStorageService cloudinaryService
+    ) {
+        this.reportSubmissionRepository = reportSubmissionRepository;
+        this.communicationServiceClient = communicationServiceClient;
+        this.cloudinaryService = cloudinaryService;
+    }
     
     // Constants
     private static final String SUBMISSION_NOT_FOUND_MSG = "Không tìm thấy báo cáo với ID: ";
@@ -128,7 +140,7 @@ public class ReportSubmissionService {
         List<ReportSubmission> submissions = reportSubmissionRepository.findByTopicId(topicId);
         return submissions.stream()
                 .map(this::convertToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     /**
@@ -138,7 +150,7 @@ public class ReportSubmissionService {
         List<ReportSubmission> submissions = reportSubmissionRepository.findBySubmittedBy(userId);
         return submissions.stream()
                 .map(this::convertToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     /**
@@ -147,6 +159,21 @@ public class ReportSubmissionService {
     public Page<ReportSubmissionResponse> getSubmissionsWithPagination(Pageable pageable) {
         Page<ReportSubmission> submissions = reportSubmissionRepository.findAll(pageable);
         return submissions.map(this::convertToResponse);
+    }
+
+    /**
+     * Tìm kiếm + lọc bằng Specification
+     */
+    public Page<ReportSubmissionResponse> filterSubmissions(SubmissionFilterRequest req, Integer submittedBy) {
+        Specification<ReportSubmission> spec = ReportSubmissionSpecification.withFilter(
+                req.getSearch(), req.getSubmissionType(), submittedBy
+        );
+        PageRequest pageable = PageRequest.of(
+                req.getPage() == null ? 0 : req.getPage(),
+                req.getSize() == null ? 10 : req.getSize()
+        );
+        Page<ReportSubmission> page = reportSubmissionRepository.findAll(spec, pageable);
+        return page.map(this::convertToResponse);
     }
     
     /**
@@ -196,7 +223,7 @@ public class ReportSubmissionService {
     }
     
     /**
-     * Xử lý upload file lên Cloudinary
+     * Xử lý upload file qua FileStorageService (Adapter)
      */
     private String handleFileUpload(MultipartFile file, Integer topicId) {
         try {
@@ -214,51 +241,20 @@ public class ReportSubmissionService {
             String folderName = "thesis-reports/topic_" + topicId;
             return cloudinaryService.uploadFile(file, folderName);
         } catch (Exception e) {
-            log.error("Error uploading file to Cloudinary: {}", e.getMessage(), e);
+            log.error("Error uploading file: {}", e.getMessage(), e);
             throw new ReportSubmissionException("Không thể upload file: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Xóa file từ Cloudinary
+     * Xóa file qua FileStorageService (Adapter)
      */
     private void deleteFile(String fileUrl) {
         try {
-            // Extract public_id from Cloudinary URL
-            // URL format: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/filename.ext
-            String publicId = extractPublicIdFromUrl(fileUrl);
-            if (publicId != null) {
-                cloudinaryService.deleteFile(publicId);
-                log.info("File deleted from Cloudinary: {}", publicId);
-            }
+            cloudinaryService.deleteFile(fileUrl);
+            log.info("File deleted via storage service: {}", fileUrl);
         } catch (Exception e) {
-            log.error("Error deleting file from Cloudinary: {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * Extract public_id from Cloudinary URL
-     */
-    private String extractPublicIdFromUrl(String fileUrl) {
-        try {
-            if (fileUrl == null || !fileUrl.contains("cloudinary.com")) {
-                return null;
-            }
-            
-            // Extract the part after /upload/ and before the file extension
-            String[] parts = fileUrl.split("/upload/");
-            if (parts.length > 1) {
-                String pathWithVersion = parts[1];
-                // Remove version prefix (v1234567890/)
-                String[] pathParts = pathWithVersion.split("/", 2);
-                if (pathParts.length > 1) {
-                    return pathParts[1].split("\\.")[0]; // Remove file extension
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            log.error("Error extracting public_id from URL: {}", e.getMessage());
-            return null;
+            log.error("Error deleting file: {}", e.getMessage());
         }
     }
     

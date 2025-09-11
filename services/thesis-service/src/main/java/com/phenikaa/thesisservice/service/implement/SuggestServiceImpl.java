@@ -40,10 +40,12 @@ public class SuggestServiceImpl implements SuggestService {
 
     @Override
     public void suggestTopic(SuggestTopicRequest dto, Integer studentId) {
-        // Kiểm tra xem có đợt đăng ký nào đang hoạt động không
-        RegistrationPeriod activePeriod = registrationPeriodRepository.findActivePeriod(LocalDateTime.now())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Hiện tại không có đợt đăng ký nào đang diễn ra!"));
+        // Kiểm tra xem có đợt đăng ký nào đang hoạt động không (chọn đợt đầu tiên trong cửa sổ thời gian)
+        List<RegistrationPeriod> periods = registrationPeriodRepository.findActivePeriodsWindow(LocalDateTime.now());
+        if (periods.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hiện tại không có đợt đăng ký nào đang diễn ra!");
+        }
+        RegistrationPeriod activePeriod = periods.get(0);
 
         // Kiểm tra xem sinh viên đã đề xuất đề tài trong đợt này chưa
         if (hasStudentSuggestedInPeriod(studentId, activePeriod.getPeriodId())) {
@@ -147,7 +149,6 @@ public class SuggestServiceImpl implements SuggestService {
 
         if (increase) {
             capacity.increaseCurrentStudents();
-            capacity.setMaxStudents(capacity.getMaxStudents() - 1);
         } else {
             capacity.decreaseCurrentStudents();
         }

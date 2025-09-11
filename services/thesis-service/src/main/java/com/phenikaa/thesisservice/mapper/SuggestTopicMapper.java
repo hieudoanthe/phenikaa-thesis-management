@@ -19,5 +19,6 @@ public interface SuggestTopicMapper {
     ProjectTopic toProjectTopic(SuggestTopicRequest dto);
 
     @Mapping(target = "topicId", source = "projectTopic.topicId")
+    @Mapping(target = "title", source = "projectTopic.title")
     GetSuggestTopicResponse toGetSuggestTopicResponse(SuggestedTopic dto);
 }

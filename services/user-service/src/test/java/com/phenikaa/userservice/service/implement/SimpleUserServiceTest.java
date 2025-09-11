@@ -24,12 +24,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit test đơn giản cho UserService với 3 test cases chính:
- * 1. Test lấy danh sách user thành công
- * 2. Test lấy user theo ID thành công
- * 3. Test thay đổi trạng thái user thành công
- */
 @ExtendWith(MockitoExtension.class)
 class SimpleUserServiceTest {
 
@@ -67,10 +61,6 @@ class SimpleUserServiceTest {
         testUserResponse.setStatus(1);
     }
 
-    /**
-     * Test Case 1: Lấy danh sách tất cả user thành công
-     * Kiểm tra method getAllUsers() trả về danh sách user
-     */
     @Test
     void testGetAllUsers_Success() {
         // Given - Chuẩn bị dữ liệu test
@@ -92,10 +82,6 @@ class SimpleUserServiceTest {
         verify(userMapper).toDTO(testUser);
     }
 
-    /**
-     * Test Case 2: Lấy user theo ID thành công
-     * Kiểm tra method getUserById() trả về user đúng
-     */
     @Test
     void testGetUserById_Success() {
         // Given - Chuẩn bị dữ liệu test
@@ -116,10 +102,6 @@ class SimpleUserServiceTest {
         verify(userMapper).toDTO(testUser);
     }
 
-    /**
-     * Test Case 3: Thay đổi trạng thái user thành công
-     * Kiểm tra method changeStatusUser() thay đổi status từ 1 sang 2
-     */
     @Test
     void testChangeStatusUser_Success() {
         // Given - Chuẩn bị dữ liệu test
@@ -137,10 +119,7 @@ class SimpleUserServiceTest {
         verify(userRepository).save(testUser);
     }
 
-    /**
-     * Test Case bổ sung: Lấy user theo ID không tồn tại
-     * Kiểm tra exception khi user không tồn tại
-     */
+
     @Test
     void testGetUserById_UserNotFound_ThrowsException() {
         // Given - Chuẩn bị dữ liệu test
@@ -156,10 +135,7 @@ class SimpleUserServiceTest {
         verify(userMapper, never()).toDTO(any(User.class));
     }
 
-    /**
-     * Test Case bổ sung: Lấy danh sách user có phân trang
-     * Kiểm tra method getAllUsers(page, size) trả về Page
-     */
+
     @Test
     void testGetAllUsersPaged_Success() {
         // Given - Chuẩn bị dữ liệu test

@@ -164,12 +164,16 @@ public class ThesisSpecification {
                         ));
                         break;
                     case "STUDENT":
-                        // Sinh viên chỉ thấy đề tài có sẵn và đã được phê duyệt
+                        // Sinh viên: chỉ hiển thị đề tài GIẢNG VIÊN tạo (createdBy == supervisorId), đang ACTIVE và ở trạng thái AVAILABLE
                         predicates.add(criteriaBuilder.equal(
                             root.get("topicStatus"), ProjectTopic.TopicStatus.ACTIVE
                         ));
                         predicates.add(criteriaBuilder.equal(
-                            root.get("approvalStatus"), ProjectTopic.ApprovalStatus.APPROVED
+                            root.get("approvalStatus"), ProjectTopic.ApprovalStatus.AVAILABLE
+                        ));
+                        // Loại bỏ đề tài do sinh viên đề xuất: giảng viên tạo thì createdBy == supervisorId
+                        predicates.add(criteriaBuilder.equal(
+                            root.get("createdBy"), root.get("supervisorId")
                         ));
                         break;
                     case "ADMIN":

@@ -7,7 +7,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface ProjectEvaluationRepository extends JpaRepository<ProjectEvaluation, Integer> {
@@ -30,8 +29,8 @@ public interface ProjectEvaluationRepository extends JpaRepository<ProjectEvalua
     // Kiểm tra xem đã có đánh giá chưa
     boolean existsByTopicIdAndEvaluatorIdAndEvaluationType(Integer topicId, Integer evaluatorId, ProjectEvaluation.EvaluationType evaluationType);
     
-    // Tìm đánh giá cụ thể
-    Optional<ProjectEvaluation> findByTopicIdAndEvaluatorIdAndEvaluationType(Integer topicId, Integer evaluatorId, ProjectEvaluation.EvaluationType evaluationType);
+    // Tìm tất cả đánh giá cụ thể (trong trường hợp có nhiều bản ghi) và sắp xếp mới nhất trước
+    List<ProjectEvaluation> findAllByTopicIdAndEvaluatorIdAndEvaluationTypeOrderByEvaluatedAtDesc(Integer topicId, Integer evaluatorId, ProjectEvaluation.EvaluationType evaluationType);
     
     // Lấy tất cả đánh giá của một topic
     @Query("SELECT pe FROM ProjectEvaluation pe WHERE pe.topicId = :topicId ORDER BY pe.evaluationType, pe.evaluatedAt")

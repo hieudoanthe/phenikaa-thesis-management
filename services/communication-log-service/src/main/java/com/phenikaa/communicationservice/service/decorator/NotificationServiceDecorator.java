@@ -8,11 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
-/**
- * Adapter class để wrap NotificationService thành NotificationDecorator
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -35,16 +30,5 @@ public class NotificationServiceDecorator implements NotificationDecorator {
         ).subscribe();
 
         log.info("NotificationServiceDecorator: notification persisted & broadcasted");
-    }
-
-    @Override
-    public void sendNotification(Map<String, Object> request) {
-        NotificationRequest notificationRequest = new NotificationRequest();
-        notificationRequest.setSenderId((Integer) request.get("senderId"));
-        notificationRequest.setReceiverId((Integer) request.get("receiverId"));
-        notificationRequest.setMessage((String) request.get("message"));
-        notificationRequest.setType((String) request.get("type"));
-
-        sendNotification(notificationRequest);
     }
 }

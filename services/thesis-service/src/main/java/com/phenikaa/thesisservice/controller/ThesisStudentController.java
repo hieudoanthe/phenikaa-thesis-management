@@ -3,6 +3,8 @@ package com.phenikaa.thesisservice.controller;
 import com.phenikaa.thesisservice.dto.request.RegisterTopicRequest;
 import com.phenikaa.thesisservice.dto.request.SuggestTopicRequest;
 import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
+import com.phenikaa.thesisservice.dto.request.ThesisSpecificationFilterRequest;
+import com.phenikaa.thesisservice.dto.response.GetThesisResponse;
 import com.phenikaa.thesisservice.dto.response.GetSuggestTopicResponse;
 import com.phenikaa.thesisservice.service.interfaces.RegisterService;
 import com.phenikaa.thesisservice.service.interfaces.ThesisService;
@@ -46,6 +48,18 @@ public class ThesisStudentController {
     @GetMapping("/available-topics")
     public List<AvailableTopicResponse> getAvailableTopics() {
         return thesisService.getAvailableTopics();
+    }
+
+    // Tìm kiếm/ lọc đề tài bằng Specification (dành cho sinh viên)
+    @PostMapping("/topics/filter")
+    public ResponseEntity<Page<GetThesisResponse>> filterTopicsForStudent(
+            @RequestBody ThesisSpecificationFilterRequest request) {
+        // Đảm bảo sinh viên chỉ thấy đề tài hợp lệ nếu FE không truyền
+        if (request.getUserRole() == null) {
+            request.setUserRole("STUDENT");
+        }
+        Page<GetThesisResponse> page = thesisService.filterTheses(request);
+        return ResponseEntity.ok(page);
     }
 
     @GetMapping("/get-suggest-topic-{studentId}/paged")

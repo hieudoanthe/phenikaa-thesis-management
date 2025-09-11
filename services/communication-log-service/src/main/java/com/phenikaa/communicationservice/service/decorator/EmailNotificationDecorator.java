@@ -1,6 +1,5 @@
 package com.phenikaa.communicationservice.service.decorator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phenikaa.communicationservice.client.UserServiceClient;
 import com.phenikaa.communicationservice.dto.request.NotificationRequest;
 import jakarta.mail.internet.MimeMessage;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -21,25 +19,22 @@ import java.util.concurrent.CompletableFuture;
 public class EmailNotificationDecorator extends BaseNotificationDecorator {
 
     private final JavaMailSender mailSender;
-    private final ObjectMapper objectMapper;
     private final UserServiceClient userServiceClient;
     private final NotificationExecutionServiceImpl executionService;
 
     // Constructor cho Spring autowiring
     @Autowired
-    public EmailNotificationDecorator(JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient, NotificationExecutionServiceImpl executionService) {
+    public EmailNotificationDecorator(JavaMailSender mailSender, UserServiceClient userServiceClient, NotificationExecutionServiceImpl executionService) {
         super();
         this.mailSender = mailSender;
-        this.objectMapper = objectMapper;
         this.userServiceClient = userServiceClient;
         this.executionService = executionService;
     }
 
     // Constructor cho decorator chain
-    public EmailNotificationDecorator(NotificationDecorator wrapped, JavaMailSender mailSender, ObjectMapper objectMapper, UserServiceClient userServiceClient, NotificationExecutionServiceImpl executionService) {
+    public EmailNotificationDecorator(NotificationDecorator wrapped, JavaMailSender mailSender, UserServiceClient userServiceClient, NotificationExecutionServiceImpl executionService) {
         super(wrapped);
         this.mailSender = mailSender;
-        this.objectMapper = objectMapper;
         this.userServiceClient = userServiceClient;
         this.executionService = executionService;
     }
@@ -60,33 +55,6 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
         super.sendNotification(request);
     }
 
-    @Override
-    public void sendNotification(Map<String, Object> request) {
-        log.info("EmailNotificationDecorator.sendNotification(Map) called with request: {}", request);
-        
-        // Convert Map to NotificationRequest
-        try {
-            NotificationRequest notificationRequest = objectMapper.convertValue(request, NotificationRequest.class);
-            log.info("Converted to NotificationRequest with type: {}", notificationRequest.getType());
-            
-            // Chỉ gửi email cho các loại thông báo quan trọng
-            if (shouldSendEmail(notificationRequest.getType())) {
-                log.info("Should send email for type: {}", notificationRequest.getType());
-                this.triggerEmailNotificationAsync(notificationRequest);
-            } else {
-                log.info("Skipping email for type: {}", notificationRequest.getType());
-            }
-        } catch (Exception e) {
-            log.error("Error converting Map to NotificationRequest for email: {}", e.getMessage());
-        }
-
-        // Luôn gọi wrapped service
-        super.sendNotification(request);
-    }
-
-    /**
-     * Kiểm tra xem có nên gửi email cho loại thông báo này không
-     */
     private boolean shouldSendEmail(String notificationType) {
         log.info("Checking if should send email for type: {}", notificationType);
         
@@ -105,9 +73,6 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
         return shouldSend;
     }
 
-    /**
-     * Gửi email notification bất đồng bộ
-     */
     public void triggerEmailNotificationAsync(NotificationRequest request) {
         log.info("Starting async email notification for receiver: {}", request.getReceiverId());
 
@@ -132,9 +97,6 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
         });
     }
 
-    /**
-     * Gửi email đến user
-     */
     private void sendEmailToUser(String receiverEmail, NotificationRequest request) {
         try {
             log.info("Creating email message for: {}", receiverEmail);

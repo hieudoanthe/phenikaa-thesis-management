@@ -19,6 +19,9 @@ public interface RegistrationPeriodService {
     
     RegistrationPeriod getCurrentActivePeriod();
     
+    // Trả về tất cả đợt ACTIVE tại thời điểm hiện tại (cho phép song song)
+    List<RegistrationPeriod> getAllActivePeriods();
+    
     void startPeriod(Integer periodId);
     
     void closePeriod(Integer periodId);
