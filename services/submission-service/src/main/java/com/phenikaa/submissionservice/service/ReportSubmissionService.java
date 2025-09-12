@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.phenikaa.submissionservice.dto.request.SubmissionFilterRequest;
-import com.phenikaa.submissionservice.spec.ReportSubmissionSpecification;
 @Service
 @Slf4j
 @Transactional
@@ -162,18 +160,27 @@ public class ReportSubmissionService {
     }
 
     /**
-     * Tìm kiếm + lọc bằng Specification
+     * Tìm kiếm + lọc bằng native query
      */
     public Page<ReportSubmissionResponse> filterSubmissions(SubmissionFilterRequest req, Integer submittedBy) {
-        Specification<ReportSubmission> spec = ReportSubmissionSpecification.withFilter(
+        // Sử dụng native query để tránh vấn đề với TEXT field
+        List<ReportSubmission> submissions = reportSubmissionRepository.searchSubmissions(
                 req.getSearch(), req.getSubmissionType(), submittedBy
         );
-        PageRequest pageable = PageRequest.of(
-                req.getPage() == null ? 0 : req.getPage(),
-                req.getSize() == null ? 10 : req.getSize()
+        
+        // Manual pagination
+        int page = req.getPage() == null ? 0 : req.getPage();
+        int size = req.getSize() == null ? 10 : req.getSize();
+        int start = page * size;
+        int end = Math.min(start + size, submissions.size());
+        
+        List<ReportSubmission> pageContent = submissions.subList(start, end);
+        
+        return new org.springframework.data.domain.PageImpl<>(
+                pageContent.stream().map(this::convertToResponse).toList(),
+                PageRequest.of(page, size),
+                submissions.size()
         );
-        Page<ReportSubmission> page = reportSubmissionRepository.findAll(spec, pageable);
-        return page.map(this::convertToResponse);
     }
     
     /**

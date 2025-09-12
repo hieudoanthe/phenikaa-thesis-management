@@ -9,6 +9,10 @@ import java.util.List;
 
 public class ReportSubmissionSpecification {
 
+    private ReportSubmissionSpecification() {
+        // Private constructor to prevent instantiation
+    }
+
     public static Specification<ReportSubmission> withFilter(String search, Integer submissionType, Integer submittedBy) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -19,9 +23,10 @@ public class ReportSubmissionSpecification {
 
             if (search != null && !search.isBlank()) {
                 String like = "%" + search.trim().toLowerCase() + "%";
+                // For now, only search in reportTitle to avoid TEXT conversion issues
+                // TODO: Implement proper TEXT field search using @Query annotation
                 Predicate byTitle = cb.like(cb.lower(root.get("reportTitle")), like);
-                Predicate byDesc  = cb.like(cb.lower(root.get("description")), like);
-                predicates.add(cb.or(byTitle, byDesc));
+                predicates.add(byTitle);
             }
 
             if (submissionType != null) {

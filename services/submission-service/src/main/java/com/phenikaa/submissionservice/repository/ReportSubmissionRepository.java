@@ -49,6 +49,17 @@ public interface ReportSubmissionRepository extends JpaRepository<ReportSubmissi
     @Query("SELECT s FROM ReportSubmission s WHERE s.deadline BETWEEN :startDate AND :endDate")
     List<ReportSubmission> findUpcomingDeadlines(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
+    // Tìm kiếm báo cáo với TEXT field support
+    @Query(value = "SELECT * FROM hieudt.report_submission rs WHERE " +
+            "(:search IS NULL OR LOWER(rs.report_title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CAST(rs.description AS VARCHAR(MAX))) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+            "AND (:submissionType IS NULL OR rs.submission_type = :submissionType) " +
+            "AND (:submittedBy IS NULL OR rs.submitted_by = :submittedBy)",
+            nativeQuery = true)
+    List<ReportSubmission> searchSubmissions(@Param("search") String search, 
+                                           @Param("submissionType") Integer submissionType, 
+                                           @Param("submittedBy") Integer submittedBy);
+
     // Tìm báo cáo theo khoảng thời gian
     List<ReportSubmission> findBySubmittedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
