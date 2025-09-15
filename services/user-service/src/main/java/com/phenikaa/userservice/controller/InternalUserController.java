@@ -61,4 +61,10 @@ public class InternalUserController {
         GetUserResponse user = userService.getUserById(userId);
         return ResponseEntity.ok(user.getUsername());
     }
+
+    // New: expose users by role for internal services (e.g., notifications)
+    @GetMapping("/by-role")
+    public ResponseEntity<List<GetUserResponse>> getUsersByRole(@RequestParam String role) {
+        return ResponseEntity.ok(userService.getUsersByRole(role));
+    }
 }

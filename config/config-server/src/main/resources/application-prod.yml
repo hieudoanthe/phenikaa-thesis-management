@@ -26,6 +26,11 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
     fetch-registry: true
     register-with-eureka: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:${RAILWAY_STATIC_URL:}}
+    non-secure-port: ${EUREKA_INSTANCE_NONSECUREPORT:80}
+    secure-port-enabled: ${EUREKA_INSTANCE_SECUREPORT_ENABLED:true}
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:false}
 
 logging:
   level:

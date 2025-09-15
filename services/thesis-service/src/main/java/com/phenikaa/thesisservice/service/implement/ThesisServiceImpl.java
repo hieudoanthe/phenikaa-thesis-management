@@ -213,33 +213,8 @@ public class ThesisServiceImpl implements ThesisService {
             register.setRegisterStatus(Register.RegisterStatus.APPROVED);
         }
 
-        // Giảm currentStudents trong LecturerCapacity khi chấp nhận đề tài
-        if (registrationPeriodId != null) {
-            System.out.println("=== TRƯỚC KHI GIẢM currentStudents ===");
-            System.out.println("Lecturer ID: " + projectTopic.getSupervisorId());
-            System.out.println("Period ID: " + registrationPeriodId);
-            
-            // Lấy capacity hiện tại để debug
-            LecturerCapacity currentCapacity = lecturerCapacityRepository
-                    .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), registrationPeriodId)
-                    .orElse(null);
-            if (currentCapacity != null) {
-                System.out.println("Capacity hiện tại: maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
-            } else {
-                System.out.println("KHÔNG TÌM THẤY LecturerCapacity!");
-            }
-            
-            decreaseLecturerCapacity(projectTopic.getSupervisorId(), registrationPeriodId);
-            System.out.println("Đã giảm currentStudents cho lecturer " + projectTopic.getSupervisorId() + " trong period " + registrationPeriodId + " khi chấp nhận đề tài");
-            
-            // Kiểm tra sau khi giảm
-            LecturerCapacity afterCapacity = lecturerCapacityRepository
-                    .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), registrationPeriodId)
-                    .orElse(null);
-            if (afterCapacity != null) {
-                System.out.println("Capacity sau khi giảm: maxStudents=" + afterCapacity.getMaxStudents() + ", currentStudents=" + afterCapacity.getCurrentStudents());
-            }
-        }
+        // KHÔNG thay đổi currentStudents trong LecturerCapacity khi chấp nhận đề tài
+        // currentStudents đã được tăng khi sinh viên đăng ký (giữ chỗ). Khi approve, giữ nguyên.
 
         // Lưu thay đổi vào database
         projectTopicRepository.save(projectTopic);
@@ -311,23 +286,18 @@ public class ThesisServiceImpl implements ThesisService {
         // Lưu thay đổi (cascade sẽ cập nhật SuggestedTopic hoặc Register)
         projectTopicRepository.save(projectTopic);
         
-        // HOÀN TRẢ slot khi từ chối đề tài (tăng maxStudents lên 1)
+        // HOÀN TRẢ slot khi từ chối đề tài: giảm currentStudents (hủy giữ chỗ)
         if (registrationPeriodId != null) {
-            
-            // Lấy capacity hiện tại để debug
             LecturerCapacity currentCapacity = lecturerCapacityRepository
                     .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), registrationPeriodId)
                     .orElse(null);
             if (currentCapacity != null) {
-                System.out.println("Capacity trước khi hoàn trả: maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
-                
-                // Hoàn trả slot (tăng maxStudents lên 1)
-                currentCapacity.setMaxStudents(currentCapacity.getMaxStudents() + 1);
-                lecturerCapacityRepository.save(currentCapacity);
-                
-                System.out.println("Capacity sau khi hoàn trả: maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
-            } else {
-                System.out.println("KHÔNG TÌM THẤY LecturerCapacity để hoàn trả slot!");
+                System.out.println("Capacity trước khi hoàn trả (reject): maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
+                if (currentCapacity.getCurrentStudents() != null && currentCapacity.getCurrentStudents() > 0) {
+                    currentCapacity.decreaseCurrentStudents();
+                    lecturerCapacityRepository.save(currentCapacity);
+                }
+                System.out.println("Capacity sau khi hoàn trả (reject): maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
             }
         }
 

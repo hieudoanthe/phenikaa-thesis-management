@@ -67,7 +67,8 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
         boolean shouldSend = notificationType.equals("ASSIGNMENT") || 
                notificationType.equals("UNASSIGNMENT") ||
                notificationType.equals("DEFENSE_SCHEDULE") ||
-               notificationType.equals("IMPORTANT");
+               notificationType.equals("IMPORTANT") ||
+               notificationType.equals("REGISTRATION_PERIOD");
                
         log.info("Should send email: {} for type: {}", shouldSend, notificationType);
         return shouldSend;
@@ -117,6 +118,30 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
     }
 
     private String buildEmailContent(NotificationRequest request) {
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+
+        if ("REGISTRATION_PERIOD".equalsIgnoreCase(request.getType())) {
+            return String.format("""
+                <html>
+                <body style=\"font-family:Arial,Helvetica,sans-serif; color:#111827;\">
+                    <div style=\"max-width:640px;margin:auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden\">
+                        <div style=\"background:#111827;color:#fff;padding:16px 20px\">
+                            <h2 style=\"margin:0;font-size:18px\">Thông báo mở đợt đăng ký</h2>
+                        </div>
+                        <div style=\"padding:20px;background:#ffffff\">
+                            <p style=\"margin:0 0 12px\">%s</p>
+                            <p style=\"margin:0;color:#6b7280;font-size:12px\">Thời gian gửi: %s</p>
+                        </div>
+                        <div style=\"padding:14px 20px;background:#f9fafb;color:#6b7280;font-size:12px\">
+                            Hệ thống quản lý luận văn - Phenikaa University
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """,
+                    request.getMessage(), now);
+        }
+
         return String.format("""
             <html>
             <body>
@@ -131,7 +156,7 @@ public class EmailNotificationDecorator extends BaseNotificationDecorator {
             """,
                 request.getMessage(),
                 request.getType(),
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                now
         );
     }
 }

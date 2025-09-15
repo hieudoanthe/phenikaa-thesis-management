@@ -14,6 +14,7 @@ import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.mapper.UserMapper;
 import com.phenikaa.userservice.repository.UserRepository;
+import com.phenikaa.userservice.repository.RefreshTokenRepository;
 import com.phenikaa.userservice.service.CustomUserDetailsService;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import com.phenikaa.userservice.specification.UserSpecification;
@@ -55,6 +56,7 @@ public class UserServiceImpl implements UserService {
     private final ProfileServiceClient profileServiceClient;
     private final UserMapper userMapper;
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final AuthenticationManager authenticationManager;
 
     @Override
@@ -121,11 +123,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(Integer userId) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
         }
+        // Xoá refresh token trước để tránh lỗi ràng buộc FK
+        try {
+            refreshTokenRepository.deleteByUser_UserId(userId);
+        } catch (Exception ignored) {}
+
         userRepository.delete(userOpt.get());
         profileServiceClient.deleteProfile(userId);
     }

@@ -29,12 +29,15 @@ public class UserServiceClient {
     }
 
     @SuppressWarnings("unchecked")
-    public Mono<Map<String, Object>> getUserById(String userId) {
+    public Flux<Map<String, Object>> getUsersByIds(String... userIds) {
         return webClient
                 .get()
-                .uri("/internal/users/{userId}", userId)
+                .uri(uriBuilder -> uriBuilder
+                        .path("/internal/users/batch")
+                        .queryParam("ids", String.join(",", userIds))
+                        .build())
                 .retrieve()
-                .bodyToMono(Map.class)
+                .bodyToFlux(Map.class)
                 .cast(Map.class)
                 .map(map -> {
                     Map<String, Object> result = new HashMap<>();
@@ -45,12 +48,12 @@ public class UserServiceClient {
     }
 
     @SuppressWarnings("unchecked")
-    public Flux<Map<String, Object>> getUsersByIds(String... userIds) {
+    public Flux<Map<String, Object>> getUsersByRole(String role) {
         return webClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/internal/users/batch")
-                        .queryParam("ids", String.join(",", userIds))
+                        .path("/internal/users/by-role")
+                        .queryParam("role", role)
                         .build())
                 .retrieve()
                 .bodyToFlux(Map.class)

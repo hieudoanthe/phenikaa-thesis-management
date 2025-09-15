@@ -76,7 +76,9 @@ public class AcademicYear {
     // Kiểm tra xem năm học có thể active không
     public boolean canActivate() {
         LocalDate now = LocalDate.now();
-        return now.isAfter(startDate) && now.isBefore(endDate);
+        // Cho phép kích hoạt trước ngày bắt đầu, miễn chưa quá ngày kết thúc
+        // Điều kiện: now <= endDate (bao gồm ngày kết thúc)
+        return endDate == null || !now.isAfter(endDate);
     }
 
     // Getter cho status enum
