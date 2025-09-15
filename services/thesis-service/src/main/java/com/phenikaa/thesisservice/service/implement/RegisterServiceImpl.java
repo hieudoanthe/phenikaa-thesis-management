@@ -10,15 +10,23 @@ import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.repository.RegisterRepository;
 import com.phenikaa.thesisservice.repository.RegistrationPeriodRepository;
 import com.phenikaa.thesisservice.repository.LecturerCapacityRepository;
+import com.phenikaa.thesisservice.repository.SuggestRepository;
 import com.phenikaa.thesisservice.service.interfaces.RegisterService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class RegisterServiceImpl implements RegisterService {
 
@@ -27,6 +35,7 @@ public class RegisterServiceImpl implements RegisterService {
     private final ProjectTopicRepository projectTopicRepository;
     private final RegistrationPeriodRepository registrationPeriodRepository;
     private final LecturerCapacityRepository lecturerCapacityRepository;
+    private final SuggestRepository suggestRepository;
 
     @Override
     public void registerTopic(RegisterTopicRequest dto, Integer userId) {
@@ -51,6 +60,12 @@ public class RegisterServiceImpl implements RegisterService {
                 "Bạn đã đăng ký đề tài trong đợt này rồi!");
         }
 
+        // Kiểm tra xem sinh viên đã đề xuất đề tài trong đợt này chưa
+        if (hasStudentSuggestedInPeriod(userId, period.getPeriodId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Bạn đã đề xuất đề tài trong đợt này rồi! Không thể đăng ký đề tài khác.");
+        }
+
         ProjectTopic topic = projectTopicRepository.findById(dto.getTopicId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found!"));
 
@@ -68,12 +83,20 @@ public class RegisterServiceImpl implements RegisterService {
         // Lưu đăng ký
         registerRepository.save(register);
 
+        // Cập nhật trạng thái đề tài từ AVAILABLE thành PENDING
+        topic.setApprovalStatus(ProjectTopic.ApprovalStatus.PENDING);
+        projectTopicRepository.save(topic);
+
         // Cập nhật sức chứa của giảng viên
         updateLecturerCapacity(topic.getSupervisorId(), period.getPeriodId(), true);
     }
 
     private boolean hasStudentRegisteredInPeriod(Integer studentId, Integer periodId) {
         return registerRepository.existsByStudentIdAndRegistrationPeriodId(studentId, periodId);
+    }
+
+    private boolean hasStudentSuggestedInPeriod(Integer studentId, Integer periodId) {
+        return suggestRepository.existsBySuggestedByAndRegistrationPeriodId(studentId, periodId);
     }
 
     private boolean canLecturerAcceptMoreStudents(Integer lecturerId, Integer periodId) {
@@ -131,5 +154,98 @@ public class RegisterServiceImpl implements RegisterService {
         }
 
         lecturerCapacityRepository.save(capacity);
+    }
+
+    // Statistics methods implementation
+    @Override
+    public Long getRegistrationCount() {
+        return registerRepository.count();
+    }
+
+    @Override
+    public Long getRegistrationCountByStatus(String status) {
+        try {
+            Register.RegisterStatus registerStatus = Register.RegisterStatus.valueOf(status.toUpperCase());
+            return registerRepository.countByRegisterStatus(registerStatus);
+        } catch (IllegalArgumentException e) {
+            return 0L;
+        }
+    }
+
+    @Override
+    public Long getRegistrationCountByAcademicYear(Integer academicYearId) {
+        return registerRepository.countByRegistrationPeriodId(academicYearId);
+    }
+
+    @Override
+    public List<Map<String, Object>> getRegistrationsByTopic(Integer topicId) {
+        List<Register> registrations = registerRepository.findByProjectTopicTopicId(topicId);
+        return registrations.stream()
+                .map(register -> {
+                    Map<String, Object> registrationMap = new HashMap<>();
+                    registrationMap.put("registerId", register.getRegisterId());
+                    registrationMap.put("studentId", register.getStudentId());
+                    registrationMap.put("registerType", register.getRegisterType());
+                    registrationMap.put("registerStatus", register.getRegisterStatus());
+                    registrationMap.put("registeredAt", register.getRegisteredAt());
+                    registrationMap.put("approvedAt", register.getApprovedAt());
+                    registrationMap.put("approvedBy", register.getApprovedBy());
+                    return registrationMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Map<String, Object>> getRegistrationsOverTime(String startDate, String endDate) {
+        // TODO: Implement registrations over time with date filtering
+        List<Register> registrations = registerRepository.findAll();
+        return registrations.stream()
+                .collect(Collectors.groupingBy(
+                        registration -> registration.getRegisteredAt().atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString(),
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> timeData = new HashMap<>();
+                    timeData.put("date", entry.getKey());
+                    timeData.put("count", entry.getValue());
+                    return timeData;
+                })
+                .sorted((a, b) -> a.get("date").toString().compareTo(b.get("date").toString()))
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public Long getRegistrationsToday() {
+        log.info("Getting registrations count for today");
+        LocalDate today = LocalDate.now();
+        return registerRepository.countByRegisteredAtBetween(
+            today.atStartOfDay(),
+            today.plusDays(1).atStartOfDay()
+        );
+    }
+    
+    @Override
+    public List<Map<String, Object>> getTodayRegistrations() {
+        log.info("Getting today's registrations");
+        LocalDate today = LocalDate.now();
+        List<Register> todayRegistrations = registerRepository.findByRegisteredAtBetween(
+            today.atStartOfDay(),
+            today.plusDays(1).atStartOfDay()
+        );
+        
+        return todayRegistrations.stream()
+                .map(registration -> {
+                    Map<String, Object> registrationData = new HashMap<>();
+                    registrationData.put("id", registration.getRegisterId());
+                    registrationData.put("studentId", registration.getStudentId());
+                    registrationData.put("topicId", registration.getProjectTopic().getTopicId());
+                    registrationData.put("topicTitle", registration.getProjectTopic().getTitle());
+                    registrationData.put("supervisorId", registration.getProjectTopic().getSupervisorId());
+                    registrationData.put("status", registration.getRegisterStatus());
+                    registrationData.put("registeredAt", registration.getRegisteredAt());
+                    return registrationData;
+                })
+                .collect(Collectors.toList());
     }
 }

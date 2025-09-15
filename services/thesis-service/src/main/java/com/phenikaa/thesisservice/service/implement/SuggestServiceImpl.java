@@ -14,6 +14,7 @@ import com.phenikaa.thesisservice.repository.ProjectTopicRepository;
 import com.phenikaa.thesisservice.repository.SuggestRepository;
 import com.phenikaa.thesisservice.repository.RegistrationPeriodRepository;
 import com.phenikaa.thesisservice.repository.LecturerCapacityRepository;
+import com.phenikaa.thesisservice.repository.RegisterRepository;
 import com.phenikaa.thesisservice.service.interfaces.SuggestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,6 +38,7 @@ public class SuggestServiceImpl implements SuggestService {
     private final NotificationServiceClient notificationServiceClient;
     private final RegistrationPeriodRepository registrationPeriodRepository;
     private final LecturerCapacityRepository lecturerCapacityRepository;
+    private final RegisterRepository registerRepository;
 
     @Override
     public void suggestTopic(SuggestTopicRequest dto, Integer studentId) {
@@ -51,6 +53,12 @@ public class SuggestServiceImpl implements SuggestService {
         if (hasStudentSuggestedInPeriod(studentId, activePeriod.getPeriodId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Bạn đã đề xuất đề tài trong đợt này rồi!");
+        }
+
+        // Kiểm tra xem sinh viên đã đăng ký đề tài trong đợt này chưa
+        if (hasStudentRegisteredInPeriod(studentId, activePeriod.getPeriodId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Bạn đã đăng ký đề tài trong đợt này rồi! Không thể đề xuất đề tài khác.");
         }
 
         // Kiểm tra sức chứa của giảng viên trong đợt đăng ký này
@@ -100,6 +108,10 @@ public class SuggestServiceImpl implements SuggestService {
 
     private boolean hasStudentSuggestedInPeriod(Integer studentId, Integer periodId) {
         return suggestRepository.existsBySuggestedByAndRegistrationPeriodId(studentId, periodId);
+    }
+
+    private boolean hasStudentRegisteredInPeriod(Integer studentId, Integer periodId) {
+        return registerRepository.existsByStudentIdAndRegistrationPeriodId(studentId, periodId);
     }
 
     private boolean canLecturerAcceptMoreStudents(Integer lecturerId, Integer periodId) {

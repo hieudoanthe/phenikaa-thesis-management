@@ -2,10 +2,13 @@ package com.phenikaa.thesisservice.specification;
 
 import com.phenikaa.thesisservice.dto.request.ThesisSpecificationFilterRequest;
 import com.phenikaa.thesisservice.entity.ProjectTopic;
+import com.phenikaa.thesisservice.entity.Register;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Subquery;
+import jakarta.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -155,26 +158,51 @@ public class ThesisSpecification {
             }
             
             // Lọc theo vai trò người dùng
-            if (StringUtils.hasText(filterRequest.getUserRole()) && filterRequest.getUserId() != null) {
+            if (StringUtils.hasText(filterRequest.getUserRole())) {
                 switch (filterRequest.getUserRole().toUpperCase()) {
                     case "TEACHER":
-                        // Giảng viên chỉ thấy đề tài của mình
-                        predicates.add(criteriaBuilder.equal(
-                            root.get("supervisorId"), filterRequest.getUserId()
-                        ));
+                        // Giảng viên chỉ thấy đề tài của mình (cần userId)
+                        if (filterRequest.getUserId() != null) {
+                            predicates.add(criteriaBuilder.equal(
+                                root.get("supervisorId"), filterRequest.getUserId()
+                            ));
+                        }
                         break;
                     case "STUDENT":
-                        // Sinh viên: chỉ hiển thị đề tài GIẢNG VIÊN tạo (createdBy == supervisorId), đang ACTIVE và ở trạng thái AVAILABLE
+                        // Sinh viên: chỉ hiển thị đề tài GIẢNG VIÊN tạo (createdBy == supervisorId), đang ACTIVE
                         predicates.add(criteriaBuilder.equal(
                             root.get("topicStatus"), ProjectTopic.TopicStatus.ACTIVE
-                        ));
-                        predicates.add(criteriaBuilder.equal(
-                            root.get("approvalStatus"), ProjectTopic.ApprovalStatus.AVAILABLE
                         ));
                         // Loại bỏ đề tài do sinh viên đề xuất: giảng viên tạo thì createdBy == supervisorId
                         predicates.add(criteriaBuilder.equal(
                             root.get("createdBy"), root.get("supervisorId")
                         ));
+                        
+                        // Hiển thị đề tài AVAILABLE cho tất cả sinh viên
+                        // Hoặc đề tài PENDING nhưng chỉ cho sinh viên đã đăng ký đề tài đó
+                        Predicate availableTopics = criteriaBuilder.equal(
+                            root.get("approvalStatus"), ProjectTopic.ApprovalStatus.AVAILABLE
+                        );
+                        
+                        // Tạo subquery để kiểm tra sinh viên đã đăng ký đề tài PENDING chưa
+                        Subquery<Register> subquery = criteriaBuilder.createQuery(Register.class).subquery(Register.class);
+                        Root<Register> subRoot = subquery.from(Register.class);
+                        subquery.select(subRoot);
+                        subquery.where(
+                            criteriaBuilder.and(
+                                criteriaBuilder.equal(subRoot.get("projectTopic"), root),
+                                criteriaBuilder.equal(subRoot.get("studentId"), filterRequest.getUserId())
+                            )
+                        );
+                        
+                        Predicate pendingTopicsForRegisteredStudent = criteriaBuilder.and(
+                            criteriaBuilder.equal(
+                                root.get("approvalStatus"), ProjectTopic.ApprovalStatus.PENDING
+                            ),
+                            criteriaBuilder.exists(subquery)
+                        );
+                        
+                        predicates.add(criteriaBuilder.or(availableTopics, pendingTopicsForRegisteredStudent));
                         break;
                     case "ADMIN":
                         // Admin thấy tất cả đề tài

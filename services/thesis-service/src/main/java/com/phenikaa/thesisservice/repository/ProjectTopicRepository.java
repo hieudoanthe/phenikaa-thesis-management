@@ -48,4 +48,13 @@ public interface ProjectTopicRepository extends JpaRepository<ProjectTopic, Inte
     // Lấy tất cả đề tài có trạng thái APPROVED với phân trang
     @EntityGraph(attributePaths = {"suggestedTopics", "registers"})
     Page<ProjectTopic> findByApprovalStatus(ProjectTopic.ApprovalStatus approvalStatus, Pageable pageable);
+    
+    // Statistics methods
+    Long countByTopicStatus(ProjectTopic.TopicStatus topicStatus);
+    Long countByDifficultyLevel(ProjectTopic.DifficultyLevel difficultyLevel);
+    Long countByAcademicYearId(Integer academicYearId);
+    Long countBySupervisorId(Integer supervisorId);
+    List<ProjectTopic> findBySupervisorId(Integer supervisorId);
+    Long countBySupervisorIdAndTopicStatus(Integer supervisorId, ProjectTopic.TopicStatus topicStatus);
+    Long countBySupervisorIdAndDifficultyLevel(Integer supervisorId, ProjectTopic.DifficultyLevel difficultyLevel);
 }

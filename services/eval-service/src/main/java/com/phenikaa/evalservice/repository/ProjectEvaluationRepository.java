@@ -50,4 +50,9 @@ public interface ProjectEvaluationRepository extends JpaRepository<ProjectEvalua
     // Thống kê - điểm trung bình tổng
     @Query("SELECT AVG(pe.totalScore) FROM ProjectEvaluation pe WHERE pe.totalScore IS NOT NULL")
     Double findAverageScore();
+    
+    // Statistics methods
+    Long countByEvaluationStatus(ProjectEvaluation.EvaluationStatus evaluationStatus);
+    Long countByEvaluatorId(Integer evaluatorId);
+    Long countByEvaluatorIdAndEvaluationStatus(Integer evaluatorId, ProjectEvaluation.EvaluationStatus evaluationStatus);
 }

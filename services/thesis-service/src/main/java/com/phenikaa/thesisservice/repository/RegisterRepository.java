@@ -25,4 +25,13 @@ public interface RegisterRepository extends JpaRepository<Register, Integer> {
     
     // Lấy danh sách đăng ký theo đợt đăng ký
     List<Register> findByRegistrationPeriodId(Integer registrationPeriodId);
+    
+    // Statistics methods
+    Long countByRegisterStatus(Register.RegisterStatus registerStatus);
+    Long countByRegistrationPeriodId(Integer registrationPeriodId);
+    List<Register> findByProjectTopicTopicId(Integer topicId);
+    
+    // Today's statistics
+    Long countByRegisteredAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+    List<Register> findByRegisteredAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 }

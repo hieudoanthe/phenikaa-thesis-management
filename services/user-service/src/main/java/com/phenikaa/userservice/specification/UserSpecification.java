@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class UserSpecification {
@@ -129,5 +130,18 @@ public class UserSpecification {
     public static Specification<User> withStatus(Integer status) {
         return (root, query, criteriaBuilder) -> 
             criteriaBuilder.equal(root.get("status"), status);
+    }
+    
+    /**
+     * Tạo specification để filter theo thời gian đăng nhập cuối
+     */
+    public static Specification<User> withLastLoginBetween(LocalDateTime start, LocalDateTime end) {
+        return (root, query, criteriaBuilder) -> {
+            Predicate startPredicate = criteriaBuilder.greaterThanOrEqualTo(root.get("lastLogin"), start);
+            Predicate endPredicate = criteriaBuilder.lessThanOrEqualTo(root.get("lastLogin"), end);
+            Predicate notNullPredicate = criteriaBuilder.isNotNull(root.get("lastLogin"));
+            
+            return criteriaBuilder.and(startPredicate, endPredicate, notNullPredicate);
+        };
     }
 }

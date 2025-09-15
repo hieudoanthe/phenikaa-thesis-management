@@ -18,6 +18,8 @@ import com.phenikaa.userservice.service.CustomUserDetailsService;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import com.phenikaa.userservice.specification.UserSpecification;
 import com.phenikaa.userservice.filter.DynamicFilterBuilder;
+
+import java.time.LocalDateTime;
 import com.phenikaa.userservice.filter.DynamicQueryBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -299,6 +301,38 @@ public class UserServiceImpl implements UserService {
         Page<User> userPage = userRepository.findAll(spec, pageable);
 
         return userPage.map(userMapper::toDTO);
+    }
+
+    @Override
+    public Long getUserCount() {
+        return userRepository.count();
+    }
+
+    @Override
+    public Long getUserCountByRole(String role) {
+        try {
+            Role.RoleName roleName = Role.RoleName.valueOf(role.toUpperCase());
+            Specification<User> spec = UserSpecification.withRole(roleName);
+            return userRepository.count(spec);
+        } catch (IllegalArgumentException e) {
+            return 0L;
+        }
+    }
+
+    @Override
+    public Long getUserCountByStatus(Integer status) {
+        Specification<User> spec = UserSpecification.withStatus(status);
+        return userRepository.count(spec);
+    }
+
+    @Override
+    public Long getActiveUsersToday() {
+        // Lấy số user đã login trong ngày hôm nay
+        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
+        
+        Specification<User> spec = UserSpecification.withLastLoginBetween(startOfDay, endOfDay);
+        return userRepository.count(spec);
     }
 
 }

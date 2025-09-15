@@ -33,4 +33,10 @@ public interface UserService {
     
     // Dynamic filter method
     Page<GetUserResponse> dynamicFilterUsers(DynamicFilterRequest dynamicFilterRequest);
+    
+    // Statistics methods
+    Long getUserCount();
+    Long getUserCountByRole(String role);
+    Long getUserCountByStatus(Integer status);
+    Long getActiveUsersToday();
 }

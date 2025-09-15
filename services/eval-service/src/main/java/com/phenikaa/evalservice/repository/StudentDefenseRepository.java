@@ -56,4 +56,8 @@ public interface StudentDefenseRepository extends JpaRepository<StudentDefense, 
 
     // Tìm danh sách sinh viên đã gán theo thứ tự bảo vệ
     List<StudentDefense> findByDefenseSession_SessionIdOrderByDefenseOrder(Integer sessionId);
+    
+    // Lấy tất cả StudentDefense với DefenseSession được fetch
+    @Query("SELECT sd FROM StudentDefense sd LEFT JOIN FETCH sd.defenseSession")
+    List<StudentDefense> findAllWithDefenseSession();
 }

@@ -441,4 +441,89 @@ public class StatisticsService {
         // TODO: Implement monthly statistics
         return new ArrayList<>();
     }
+
+    // Statistics methods for internal API
+    public Long getEvaluationCount() {
+        return evaluationRepository.count();
+    }
+
+    public Long getEvaluationCountByType(String type) {
+        try {
+            ProjectEvaluation.EvaluationType evaluationType = ProjectEvaluation.EvaluationType.valueOf(type.toUpperCase());
+            return evaluationRepository.countByEvaluationType(evaluationType);
+        } catch (IllegalArgumentException e) {
+            return 0L;
+        }
+    }
+
+    public Long getEvaluationCountByStatus(String status) {
+        try {
+            ProjectEvaluation.EvaluationStatus evaluationStatus = ProjectEvaluation.EvaluationStatus.valueOf(status.toUpperCase());
+            return evaluationRepository.countByEvaluationStatus(evaluationStatus);
+        } catch (IllegalArgumentException e) {
+            return 0L;
+        }
+    }
+
+    public Long getEvaluationCountByEvaluator(Integer evaluatorId) {
+        return evaluationRepository.countByEvaluatorId(evaluatorId);
+    }
+
+    public List<Map<String, Object>> getEvaluationsOverTime(String startDate, String endDate) {
+        // TODO: Implement evaluations over time with date filtering
+        return new ArrayList<>();
+    }
+
+    public List<Map<String, Object>> getEvaluationsByEvaluator(Integer evaluatorId) {
+        // TODO: Implement evaluations by evaluator
+        return new ArrayList<>();
+    }
+
+    public List<Map<String, Object>> getEvaluationsByTopic(Integer topicId) {
+        // TODO: Implement evaluations by topic
+        return new ArrayList<>();
+    }
+
+    public List<Map<String, Object>> getEvaluationsByStudent(Integer studentId) {
+        // TODO: Implement evaluations by student
+        return new ArrayList<>();
+    }
+
+    public Map<String, Object> getScoreStatistics(String startDate, String endDate) {
+        // TODO: Implement score statistics with date filtering
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("averageScore", 0.0);
+        stats.put("highestScore", 0.0);
+        stats.put("lowestScore", 0.0);
+        stats.put("scoreDistribution", new HashMap<String, Long>());
+        stats.put("passRate", 0.0);
+        return stats;
+    }
+
+    public Long getPendingEvaluations() {
+        return evaluationRepository.countByEvaluationStatus(ProjectEvaluation.EvaluationStatus.PENDING);
+    }
+
+    public Long getPendingEvaluationsByEvaluator(Integer evaluatorId) {
+        return evaluationRepository.countByEvaluatorIdAndEvaluationStatus(evaluatorId, ProjectEvaluation.EvaluationStatus.PENDING);
+    }
+    
+    public List<Map<String, Object>> getPendingEvaluationsList() {
+        List<ProjectEvaluation> pendingEvaluations = evaluationRepository.findByEvaluationStatus(ProjectEvaluation.EvaluationStatus.PENDING);
+        
+        return pendingEvaluations.stream()
+                .map(evaluation -> {
+                    Map<String, Object> evaluationData = new HashMap<>();
+                    evaluationData.put("id", evaluation.getEvaluatorId());
+                    evaluationData.put("studentId", evaluation.getStudentId());
+                    evaluationData.put("topicId", evaluation.getTopicId());
+                    evaluationData.put("evaluatorId", evaluation.getEvaluatorId());
+                    evaluationData.put("evaluationType", evaluation.getEvaluationType());
+                    evaluationData.put("status", evaluation.getEvaluationStatus());
+                    evaluationData.put("createdAt", evaluation.getCreatedAt());
+                    evaluationData.put("dueDate", evaluation.getEvaluatedAt());
+                    return evaluationData;
+                })
+                .collect(Collectors.toList());
+    }
 }

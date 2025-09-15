@@ -100,12 +100,15 @@ public class ThesisServiceImpl implements ThesisService {
                                     .orElse(null)
                     );
 
-                    dto.setRegisterId(
-                            projectTopic.getRegisters().stream()
-                                    .findFirst()
-                                    .map(Register::getRegisterId)
-                                    .orElse(null)
-                    );
+                    // Lấy thông tin đăng ký
+                    Register register = projectTopic.getRegisters().stream()
+                            .findFirst()
+                            .orElse(null);
+                    
+                    if (register != null) {
+                        dto.setRegisterId(register.getRegisterId());
+                        dto.setRegisteredBy(register.getStudentId());
+                    }
 
                     return dto;
                 });
@@ -163,13 +166,32 @@ public class ThesisServiceImpl implements ThesisService {
         }
 
         Integer senderId = projectTopic.getSupervisorId();
+        Integer receiverId = null;
+        Integer registrationPeriodId = null;
 
-        SuggestedTopic suggestedTopic = projectTopic.getSuggestedTopics().stream()
+        // Kiểm tra xem có đề tài đề xuất đang PENDING không
+        Optional<SuggestedTopic> pendingSuggestion = projectTopic.getSuggestedTopics().stream()
                 .filter(st -> st.getSuggestionStatus() == SuggestedTopic.SuggestionStatus.PENDING)
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No pending suggestion found!"));
+                .findFirst();
 
-        Integer receiverId = suggestedTopic.getSuggestedBy();
+        // Kiểm tra xem có đề tài đăng ký đang PENDING không
+        Optional<Register> pendingRegister = projectTopic.getRegisters().stream()
+                .filter(r -> r.getRegisterStatus() == Register.RegisterStatus.PENDING)
+                .findFirst();
+
+        if (pendingSuggestion.isPresent()) {
+            // Xử lý đề tài đề xuất
+            SuggestedTopic suggestedTopic = pendingSuggestion.get();
+            receiverId = suggestedTopic.getSuggestedBy();
+            registrationPeriodId = suggestedTopic.getRegistrationPeriodId();
+        } else if (pendingRegister.isPresent()) {
+            // Xử lý đề tài đăng ký
+            Register register = pendingRegister.get();
+            receiverId = register.getStudentId();
+            registrationPeriodId = register.getRegistrationPeriodId();
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No pending suggestion or registration found!");
+        }
 
         // Giảm số lượng sinh viên có thể nhận
         boolean decreased = projectTopic.decreaseMaxStudents();
@@ -181,19 +203,25 @@ public class ThesisServiceImpl implements ThesisService {
         // Cập nhật trạng thái đề tài
         projectTopic.updateTopicStatusBasedOnStudents();
         
-        // Cập nhật trạng thái suggestion
-        suggestedTopic.setSuggestionStatus(SuggestedTopic.SuggestionStatus.APPROVED);
-        suggestedTopic.setApprovedBy(senderId);
+        // Cập nhật trạng thái suggestion hoặc register
+        if (pendingSuggestion.isPresent()) {
+            SuggestedTopic suggestedTopic = pendingSuggestion.get();
+            suggestedTopic.setSuggestionStatus(SuggestedTopic.SuggestionStatus.APPROVED);
+            suggestedTopic.setApprovedBy(senderId);
+        } else if (pendingRegister.isPresent()) {
+            Register register = pendingRegister.get();
+            register.setRegisterStatus(Register.RegisterStatus.APPROVED);
+        }
 
         // Giảm currentStudents trong LecturerCapacity khi chấp nhận đề tài
-        if (suggestedTopic.getRegistrationPeriodId() != null) {
+        if (registrationPeriodId != null) {
             System.out.println("=== TRƯỚC KHI GIẢM currentStudents ===");
             System.out.println("Lecturer ID: " + projectTopic.getSupervisorId());
-            System.out.println("Period ID: " + suggestedTopic.getRegistrationPeriodId());
+            System.out.println("Period ID: " + registrationPeriodId);
             
             // Lấy capacity hiện tại để debug
             LecturerCapacity currentCapacity = lecturerCapacityRepository
-                    .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), suggestedTopic.getRegistrationPeriodId())
+                    .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), registrationPeriodId)
                     .orElse(null);
             if (currentCapacity != null) {
                 System.out.println("Capacity hiện tại: maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
@@ -201,12 +229,12 @@ public class ThesisServiceImpl implements ThesisService {
                 System.out.println("KHÔNG TÌM THẤY LecturerCapacity!");
             }
             
-            decreaseLecturerCapacity(projectTopic.getSupervisorId(), suggestedTopic.getRegistrationPeriodId());
-            System.out.println("Đã giảm currentStudents cho lecturer " + projectTopic.getSupervisorId() + " trong period " + suggestedTopic.getRegistrationPeriodId() + " khi chấp nhận đề tài");
+            decreaseLecturerCapacity(projectTopic.getSupervisorId(), registrationPeriodId);
+            System.out.println("Đã giảm currentStudents cho lecturer " + projectTopic.getSupervisorId() + " trong period " + registrationPeriodId + " khi chấp nhận đề tài");
             
             // Kiểm tra sau khi giảm
             LecturerCapacity afterCapacity = lecturerCapacityRepository
-                    .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), suggestedTopic.getRegistrationPeriodId())
+                    .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), registrationPeriodId)
                     .orElse(null);
             if (afterCapacity != null) {
                 System.out.println("Capacity sau khi giảm: maxStudents=" + afterCapacity.getMaxStudents() + ", currentStudents=" + afterCapacity.getCurrentStudents());
@@ -242,27 +270,53 @@ public class ThesisServiceImpl implements ThesisService {
         ProjectTopic projectTopic = projectTopicOpt.get();
 
         Integer senderId = projectTopic.getSupervisorId();
+        Integer receiverId = null;
+        Integer registrationPeriodId = null;
 
-        SuggestedTopic suggestedTopic = projectTopic.getSuggestedTopics().stream()
+        // Kiểm tra xem có đề tài đề xuất đang PENDING không
+        Optional<SuggestedTopic> pendingSuggestion = projectTopic.getSuggestedTopics().stream()
                 .filter(st -> st.getSuggestionStatus() == SuggestedTopic.SuggestionStatus.PENDING)
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No pending suggestion found!"));
+                .findFirst();
 
-        Integer receiverId = suggestedTopic.getSuggestedBy();
+        // Kiểm tra xem có đề tài đăng ký đang PENDING không
+        Optional<Register> pendingRegister = projectTopic.getRegisters().stream()
+                .filter(r -> r.getRegisterStatus() == Register.RegisterStatus.PENDING)
+                .findFirst();
 
-        // Cập nhật trạng thái đề tài và suggestion sang REJECTED
+        if (pendingSuggestion.isPresent()) {
+            // Xử lý đề tài đề xuất
+            SuggestedTopic suggestedTopic = pendingSuggestion.get();
+            receiverId = suggestedTopic.getSuggestedBy();
+            registrationPeriodId = suggestedTopic.getRegistrationPeriodId();
+        } else if (pendingRegister.isPresent()) {
+            // Xử lý đề tài đăng ký
+            Register register = pendingRegister.get();
+            receiverId = register.getStudentId();
+            registrationPeriodId = register.getRegistrationPeriodId();
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No pending suggestion or registration found!");
+        }
+
+        // Cập nhật trạng thái đề tài và suggestion/register sang REJECTED
         projectTopic.setApprovalStatus(ProjectTopic.ApprovalStatus.REJECTED);
-        suggestedTopic.setSuggestionStatus(SuggestedTopic.SuggestionStatus.REJECTED);
+        
+        if (pendingSuggestion.isPresent()) {
+            SuggestedTopic suggestedTopic = pendingSuggestion.get();
+            suggestedTopic.setSuggestionStatus(SuggestedTopic.SuggestionStatus.REJECTED);
+        } else if (pendingRegister.isPresent()) {
+            Register register = pendingRegister.get();
+            register.setRegisterStatus(Register.RegisterStatus.REJECTED);
+        }
 
-        // Lưu thay đổi (cascade sẽ cập nhật SuggestedTopic)
+        // Lưu thay đổi (cascade sẽ cập nhật SuggestedTopic hoặc Register)
         projectTopicRepository.save(projectTopic);
         
         // HOÀN TRẢ slot khi từ chối đề tài (tăng maxStudents lên 1)
-        if (suggestedTopic.getRegistrationPeriodId() != null) {
+        if (registrationPeriodId != null) {
             
             // Lấy capacity hiện tại để debug
             LecturerCapacity currentCapacity = lecturerCapacityRepository
-                    .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), suggestedTopic.getRegistrationPeriodId())
+                    .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), registrationPeriodId)
                     .orElse(null);
             if (currentCapacity != null) {
                 System.out.println("Capacity trước khi hoàn trả: maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
@@ -349,12 +403,15 @@ public class ThesisServiceImpl implements ThesisService {
                     .orElse(null)
             );
             
-            dto.setRegisterId(
-                projectTopic.getRegisters().stream()
-                    .findFirst()
-                    .map(Register::getRegisterId)
-                    .orElse(null)
-            );
+            // Lấy thông tin đăng ký
+            Register register = projectTopic.getRegisters().stream()
+                .findFirst()
+                .orElse(null);
+            
+            if (register != null) {
+                dto.setRegisterId(register.getRegisterId());
+                dto.setRegisteredBy(register.getStudentId());
+            }
 
             // Bổ sung supervisorName để FE hiển thị ngay không bị nháy
             try {
@@ -630,5 +687,98 @@ public class ThesisServiceImpl implements ThesisService {
         topicInfo.put("updatedAt", projectTopic.getUpdatedAt());
         
         return topicInfo;
+    }
+
+    // Statistics methods implementation
+    @Override
+    public Long getTopicCount() {
+        return projectTopicRepository.count();
+    }
+
+    @Override
+    public Long getTopicCountByStatus(String status) {
+        try {
+            ProjectTopic.TopicStatus topicStatus = ProjectTopic.TopicStatus.valueOf(status.toUpperCase());
+            return projectTopicRepository.countByTopicStatus(topicStatus);
+        } catch (IllegalArgumentException e) {
+            return 0L;
+        }
+    }
+
+    @Override
+    public Long getTopicCountByDifficulty(String difficulty) {
+        try {
+            ProjectTopic.DifficultyLevel difficultyLevel = ProjectTopic.DifficultyLevel.valueOf(difficulty.toUpperCase());
+            return projectTopicRepository.countByDifficultyLevel(difficultyLevel);
+        } catch (IllegalArgumentException e) {
+            return 0L;
+        }
+    }
+
+    @Override
+    public Long getTopicCountByAcademicYear(Integer academicYearId) {
+        return projectTopicRepository.countByAcademicYearId(academicYearId);
+    }
+
+    @Override
+    public Long getTopicCountBySupervisor(Integer supervisorId) {
+        return projectTopicRepository.countBySupervisorId(supervisorId);
+    }
+
+    @Override
+    public List<Map<String, Object>> getTopicsBySupervisor(Integer supervisorId) {
+        List<ProjectTopic> topics = projectTopicRepository.findBySupervisorId(supervisorId);
+        return topics.stream()
+                .map(topic -> {
+                    Map<String, Object> topicMap = new HashMap<>();
+                    topicMap.put("topicId", topic.getTopicId());
+                    topicMap.put("topicCode", topic.getTopicCode());
+                    topicMap.put("title", topic.getTitle());
+                    topicMap.put("difficultyLevel", topic.getDifficultyLevel());
+                    topicMap.put("topicStatus", topic.getTopicStatus());
+                    topicMap.put("academicYearId", topic.getAcademicYearId());
+                    topicMap.put("maxStudents", topic.getMaxStudents());
+                    topicMap.put("acceptedStudentsCount", topic.getAcceptedStudentsCount());
+                    topicMap.put("createdAt", topic.getCreatedAt());
+                    return topicMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> getTopicsStatsBySupervisor(Integer supervisorId) {
+        Map<String, Object> stats = new HashMap<>();
+        Long totalTopics = getTopicCountBySupervisor(supervisorId);
+        Long activeTopics = projectTopicRepository.countBySupervisorIdAndTopicStatus(supervisorId, ProjectTopic.TopicStatus.ACTIVE);
+        Long archivedTopics = projectTopicRepository.countBySupervisorIdAndTopicStatus(supervisorId, ProjectTopic.TopicStatus.ARCHIVED);
+        
+        stats.put("totalTopics", totalTopics);
+        stats.put("activeTopics", activeTopics);
+        stats.put("archivedTopics", archivedTopics);
+        stats.put("easyTopics", projectTopicRepository.countBySupervisorIdAndDifficultyLevel(supervisorId, ProjectTopic.DifficultyLevel.EASY));
+        stats.put("mediumTopics", projectTopicRepository.countBySupervisorIdAndDifficultyLevel(supervisorId, ProjectTopic.DifficultyLevel.MEDIUM));
+        stats.put("hardTopics", projectTopicRepository.countBySupervisorIdAndDifficultyLevel(supervisorId, ProjectTopic.DifficultyLevel.HARD));
+        
+        return stats;
+    }
+
+    @Override
+    public List<Map<String, Object>> getTopicsOverTime(String startDate, String endDate) {
+        // TODO: Implement topics over time with date filtering
+        List<ProjectTopic> topics = projectTopicRepository.findAll();
+        return topics.stream()
+                .collect(Collectors.groupingBy(
+                        topic -> topic.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString(),
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> timeData = new HashMap<>();
+                    timeData.put("date", entry.getKey());
+                    timeData.put("count", entry.getValue());
+                    return timeData;
+                })
+                .sorted((a, b) -> a.get("date").toString().compareTo(b.get("date").toString()))
+                .collect(Collectors.toList());
     }
 }

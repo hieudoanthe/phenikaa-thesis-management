@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -328,5 +330,107 @@ public class AssignmentServiceImpl implements AssignmentService {
         response.setTaskStatus(task.getTaskStatus());
         
         return response;
+    }
+
+    // Statistics methods implementation
+    @Override
+    public Long getAssignmentCount() {
+        return assignmentRepository.count();
+    }
+
+    @Override
+    public Long getAssignmentCountByStatus(String status) {
+        try {
+            Integer statusValue = Integer.parseInt(status);
+            return assignmentRepository.countByStatus(statusValue);
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    @Override
+    public Long getAssignmentCountByUser(Integer userId) {
+        return assignmentRepository.countByAssignedTo(userId);
+    }
+
+    @Override
+    public Long getAssignmentCountByTopic(Integer topicId) {
+        return assignmentRepository.countByTopicId(topicId);
+    }
+
+    @Override
+    public List<Map<String, Object>> getAssignmentsByUser(Integer userId) {
+        return assignmentRepository.findByAssignedTo(userId).stream()
+                .map(assignment -> {
+                    Map<String, Object> assignmentMap = new HashMap<>();
+                    assignmentMap.put("assignmentId", assignment.getAssignmentId());
+                    assignmentMap.put("topicId", assignment.getTopicId());
+                    assignmentMap.put("assignedTo", assignment.getAssignedTo());
+                    assignmentMap.put("assignedBy", assignment.getAssignedBy());
+                    assignmentMap.put("title", assignment.getTitle());
+                    assignmentMap.put("description", assignment.getDescription());
+                    assignmentMap.put("status", assignment.getStatus());
+                    assignmentMap.put("createdAt", assignment.getCreatedAt());
+                    return assignmentMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Map<String, Object>> getAssignmentsByTopic(Integer topicId) {
+        return assignmentRepository.findByTopicId(topicId).stream()
+                .map(assignment -> {
+                    Map<String, Object> assignmentMap = new HashMap<>();
+                    assignmentMap.put("assignmentId", assignment.getAssignmentId());
+                    assignmentMap.put("topicId", assignment.getTopicId());
+                    assignmentMap.put("assignedTo", assignment.getAssignedTo());
+                    assignmentMap.put("assignedBy", assignment.getAssignedBy());
+                    assignmentMap.put("title", assignment.getTitle());
+                    assignmentMap.put("description", assignment.getDescription());
+                    assignmentMap.put("status", assignment.getStatus());
+                    assignmentMap.put("createdAt", assignment.getCreatedAt());
+                    return assignmentMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Long getTaskCount() {
+        return taskRepository.count();
+    }
+
+    @Override
+    public Long getTaskCountByStatus(String status) {
+        try {
+            Integer statusValue = Integer.parseInt(status);
+            return taskRepository.countByStatus(statusValue);
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    @Override
+    public Long getTaskCountByAssignment(Integer assignmentId) {
+        return taskRepository.countByAssignmentAssignmentId(assignmentId);
+    }
+
+    @Override
+    public List<Map<String, Object>> getTasksByAssignment(Integer assignmentId) {
+        return taskRepository.findByAssignmentAssignmentId(assignmentId).stream()
+                .map(task -> {
+                    Map<String, Object> taskMap = new HashMap<>();
+                    taskMap.put("taskId", task.getTaskId());
+                    taskMap.put("assignmentId", task.getAssignment().getAssignmentId());
+                    taskMap.put("topicId", task.getTopicId());
+                    taskMap.put("assignedTo", task.getAssignedTo());
+                    taskMap.put("assignedBy", task.getAssignedBy());
+                    taskMap.put("taskName", task.getTaskName());
+                    taskMap.put("description", task.getDescription());
+                    taskMap.put("status", task.getStatus());
+                    taskMap.put("progress", task.getProgress());
+                    taskMap.put("createdAt", task.getCreatedAt());
+                    return taskMap;
+                })
+                .collect(Collectors.toList());
     }
 }

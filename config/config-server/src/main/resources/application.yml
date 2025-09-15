@@ -19,6 +19,7 @@ spring:
             - profile-service
             - submission-service
             - auth-service
+            - statistics-service
 
 logging:
   level:

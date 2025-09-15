@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -173,6 +175,91 @@ public class ProfileServiceImpl implements ProfileService {
         }
         profile.setMaxStudents(current - 1);
         teacherProfileRepository.save(profile);
+    }
+
+    // Statistics methods implementation
+    @Override
+    public Long getProfileCount() {
+        return studentProfileRepository.count() + teacherProfileRepository.count();
+    }
+
+    @Override
+    public Long getStudentProfileCount() {
+        return studentProfileRepository.count();
+    }
+
+    @Override
+    public Long getLecturerProfileCount() {
+        return teacherProfileRepository.count();
+    }
+
+    @Override
+    public List<Map<String, Object>> getProfilesByMajor(String major) {
+        return studentProfileRepository.findByMajor(major).stream()
+                .map(profile -> {
+                    Map<String, Object> profileMap = new HashMap<>();
+                    profileMap.put("userId", profile.getUserId());
+                    profileMap.put("studentId", profile.getStudentId());
+                    profileMap.put("major", profile.getMajor());
+                    profileMap.put("year", profile.getAcademicYear());
+                    profileMap.put("supervisorId", null); // Not available in current entity
+                    profileMap.put("createdAt", null); // Not available in current entity
+                    return profileMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Map<String, Object>> getProfilesByYear(Integer year) {
+        return studentProfileRepository.findByAcademicYear(year).stream()
+                .map(profile -> {
+                    Map<String, Object> profileMap = new HashMap<>();
+                    profileMap.put("userId", profile.getUserId());
+                    profileMap.put("studentId", profile.getStudentId());
+                    profileMap.put("major", profile.getMajor());
+                    profileMap.put("year", profile.getAcademicYear());
+                    profileMap.put("supervisorId", null); // Not available in current entity
+                    profileMap.put("createdAt", null); // Not available in current entity
+                    return profileMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Map<String, Object>> getStudentProfilesBySupervisor(Integer supervisorId) {
+        // Note: StudentProfile entity doesn't have supervisorId field
+        // This method returns empty list as supervisor information is not available
+        return new ArrayList<>();
+    }
+
+    @Override
+    public Map<String, Object> getProfileByUserId(Integer userId) {
+        // Try student profile first
+        StudentProfile studentProfile = studentProfileRepository.findByUserId(userId).orElse(null);
+        if (studentProfile != null) {
+            Map<String, Object> profileMap = new HashMap<>();
+            profileMap.put("type", "STUDENT");
+            profileMap.put("userId", studentProfile.getUserId());
+            profileMap.put("studentId", studentProfile.getStudentId());
+            profileMap.put("major", studentProfile.getMajor());
+            profileMap.put("year", studentProfile.getAcademicYear());
+            profileMap.put("supervisorId", null); // Not available in current entity
+            profileMap.put("createdAt", null); // Not available in current entity
+            return profileMap;
+        }
+
+        // Try teacher profile
+        TeacherProfile teacherProfile = teacherProfileRepository.findByUserId(userId).orElse(null);
+        if (teacherProfile != null) {
+            Map<String, Object> profileMap = new HashMap<>();
+            profileMap.put("type", "TEACHER");
+            profileMap.put("userId", teacherProfile.getUserId());
+            profileMap.put("maxStudents", teacherProfile.getMaxStudents());
+            profileMap.put("createdAt", null);
+            return profileMap;
+        }
+
+        return new HashMap<>();
     }
 
 }

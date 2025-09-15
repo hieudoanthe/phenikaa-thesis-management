@@ -33,4 +33,9 @@ public interface TaskRepository extends JpaRepository<Task, Integer> {
      * Đếm số tasks theo assignmentId
      */
     long countByAssignment_AssignmentId(Integer assignmentId);
+    
+    // Statistics methods
+    Long countByStatus(Integer status);
+    Long countByAssignmentAssignmentId(Integer assignmentId);
+    List<Task> findByAssignmentAssignmentId(Integer assignmentId);
 }

@@ -2,6 +2,7 @@ package com.phenikaa.submissionservice.service;
 
 import com.phenikaa.submissionservice.dto.response.AnalyticsResponse;
 import com.phenikaa.submissionservice.entity.Feedback;
+import com.phenikaa.submissionservice.entity.ReportSubmission;
 import com.phenikaa.submissionservice.repository.ReportSubmissionRepository;
 import com.phenikaa.submissionservice.repository.FeedbackRepository;
 import com.phenikaa.submissionservice.repository.SubmissionVersionRepository;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -232,5 +234,71 @@ public class AnalyticsService {
     private List<AnalyticsResponse.VersionStats> getVersionDistribution() {
         // Implementation for version distribution
         return new ArrayList<>();
+    }
+
+    // Statistics methods for internal API
+    public Long getSubmissionCount() {
+        return reportSubmissionRepository.count();
+    }
+
+    public Long getSubmissionCountByStatus(Integer status) {
+        return reportSubmissionRepository.countByStatus(status);
+    }
+
+    public Long getSubmissionCountByTopic(Integer topicId) {
+        return reportSubmissionRepository.countByTopicId(topicId);
+    }
+
+    public Long getSubmissionCountByUser(Integer userId) {
+        return reportSubmissionRepository.countBySubmittedBy(userId);
+    }
+
+    public List<Map<String, Object>> getSubmissionsOverTime(String startDate, String endDate) {
+        // TODO: Implement submissions over time with date filtering
+        return new ArrayList<>();
+    }
+
+    public List<Map<String, Object>> getSubmissionsByTopic(Integer topicId) {
+        // TODO: Implement submissions by topic
+        return new ArrayList<>();
+    }
+
+    public List<Map<String, Object>> getSubmissionsByUser(Integer userId) {
+        // TODO: Implement submissions by user
+        return new ArrayList<>();
+    }
+
+    public Map<String, Long> getDeadlineStats() {
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("onTime", getOnTimeSubmissions());
+        stats.put("late", getLateSubmissions());
+        stats.put("overdue", getOverdueSubmissions());
+        return stats;
+    }
+
+    public Long getSubmissionsToday() {
+        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
+        return reportSubmissionRepository.countBySubmittedAtBetween(startOfDay, endOfDay);
+    }
+    
+    public List<Map<String, Object>> getTodaySubmissions() {
+        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
+        
+        List<ReportSubmission> todaySubmissions = reportSubmissionRepository.findBySubmittedAtBetween(startOfDay, endOfDay);
+        
+        return todaySubmissions.stream()
+                .map(submission -> {
+                    Map<String, Object> submissionData = new HashMap<>();
+                    submissionData.put("id", submission.getSubmissionId());
+                    submissionData.put("studentId", submission.getSubmittedBy());
+                    submissionData.put("topicId", submission.getTopicId());
+                    submissionData.put("title", submission.getReportTitle());
+                    submissionData.put("status", submission.getStatus());
+                    submissionData.put("submittedAt", submission.getSubmittedAt());
+                    return submissionData;
+                })
+                .collect(Collectors.toList());
     }
 }

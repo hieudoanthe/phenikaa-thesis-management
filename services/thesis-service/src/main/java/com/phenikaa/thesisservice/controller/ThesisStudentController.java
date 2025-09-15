@@ -2,7 +2,6 @@ package com.phenikaa.thesisservice.controller;
 
 import com.phenikaa.thesisservice.dto.request.RegisterTopicRequest;
 import com.phenikaa.thesisservice.dto.request.SuggestTopicRequest;
-import com.phenikaa.thesisservice.dto.response.AvailableTopicResponse;
 import com.phenikaa.thesisservice.dto.request.ThesisSpecificationFilterRequest;
 import com.phenikaa.thesisservice.dto.response.GetThesisResponse;
 import com.phenikaa.thesisservice.dto.response.GetSuggestTopicResponse;
@@ -14,8 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/thesis-service/student")
@@ -46,8 +43,21 @@ public class ThesisStudentController {
     }
 
     @GetMapping("/available-topics")
-    public List<AvailableTopicResponse> getAvailableTopics() {
-        return thesisService.getAvailableTopics();
+    public ResponseEntity<Page<GetThesisResponse>> getAvailableTopics(
+            @RequestHeader("Authorization") String token) {
+        Integer userId = jwtUtil.extractUserId(token);
+        
+        // Tạo filter request để áp dụng logic mới
+        ThesisSpecificationFilterRequest filterRequest = new ThesisSpecificationFilterRequest();
+        filterRequest.setUserRole("STUDENT");
+        filterRequest.setUserId(userId);
+        filterRequest.setPage(0);
+        filterRequest.setSize(1000); // Lấy tất cả đề tài
+        filterRequest.setSortBy("topicId");
+        filterRequest.setSortDirection("DESC");
+        
+        Page<GetThesisResponse> page = thesisService.filterTheses(filterRequest);
+        return ResponseEntity.ok(page);
     }
 
     // Tìm kiếm/ lọc đề tài bằng Specification (dành cho sinh viên)

@@ -167,18 +167,22 @@ public class EvaluationService {
     public List<EvaluationResponse> getEvaluatorTasks(Integer evaluatorId, LocalDate date, String scope) {
         log.info("Getting evaluator tasks for evaluatorId={}, date={}, scope={}", evaluatorId, date, scope);
 
-        // Lấy tất cả student defenses
-        var allStudentDefenses = studentDefenseRepository.findAll();
+        // Tạo StudentDefense mẫu nếu chưa có
+        createSampleStudentDefenses();
+
+        // Lấy tất cả student defenses với DefenseSession được fetch
+        var allStudentDefenses = studentDefenseRepository.findAllWithDefenseSession();
         log.info("Total student defenses in database: {}", allStudentDefenses.size());
         
         // Debug: Log chi tiết từng student defense
         for (var sd : allStudentDefenses) {
-            log.info("StudentDefense ID: {}, Student ID: {}, Topic ID: {}, Supervisor ID: {}, Session: {}", 
+            log.info("StudentDefense ID: {}, Student ID: {}, Topic ID: {}, Supervisor ID: {}, Session: {}, DefenseDate: {}", 
                 sd.getStudentDefenseId(),
                 sd.getStudentId(),
                 sd.getTopicId(),
                 sd.getSupervisorId(),
-                sd.getDefenseSession() != null ? sd.getDefenseSession().getSessionId() : "NULL");
+                sd.getDefenseSession() != null ? sd.getDefenseSession().getSessionId() : "NULL",
+                sd.getDefenseSession() != null ? sd.getDefenseSession().getDefenseDate() : "NULL");
         }
 
         // 1) GVHD: sinh viên do giảng viên này hướng dẫn
@@ -300,6 +304,51 @@ public class EvaluationService {
 
     public List<com.phenikaa.evalservice.entity.DefenseCommittee> getAllDefenseCommittees() {
         return defenseCommitteeRepository.findAll();
+    }
+    
+    // Method để tạo StudentDefense mẫu dựa trên DefenseCommittee
+    public void createSampleStudentDefenses() {
+        log.info("=== CREATING SAMPLE STUDENT DEFENSES ===");
+        
+        // Kiểm tra xem đã có StudentDefense chưa
+        var existingDefenses = studentDefenseRepository.findAll();
+        if (!existingDefenses.isEmpty()) {
+            log.info("StudentDefenses already exist, skipping creation");
+            return;
+        }
+        
+        // Lấy tất cả DefenseSession
+        var sessions = defenseSessionRepository.findAll();
+        if (sessions.isEmpty()) {
+            log.warn("No DefenseSessions found, cannot create StudentDefenses");
+            return;
+        }
+        
+        // Tạo StudentDefense cho mỗi session
+        for (var session : sessions) {
+            // Tạo 2-3 sinh viên mẫu cho mỗi session
+            for (int i = 1; i <= 3; i++) {
+                var studentDefense = com.phenikaa.evalservice.entity.StudentDefense.builder()
+                        .defenseSession(session)
+                        .studentId(100 + i) // ID sinh viên mẫu
+                        .topicId(1 + i) // ID đề tài mẫu
+                        .supervisorId(109) // Giảng viên hướng dẫn mẫu
+                        .studentName("Sinh viên " + i)
+                        .studentMajor("Công nghệ thông tin")
+                        .topicTitle("Đề tài mẫu " + i)
+                        .defenseOrder(i)
+                        .defenseTime(session.getStartTime())
+                        .durationMinutes(60)
+                        .status(com.phenikaa.evalservice.entity.StudentDefense.DefenseStatus.SCHEDULED)
+                        .build();
+                
+                studentDefenseRepository.save(studentDefense);
+                log.info("Created StudentDefense for session {} with student {}", 
+                    session.getSessionId(), studentDefense.getStudentId());
+            }
+        }
+        
+        log.info("=== END CREATING SAMPLE STUDENT DEFENSES ===");
     }
     
     public com.phenikaa.evalservice.entity.StudentDefense saveStudentDefense(com.phenikaa.evalservice.entity.StudentDefense studentDefense) {

@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 
@@ -120,5 +122,64 @@ public class AcademicServiceImpl implements AcademicService {
                 academicRepository.save(year);
             }
         }
+    }
+
+    // Statistics methods implementation
+    @Override
+    public List<Map<String, Object>> getAllAcademicYears() {
+        return academicRepository.findAll().stream()
+                .map(year -> {
+                    Map<String, Object> yearMap = new HashMap<>();
+                    yearMap.put("yearId", year.getYearId());
+                    yearMap.put("yearName", year.getYearName());
+                    yearMap.put("startDate", year.getStartDate());
+                    yearMap.put("endDate", year.getEndDate());
+                    yearMap.put("status", year.getStatus());
+                    yearMap.put("createdAt", year.getCreatedAt());
+                    return yearMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> getActiveAcademicYearInfo() {
+        AcademicYear activeYear = academicRepository.findByStatus(AcademicYear.Status.ACTIVE.getValue())
+                .orElse(null);
+        
+        if (activeYear == null) {
+            return new HashMap<>();
+        }
+        
+        Map<String, Object> yearMap = new HashMap<>();
+        yearMap.put("yearId", activeYear.getYearId());
+        yearMap.put("yearName", activeYear.getYearName());
+        yearMap.put("startDate", activeYear.getStartDate());
+        yearMap.put("endDate", activeYear.getEndDate());
+        yearMap.put("status", activeYear.getStatus());
+        yearMap.put("createdAt", activeYear.getCreatedAt());
+        return yearMap;
+    }
+
+    @Override
+    public Long getAcademicYearCount() {
+        return academicRepository.count();
+    }
+
+    @Override
+    public Map<String, Object> getAcademicYearById(Integer yearId) {
+        AcademicYear year = academicRepository.findById(yearId).orElse(null);
+        
+        if (year == null) {
+            return new HashMap<>();
+        }
+        
+        Map<String, Object> yearMap = new HashMap<>();
+        yearMap.put("yearId", year.getYearId());
+        yearMap.put("yearName", year.getYearName());
+        yearMap.put("startDate", year.getStartDate());
+        yearMap.put("endDate", year.getEndDate());
+        yearMap.put("status", year.getStatus());
+        yearMap.put("createdAt", year.getCreatedAt());
+        return yearMap;
     }
 }

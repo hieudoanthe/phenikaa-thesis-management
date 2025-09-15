@@ -45,6 +45,16 @@ public interface ThesisService {
     Map<String, Object> getSupervisorCapacityInfo(Integer supervisorId);
     Map<String, Object> getTopicById(Integer topicId);
 
+    // Statistics methods
+    Long getTopicCount();
+    Long getTopicCountByStatus(String status);
+    Long getTopicCountByDifficulty(String difficulty);
+    Long getTopicCountByAcademicYear(Integer academicYearId);
+    Long getTopicCountBySupervisor(Integer supervisorId);
+    List<Map<String, Object>> getTopicsBySupervisor(Integer supervisorId);
+    Map<String, Object> getTopicsStatsBySupervisor(Integer supervisorId);
+    List<Map<String, Object>> getTopicsOverTime(String startDate, String endDate);
+
 //    Page<ProjectTopicSummary> getTopicSummariesBySupervisor(Integer supervisorId, int page, int size);
 //    Page<ProjectTopicSummaryDto> getTopicSummaryDtosBySupervisor(Integer supervisorId, int page, int size);
 //    <T> Page<T> getTopicsByApprovalStatusWithProjection(ProjectTopic.ApprovalStatus status, Class<T> type, int page, int size);

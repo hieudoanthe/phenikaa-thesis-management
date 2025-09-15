@@ -8,6 +8,7 @@ import com.phenikaa.assignservice.dto.response.TaskResponse;
 import com.phenikaa.assignservice.dto.response.AssignmentResponse;
 
 import java.util.List;
+import java.util.Map;
 
 public interface AssignmentService {
     
@@ -59,4 +60,16 @@ public interface AssignmentService {
      * Cập nhật trạng thái assignment
      */
     AssignmentResponse updateAssignmentStatus(Integer assignmentId, Integer status);
+    
+    // Statistics methods
+    Long getAssignmentCount();
+    Long getAssignmentCountByStatus(String status);
+    Long getAssignmentCountByUser(Integer userId);
+    Long getAssignmentCountByTopic(Integer topicId);
+    List<Map<String, Object>> getAssignmentsByUser(Integer userId);
+    List<Map<String, Object>> getAssignmentsByTopic(Integer topicId);
+    Long getTaskCount();
+    Long getTaskCountByStatus(String status);
+    Long getTaskCountByAssignment(Integer assignmentId);
+    List<Map<String, Object>> getTasksByAssignment(Integer assignmentId);
 }

@@ -37,10 +37,18 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // API of Authentication
+                        // API for Authentication
                         .pathMatchers("/api/auth/**").permitAll()
                         // API for All requests
                         .pathMatchers("/internal/users/**").permitAll()
+                        .pathMatchers("/internal/thesis/**").permitAll()
+                        .pathMatchers("/internal/academic/**").permitAll()
+                        .pathMatchers("/internal/assignments/**").permitAll()
+                        .pathMatchers("/internal/profiles/**").permitAll()
+                        .pathMatchers("/internal/submissions/**").permitAll()
+                        .pathMatchers("/internal/evaluations/**").permitAll()
+
+                        .pathMatchers("/api/statistics-service/**").hasAnyRole("TEACHER", "ADMIN")
                         //
                         .pathMatchers("/api/admin/**").hasAnyRole("ADMIN", "TEACHER")
                         .pathMatchers("/api/eval-service/admin/**").hasRole("ADMIN")

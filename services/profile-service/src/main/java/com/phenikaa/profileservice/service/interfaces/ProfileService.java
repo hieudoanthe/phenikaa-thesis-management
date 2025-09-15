@@ -10,6 +10,7 @@ import com.phenikaa.profileservice.entity.TeacherProfile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ProfileService {
     StudentProfile createStudentProfile(StudentProfile createStudentProfileRequest, Integer userId, MultipartFile avtFile);
@@ -21,4 +22,13 @@ public interface ProfileService {
     void deleteProfile(Integer userId);
     List<GetTeacherProfileResponse> getAllTeacherProfiles();
     void decreaseTeacherCapacity(Integer userId);
+    
+    // Statistics methods
+    Long getProfileCount();
+    Long getStudentProfileCount();
+    Long getLecturerProfileCount();
+    List<Map<String, Object>> getProfilesByMajor(String major);
+    List<Map<String, Object>> getProfilesByYear(Integer year);
+    List<Map<String, Object>> getStudentProfilesBySupervisor(Integer supervisorId);
+    Map<String, Object> getProfileByUserId(Integer userId);
 }

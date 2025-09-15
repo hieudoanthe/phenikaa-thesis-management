@@ -8,6 +8,7 @@ public class GetThesisResponse {
     private Integer topicId;
     private Integer registerId;
     private Integer suggestedBy;
+    private Integer registeredBy;
     private String topicCode;
     private String title;
     private String description;
@@ -45,6 +46,11 @@ public class GetThesisResponse {
 
         public GetThesisResponseBuilder suggestedBy(Integer suggestedBy) {
             response.suggestedBy = suggestedBy;
+            return this;
+        }
+
+        public GetThesisResponseBuilder registeredBy(Integer registeredBy) {
+            response.registeredBy = registeredBy;
             return this;
         }
 

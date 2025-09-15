@@ -32,6 +32,7 @@
     <module>services/profile-service</module>
     <module>services/submission-service</module>
     <module>services/auth-service</module>
+    <module>services/statistics-service</module>
   </modules>
 
   <properties>

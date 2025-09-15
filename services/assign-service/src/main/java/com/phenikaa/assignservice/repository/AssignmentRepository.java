@@ -38,4 +38,8 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Integer>
      * Đếm số assignments theo topicId
      */
     long countByTopicId(Integer topicId);
+    
+    // Statistics methods
+    Long countByStatus(Integer status);
+    Long countByAssignedTo(Integer assignedTo);
 }

@@ -1,0 +1,23 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: statistics-service
+  profiles:
+    active: dev
+  config:
+    import: "configserver:"
+
+  cloud:
+    config:
+      uri: http://localhost:8888
+      fail-fast: true
+      retry:
+        initial-interval: 1000
+        max-attempts: 6
+        multiplier: 1.2
+
+logging:
+  level:
+    com.phenikaa.statisticsservice: DEBUG

@@ -31,32 +31,32 @@ spring:
         - id: thesis-service
           uri: lb://thesis-service
           predicates:
-            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**,
+            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**
 
         - id: assign-service
           uri: lb://assign-service
           predicates:
-            - Path=/api/assign-service/**
+            - Path=/api/assign-service/**, /internal/assignments/**
 
         - id: profile-service
           uri: lb://profile-service
           predicates:
-            - Path=/api/profile-service/**
+            - Path=/api/profile-service/**, /internal/profiles/**
 
         - id: academic-config-service
           uri: lb://academic-config-service
           predicates:
-            - Path=/api/academic-config-service/**
+            - Path=/api/academic-config-service/**, /internal/academic/**
 
         - id: eval-service
           uri: lb://eval-service
           predicates:
-            - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**
+            - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**, /internal/evaluations/**
 
         - id: submission-service
           uri: lb://submission-service
           predicates:
-            - Path=/api/submission-service/**,
+            - Path=/api/submission-service/**, /internal/submissions/**
 
         - id: communication-log-service
           uri: lb://communication-log-service
@@ -67,6 +67,11 @@ spring:
           uri: lb:ws://communication-log-service
           predicates:
             - Path=/ws/notifications/**, /ws/chat/**
+
+        - id: statistics-service
+          uri: lb://statistics-service
+          predicates:
+            - Path=/api/statistics-service/**
 
 eureka:
   client:
