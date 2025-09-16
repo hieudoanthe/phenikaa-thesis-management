@@ -48,12 +48,12 @@ spring:
       # Nếu cần chỉ rõ label/branch trong config repo
       label: ${SPRING_CLOUD_CONFIG_LABEL:main}
 
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
-    fetch-registry: true
-    register-with-eureka: true
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
+#    fetch-registry: true
+#    register-with-eureka: true
 
 logging:
   level:
