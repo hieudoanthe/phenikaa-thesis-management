@@ -22,6 +22,7 @@ COPY --from=builder /app/discovery/discovery-server/target/*.jar discovery-serve
 COPY --from=builder /app/config/config-server/target/*.jar config-server.jar
 COPY --from=builder /app/gateway/api-gateway/target/*.jar api-gateway.jar
 COPY --from=builder /app/services/user-service/target/*.jar user-service.jar
+COPY --from=builder /app/services/auth-service/target/*.jar auth-service.jar
 COPY --from=builder /app/services/thesis-service/target/*.jar thesis-service.jar
 COPY --from=builder /app/services/submission-service/target/*.jar submission-service.jar
 COPY --from=builder /app/services/communication-log-service/target/*.jar communication-log-service.jar
