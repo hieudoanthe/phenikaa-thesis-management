@@ -75,9 +75,9 @@ spring:
 
 eureka:
   instance:
+    prefer-ip-address: true
+    non-secure-port: ${server.port}
     hostname: ${RAILWAY_PUBLIC_DOMAIN:api-gateway-production-95a5.up.railway.app}
-    non-secure-port: ${PORT:8080}
-    prefer-ip-address: false
     instance-id: ${spring.application.name}:${server.port}
   client:
     service-url:
