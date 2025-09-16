@@ -41,3 +41,14 @@ yarn-error.log*
 
 # Test files
 src/test/
+
+# Railway specific
+railway.toml
+nixpacks.toml
+
+# Docker
+Dockerfile*
+docker-compose*
+
+# Large directories
+frontend/

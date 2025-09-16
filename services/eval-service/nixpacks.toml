@@ -1,8 +1,0 @@
-[phases.setup]
-nixpkgs = ["openjdk17"]
-
-[phases.build]
-cmds = ["mvn -DskipTests package"]
-
-[phases.start]
-cmd = "java -Dserver.port=$PORT -jar target/eval-service-*.jar"
