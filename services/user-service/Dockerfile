@@ -7,8 +7,6 @@ WORKDIR /app
 COPY . .
 
 RUN mvn clean package -DskipTests
-RUN cp target/*.jar app.jar
 
 EXPOSE 8080
-#CMD ["java", "-jar", "target/user-service-*.jar"]
-CMD ["sh", "-c", "java -Dserver.port=$PORT -jar app.jar"]
+CMD ["java", "-jar", "target/user-service-*.jar"]
