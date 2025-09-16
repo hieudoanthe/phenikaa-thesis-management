@@ -6,23 +6,6 @@ RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy chỉ pom.xml trước để cache dependencies
-COPY pom.xml .
-COPY common-lib/pom.xml common-lib/
-COPY discovery/discovery-server/pom.xml discovery/discovery-server/
-COPY config/config-server/pom.xml config/config-server/
-COPY gateway/api-gateway/pom.xml gateway/api-gateway/
-COPY services/user-service/pom.xml services/user-service/
-COPY services/thesis-service/pom.xml services/thesis-service/
-COPY services/submission-service/pom.xml services/submission-service/
-COPY services/communication-log-service/pom.xml services/communication-log-service/
-COPY services/eval-service/pom.xml services/eval-service/
-COPY services/assign-service/pom.xml services/assign-service/
-COPY services/academic-config-service/pom.xml services/academic-config-service/
-
-# Download dependencies (cached layer)
-RUN mvn dependency:go-offline -B
-
 # Copy source code
 COPY . .
 
