@@ -1,5 +1,5 @@
 # Build stage
-FROM openjdk:17-jdk-slim as builder
+FROM eclipse-temurin:17-jdk as builder
 
 WORKDIR /app
 COPY pom.xml .
@@ -16,7 +16,7 @@ COPY . .
 RUN mvn clean package -pl discovery/discovery-server -am -DskipTests
 
 # Runtime stage
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 COPY --from=builder /app/discovery/discovery-server/target/*.jar app.jar

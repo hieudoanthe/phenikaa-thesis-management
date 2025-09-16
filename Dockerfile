@@ -1,5 +1,5 @@
 # Multi-stage build để giảm kích thước image
-FROM openjdk:17-jdk-slim as builder
+FROM eclipse-temurin:17-jdk as builder
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 # Runtime stage - chỉ copy JAR files cần thiết
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
