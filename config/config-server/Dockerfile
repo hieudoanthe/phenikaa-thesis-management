@@ -8,5 +8,5 @@ COPY . .
 
 RUN mvn clean package -DskipTests
 
-EXPOSE 8080
+EXPOSE 8088
 CMD ["java", "-jar", "target/config-server-*.jar"]
