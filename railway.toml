@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [build.environment]
-JAVA_VERSION = "21"
+JAVA_VERSION = "17"
 
 # Discovery Server
 [[services]]

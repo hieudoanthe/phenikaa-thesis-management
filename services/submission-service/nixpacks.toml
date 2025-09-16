@@ -1,5 +1,5 @@
 [phases.setup]
-nixpkgs = ["openjdk21"]
+nixpkgs = ["openjdk17"]
 
 [phases.build]
 cmds = ["mvn -DskipTests package"]
