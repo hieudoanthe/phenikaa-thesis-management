@@ -1,5 +1,5 @@
 server:
-  port: 8090
+  port: ${PORT:8090}
 
 spring:
   application:
@@ -11,11 +11,12 @@ spring:
       name: none
       password: none
   config:
-    import: "configserver:"
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:}
   cloud:
     config:
-      uri: http://localhost:8888
-      fail-fast: true
+      uri: ${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
+      # Có thể bật/tắt fail-fast qua ENV, default false để không crash khi config server chưa sẵn sàng
+      fail-fast: ${SPRING_CLOUD_CONFIG_FAIL_FAST:false}
       retry:
         initial-interval: 1000
         max-attempts: 6
