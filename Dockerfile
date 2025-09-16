@@ -1,6 +1,9 @@
 # Multi-stage build để giảm kích thước image
 FROM eclipse-temurin:17-jdk as builder
 
+# Install Maven
+RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy chỉ pom.xml trước để cache dependencies
