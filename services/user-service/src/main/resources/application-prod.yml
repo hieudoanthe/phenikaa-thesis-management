@@ -1,16 +1,21 @@
+# application-prod.yml
 server:
   port: ${PORT:8081}
 
 spring:
   application:
     name: user-service
+
+  # Sử dụng Config Server public URL, optional để service không fail nếu không reach được
   config:
-    import: optional:configserver:${SPRING_CLOUD_CONFIG_URI}
+    import: optional:configserver:https://config-server-production-9a61.up.railway.app/
+
   datasource:
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -19,6 +24,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+
   cloud:
     discovery:
       enabled: true
@@ -26,14 +32,14 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
+      defaultZone: https://phenikaa-thesis-management-production.up.railway.app/eureka/
     fetch-registry: true
     register-with-eureka: true
   instance:
-    hostname: ${EUREKA_INSTANCE_HOSTNAME:${RAILWAY_STATIC_URL:}}
-    non-secure-port: ${EUREKA_INSTANCE_NONSECUREPORT:80}
-    secure-port-enabled: ${EUREKA_INSTANCE_SECUREPORT_ENABLED:true}
-    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:false}
+    hostname: ${RAILWAY_STATIC_URL:phenikaa-thesis-management-production.up.railway.app}
+    non-secure-port: ${PORT:8081}
+    secure-port-enabled: false
+    prefer-ip-address: false
 
 jwt:
   secret: ${JWT_SECRET:VHJlbmRvaW5heW5ndW9pZGFuZ2RldHJhbnRyb25nbmFodGFsYW5ndW9pZGFzYW5zYW5nYm90aG9pZ2lhbmRlY2hhbXNvY2JhblRob2lnaWFuY3VhYWljdW5nZGV1ZGFuZ3F1eW5odW5oYWVkZW10aG9pZ2lhbmN1YW5ndW95ZGFuaGNob2JhbmNvbmdnaW9uZ2h1dmllY2RlbWNhdGhlZ2lvaWN1YWJhbnRoYW5jaGlhc2VjdW5nYmFu}
