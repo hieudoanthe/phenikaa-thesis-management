@@ -19,59 +19,57 @@ spring:
 
       routes:
         - id: auth-service
-#          uri: lb://auth-service
-          uri: https://auth-service-production-c217.up.railway.app
+          uri: ${AUTH_SERVICE_URL:lb://auth-service}
           predicates:
             - Path=/api/auth/**
 
         - id: user-service
-#          uri: lb://user-service
-          uri: https://user-service-production-495b.up.railway.app
+          uri: ${USER_SERVICE_URL:lb://user-service}
           predicates:
             - Path=/api/user-service/student/**, /api/admin/**, /api/teacher/**, /internal/users/**
 
         - id: thesis-service
-          uri: lb://thesis-service
+          uri: ${THESIS_SERVICE_URL:lb://thesis-service}
           predicates:
             - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**
 
         - id: assign-service
-          uri: lb://assign-service
+          uri: ${ASSIGN_SERVICE_URL:lb://assign-service}
           predicates:
             - Path=/api/assign-service/**, /internal/assignments/**
 
         - id: profile-service
-          uri: lb://profile-service
+          uri: ${PROFILE_SERVICE_URL:lb://profile-service}
           predicates:
             - Path=/api/profile-service/**, /internal/profiles/**
 
         - id: academic-config-service
-          uri: lb://academic-config-service
+          uri: ${ACADEMIC_CONFIG_SERVICE_URL:lb://academic-config-service}
           predicates:
             - Path=/api/academic-config-service/**, /internal/academic/**
 
         - id: eval-service
-          uri: lb://eval-service
+          uri: ${EVAL_SERVICE_URL:lb://eval-service}
           predicates:
             - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**, /internal/evaluations/**
 
         - id: submission-service
-          uri: lb://submission-service
+          uri: ${SUBMISSION_SERVICE_URL:lb://submission-service}
           predicates:
             - Path=/api/submission-service/**, /internal/submissions/**
 
         - id: communication-log-service
-          uri: lb://communication-log-service
+          uri: ${COMM_LOG_SERVICE_URL:lb://communication-log-service}
           predicates:
             - Path=/notifications/**, /chat/**, /api/communication-log-service/**
 
         - id: communication-log-service-ws
-          uri: lb:ws://communication-log-service
+          uri: ${COMM_LOG_SERVICE_WS_URL:lb:ws://communication-log-service}
           predicates:
             - Path=/ws/notifications/**, /ws/chat/**
 
         - id: statistics-service
-          uri: lb://statistics-service
+          uri: ${STATISTICS_SERVICE_URL:lb://statistics-service}
           predicates:
             - Path=/api/statistics-service/**
 
