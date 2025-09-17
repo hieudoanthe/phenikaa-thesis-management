@@ -78,7 +78,7 @@ eureka:
     prefer-ip-address: false
     hostname: ${RAILWAY_PUBLIC_DOMAIN:api-gateway-production-95a5.up.railway.app} # hostname public
     instance-id: ${spring.application.name}:${random.value}
-    non-secure-port: ${PORT} # port runtime thực tế
+    non-secure-port: 8080
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
