@@ -76,7 +76,8 @@ spring:
 eureka:
   instance:
     prefer-ip-address: false
-    non-secure-port: ${server.port}
+    non-secure-port-enabled: true       # bật non-secure port nội bộ
+    secure-port-enabled: false           # nếu dùng HTTPS Railway terminate SSL bên ngoài
     hostname: ${RAILWAY_PUBLIC_DOMAIN:api-gateway-production-95a5.up.railway.app}
     instance-id: ${spring.application.name}:${random.value}
   client:

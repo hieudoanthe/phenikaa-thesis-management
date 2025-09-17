@@ -8,4 +8,4 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 EXPOSE 8090
-CMD ["java", "-jar", "target/auth-service-*.jar"]
+CMD ["java", "-jar", "-Dserver.port=8090", "target/auth-service-*.jar"]
