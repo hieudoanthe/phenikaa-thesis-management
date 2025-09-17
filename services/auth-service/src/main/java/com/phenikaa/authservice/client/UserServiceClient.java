@@ -3,28 +3,22 @@ package com.phenikaa.authservice.client;
 import com.phenikaa.dto.request.LoginRequest;
 import com.phenikaa.dto.request.SaveRefreshTokenRequest;
 import com.phenikaa.dto.response.AuthenticatedUserResponse;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+@Getter
 @Component
-@RequiredArgsConstructor
 public class UserServiceClient {
 
-    private final WebClient.Builder webClientBuilder;
+    private final WebClient webClient;
 
-    private final String userServiceUrl =
-            System.getenv().getOrDefault("USER_SERVICE_URL", "http://localhost:8081");
-
-    private WebClient webClient;
-
-    @PostConstruct
-    public void init() {
+    public UserServiceClient(WebClient.Builder webClientBuilder,
+                             @Value("${USER_SERVICE_URL:https://user-service-production-495b.up.railway.app}") String userServiceUrl) {
         this.webClient = webClientBuilder.baseUrl(userServiceUrl).build();
     }
-
 
     public Mono<AuthenticatedUserResponse> verifyUser(LoginRequest request) {
         return webClient.post()
@@ -63,5 +57,4 @@ public class UserServiceClient {
                 .retrieve()
                 .bodyToMono(AuthenticatedUserResponse.class);
     }
-
 }
