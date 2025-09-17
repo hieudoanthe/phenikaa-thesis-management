@@ -6,13 +6,25 @@ spring:
     name: eval-service
   profiles:
     active: dev
+  security:
+    user:
+      name: none
+      password: none
   config:
-    import: "configserver:"
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:}
 
-# Logging
+  cloud:
+    config:
+      uri: ${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
+      fail-fast: ${SPRING_CLOUD_CONFIG_FAIL_FAST:false}
+      retry:
+        initial-interval: 1000
+        max-attempts: 6
+        multiplier: 1.2
+      label: ${SPRING_CLOUD_CONFIG_LABEL:main}
+
 logging:
   level:
-    com.phenikaa.evalservice: DEBUG
-    org.springframework.web: DEBUG
+    org.springframework: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE

@@ -6,16 +6,22 @@ spring:
     name: profile-service
   profiles:
     active: dev
+  security:
+    user:
+      name: none
+      password: none
   config:
-    import: "configserver:"
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:}
+
   cloud:
     config:
-      uri: http://localhost:8888
-      fail-fast: true
+      uri: ${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
+      fail-fast: ${SPRING_CLOUD_CONFIG_FAIL_FAST:false}
       retry:
         initial-interval: 1000
         max-attempts: 6
         multiplier: 1.2
+      label: ${SPRING_CLOUD_CONFIG_LABEL:main}
 
 cloudinary:
   cloud_name: ${CLOUDINARY_CLOUD_NAME}
@@ -27,4 +33,3 @@ logging:
     org.springframework: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.security: DEBUG

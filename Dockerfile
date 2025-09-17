@@ -24,11 +24,13 @@ COPY --from=builder /app/gateway/api-gateway/target/*.jar api-gateway.jar
 COPY --from=builder /app/services/user-service/target/*.jar user-service.jar
 COPY --from=builder /app/services/auth-service/target/*.jar auth-service.jar
 COPY --from=builder /app/services/thesis-service/target/*.jar thesis-service.jar
+COPY --from=builder /app/services/profile-service/target/*.jar profile-service.jar
 COPY --from=builder /app/services/submission-service/target/*.jar submission-service.jar
 COPY --from=builder /app/services/communication-log-service/target/*.jar communication-log-service.jar
 COPY --from=builder /app/services/eval-service/target/*.jar eval-service.jar
 COPY --from=builder /app/services/assign-service/target/*.jar assign-service.jar
 COPY --from=builder /app/services/academic-config-service/target/*.jar academic-config-service.jar
+COPY --from=builder /app/services/statistics-service/target/*.jar statistics-service.jar
 
 EXPOSE 8080
 CMD ["java", "-jar", "discovery-server.jar"]
