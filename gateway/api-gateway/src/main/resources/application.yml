@@ -38,49 +38,49 @@ spring:
 
         - id: assign-service
 #          uri: lb://assign-service
-          uri: ${ASSIGN_SERVICE_URL}
+          uri: ${ASSIGN_SERVICE_URL:assign-service-production.up.railway.app}
           predicates:
             - Path=/api/assign-service/**, /internal/assignments/**
 
         - id: profile-service
 #          uri: lb://profile-service
-          uri: ${PROFILE_SERVICE_URL}
+          uri: ${PROFILE_SERVICE_URL:profile-service-production-5af6.up.railway.app}
           predicates:
             - Path=/api/profile-service/**, /internal/profiles/**
 
         - id: academic-config-service
 #          uri: lb://academic-config-service
-          uri: ${ACADEMIC_CONFIG_SERVICE_URL}
+          uri: ${ACADEMIC_CONFIG_SERVICE_URL:academic-config-service-production.up.railway.app}
           predicates:
             - Path=/api/academic-config-service/**, /internal/academic/**
 
         - id: eval-service
 #          uri: lb://eval-service
-          uri: ${EVAL_SERVICE_SERVICE_URL}
+          uri: ${EVAL_SERVICE_SERVICE_URL:eval-service-production.up.railway.app}
           predicates:
             - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**, /internal/evaluations/**
 
         - id: submission-service
-#          uri: lb://submission-service
-          uri: ${SUBMISSION_SERVICE_URL}
+          uri: lb://submission-service
+#          uri: ${SUBMISSION_SERVICE_URL}
           predicates:
             - Path=/api/submission-service/**, /internal/submissions/**
 
         - id: communication-log-service
-#          uri: lb://communication-log-service
-          uri: ${COMMUNICATION_LOG_SERVICE_URL}
+          uri: lb://communication-log-service
+#          uri: ${COMMUNICATION_LOG_SERVICE_URL}
           predicates:
             - Path=/notifications/**, /chat/**, /api/communication-log-service/**
 
         - id: communication-log-service-ws
-#          uri: lb:ws://communication-log-service
-          uri: ${COMMUNICATION_LOG_SERVICE_WS_URL}
+          uri: lb:ws://communication-log-service
+#          uri: ${COMMUNICATION_LOG_SERVICE_WS_URL}
           predicates:
             - Path=/ws/notifications/**, /ws/chat/**
 
         - id: statistics-service
-#          uri: lb://statistics-service
-          uri: ${STATISTICS_SERVICE_URL}
+          uri: lb://statistics-service
+#          uri: ${STATISTICS_SERVICE_URL}
           predicates:
             - Path=/api/statistics-service/**
 
