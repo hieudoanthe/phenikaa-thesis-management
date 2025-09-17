@@ -20,13 +20,13 @@ spring:
       routes:
         - id: auth-service
 #          uri: lb://auth-service
-          uri: https://auth-service-production-c217.up.railway.app:8090
+          uri: https://auth-service-production-c217.up.railway.app
           predicates:
             - Path=/api/auth/**
 
         - id: user-service
 #          uri: lb://user-service
-          uri: https://user-service-production-495b.up.railway.app:8081
+          uri: https://user-service-production-495b.up.railway.app
           predicates:
             - Path=/api/user-service/student/**, /api/admin/**, /api/teacher/**, /internal/users/**
 
