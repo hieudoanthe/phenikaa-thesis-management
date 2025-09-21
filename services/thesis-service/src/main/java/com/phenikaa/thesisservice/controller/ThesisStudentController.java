@@ -83,4 +83,14 @@ public class ThesisStudentController {
         return ResponseEntity.ok(suggestTopic);
     }
 
+    @PutMapping("/update-suggest-topic/{suggestedId}")
+    public ResponseEntity<String> updateSuggestTopic(
+            @PathVariable Integer suggestedId,
+            @RequestBody SuggestTopicRequest dto,
+            @RequestHeader("Authorization") String token) {
+        Integer studentId = jwtUtil.extractUserId(token);
+        suggestService.updateSuggestTopic(suggestedId, dto, studentId);
+        return ResponseEntity.ok("Đã cập nhật đề xuất đề tài");
+    }
+
 }

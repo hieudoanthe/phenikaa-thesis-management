@@ -11,8 +11,7 @@ spring:
       name: none
       password: none
   config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:}
-
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:},optional:file:.env[.properties],optional:file:../.env[.properties],optional:file:../../.env[.properties],optional:classpath:.env[.properties]
   cloud:
     config:
       uri: ${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
@@ -21,7 +20,6 @@ spring:
         initial-interval: 1000
         max-attempts: 6
         multiplier: 1.2
-      # Nếu cần chỉ rõ label/branch trong config repo
       label: ${SPRING_CLOUD_CONFIG_LABEL:main}
 
 logging:

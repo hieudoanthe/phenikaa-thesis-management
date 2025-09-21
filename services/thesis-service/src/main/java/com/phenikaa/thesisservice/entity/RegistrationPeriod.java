@@ -20,7 +20,7 @@ public class RegistrationPeriod {
     @Column(name = "period_id")
     private Integer periodId;
 
-    @Column(name = "period_name", nullable = false)
+    @Column(name = "period_name", nullable = false, columnDefinition = "nvarchar(255)")
     private String periodName; // Ví dụ: "Đợt 1 - Học kỳ 1", "Đợt 2 - Học kỳ 1"
 
     @Column(name = "academic_year_id")
@@ -39,7 +39,7 @@ public class RegistrationPeriod {
     @Enumerated(EnumType.STRING)
     private PeriodStatus status;
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "nvarchar(255)")
     private String description;
 
     @Column(name = "created_at")

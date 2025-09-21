@@ -15,7 +15,6 @@ import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.mapper.UserMapper;
 import com.phenikaa.userservice.repository.UserRepository;
 import com.phenikaa.userservice.repository.RefreshTokenRepository;
-import com.phenikaa.userservice.service.CustomUserDetailsService;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import com.phenikaa.userservice.specification.UserSpecification;
 import com.phenikaa.userservice.filter.DynamicFilterBuilder;
@@ -39,14 +38,16 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.scheduling.annotation.Async;
+import java.util.concurrent.CompletableFuture;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     @PersistenceContext
@@ -73,10 +74,8 @@ public class UserServiceImpl implements UserService {
 
         entityManager.persist(user);
 
-        for (Role role : user.getRoles()) {
-            String roleName = String.valueOf(role.getRoleName());
-            profileServiceClient.createProfile(new CreateProfileRequest(user.getUserId(), roleName));
-        }
+        // Tạo profile bất đồng bộ để tránh timeout
+        createProfileAsync(user);
 
         return user;
     }
@@ -157,27 +156,6 @@ public class UserServiceImpl implements UserService {
         }
 
         userRepository.save(user);
-
-        // Đồng bộ profile-service theo role mới
-        Set<Role> updatedRoles = user.getRoles();
-        boolean hasTeacher = updatedRoles.stream().anyMatch(r -> r.getRoleName() == Role.RoleName.TEACHER);
-        boolean hasStudent = updatedRoles.stream().anyMatch(r -> r.getRoleName() == Role.RoleName.STUDENT);
-
-        // Xóa profile cũ (gọi 2 lần để đảm bảo xóa cả student/teacher nếu tồn tại)
-        try {
-            profileServiceClient.deleteProfile(user.getUserId());
-        } catch (Exception ignored) {}
-        try {
-            profileServiceClient.deleteProfile(user.getUserId());
-        } catch (Exception ignored) {}
-
-        // Tạo lại profile theo role mới
-        if (hasStudent) {
-            profileServiceClient.createProfile(new CreateProfileRequest(user.getUserId(), "STUDENT"));
-        }
-        if (hasTeacher) {
-            profileServiceClient.createProfile(new CreateProfileRequest(user.getUserId(), "TEACHER"));
-        }
     }
 
     @Override
@@ -341,6 +319,163 @@ public class UserServiceImpl implements UserService {
         
         Specification<User> spec = UserSpecification.withLastLoginBetween(startOfDay, endOfDay);
         return userRepository.count(spec);
+    }
+
+    /**
+     * Tạo profile bất đồng bộ cho user mới
+     */
+    @Async
+    public CompletableFuture<Void> createProfileAsync(User user) {
+        try {
+            for (Role role : user.getRoles()) {
+                String roleName = String.valueOf(role.getRoleName());
+                try {
+                    profileServiceClient.createProfile(new CreateProfileRequest(user.getUserId(), roleName));
+                    log.info("Tạo profile {} thành công cho user: {}", roleName, user.getUserId());
+                } catch (Exception e) {
+                    log.warn("Không thể tạo profile {} cho user {}: {}", roleName, user.getUserId(), e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi tạo profile cho user {}: {}", user.getUserId(), e.getMessage());
+        }
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public Page<GetUserResponse> getAllUsersGroupedByUsername(org.springframework.data.domain.Pageable pageable) {
+        try {
+            // Lấy tất cả users
+            List<User> allUsers = userRepository.findAll();
+            
+            // Group theo username
+            Map<String, List<User>> groupedByUsername = allUsers.stream()
+                .collect(Collectors.groupingBy(User::getUsername));
+            
+            List<GetUserResponse> result = new ArrayList<>();
+            
+            for (Map.Entry<String, List<User>> entry : groupedByUsername.entrySet()) {
+                String username = entry.getKey();
+                List<User> users = entry.getValue();
+                
+                // Lấy thông tin từ user đầu tiên (vì cùng username nên thông tin cơ bản giống nhau)
+                User firstUser = users.get(0);
+                
+                // Tạo danh sách period IDs từ TẤT CẢ users (không chỉ firstUser)
+                List<Integer> periodIds = users.stream()
+                    .map(User::getPeriodId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .sorted()
+                    .collect(Collectors.toList());
+                
+                // Tạo chuỗi mô tả đợt đăng ký
+                String periodDescription;
+                if (periodIds.isEmpty()) {
+                    // Kiểm tra role của user để quyết định hiển thị
+                    boolean isStudent = firstUser.getRoles().stream()
+                        .anyMatch(role -> role.getRoleName().name().equals("STUDENT"));
+                    periodDescription = isStudent ? "Chưa đăng ký đợt nào" : "";
+                } else {
+                    periodDescription = "Đợt " + periodIds.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(", "));
+                }
+                
+                // Sử dụng UserMapper để map user thành GetUserResponse với thông tin đợt đăng ký
+                GetUserResponse userResponse = userMapper.toDTOWithPeriodInfo(
+                    firstUser, 
+                    periodDescription, 
+                    periodIds, 
+                    users.size()
+                );
+                
+                result.add(userResponse);
+            }
+            
+            // Sắp xếp theo username
+            result.sort((a, b) -> a.getUsername().compareTo(b.getUsername()));
+            
+            // Manual pagination
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), result.size());
+            List<GetUserResponse> pageContent = result.subList(start, end);
+            
+            return new org.springframework.data.domain.PageImpl<>(
+                pageContent, 
+                pageable, 
+                result.size()
+            );
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy danh sách users group theo username: {}", e.getMessage(), e);
+            throw new RuntimeException("Không thể lấy danh sách users: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<GetUserResponse> getAllUsersGroupedByUsername() {
+        try {
+            // Lấy tất cả users
+            List<User> allUsers = userRepository.findAll();
+            
+            // Group theo username
+            Map<String, List<User>> groupedByUsername = allUsers.stream()
+                .collect(Collectors.groupingBy(User::getUsername));
+            
+            List<GetUserResponse> result = new ArrayList<>();
+            
+            for (Map.Entry<String, List<User>> entry : groupedByUsername.entrySet()) {
+                String username = entry.getKey();
+                List<User> users = entry.getValue();
+                
+                // Lấy thông tin từ user đầu tiên 
+                User firstUser = users.get(0);
+                
+                List<Integer> periodIds = users.stream()
+                    .map(User::getPeriodId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .sorted()
+                    .collect(Collectors.toList());
+                
+                // Tạo chuỗi mô tả đợt đăng ký
+                String periodDescription;
+                if (periodIds.isEmpty()) {
+                    // Kiểm tra role của user để quyết định hiển thị
+                    boolean isStudent = firstUser.getRoles().stream()
+                        .anyMatch(role -> role.getRoleName().name().equals("STUDENT"));
+                    periodDescription = isStudent ? "Chưa đăng ký đợt nào" : "";
+                } else {
+                    periodDescription = "Đợt " + periodIds.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(", "));
+                }
+                
+                GetUserResponse userResponse = userMapper.toDTOWithPeriodInfo(
+                    firstUser, 
+                    periodDescription, 
+                    periodIds, 
+                    users.size()
+                );
+                
+                // Debug log
+                log.info("User {} - roles size: {}, roleIds: {}, periods: {}", 
+                    username, 
+                    firstUser.getRoles() != null ? firstUser.getRoles().size() : 0,
+                    userResponse.getRoleIds(),
+                    periodIds);
+                
+                result.add(userResponse);
+            }
+            
+            // Sắp xếp theo username
+            result.sort((a, b) -> a.getUsername().compareTo(b.getUsername()));
+            
+            return result;
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy danh sách users group theo username: {}", e.getMessage(), e);
+            throw new RuntimeException("Không thể lấy danh sách users: " + e.getMessage());
+        }
     }
 
 }

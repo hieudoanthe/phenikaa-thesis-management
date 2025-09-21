@@ -213,8 +213,8 @@ public class ThesisServiceImpl implements ThesisService {
             register.setRegisterStatus(Register.RegisterStatus.APPROVED);
         }
 
-        // KHÔNG thay đổi currentStudents trong LecturerCapacity khi chấp nhận đề tài
-        // currentStudents đã được tăng khi sinh viên đăng ký (giữ chỗ). Khi approve, giữ nguyên.
+        // KHÔNG thay đổi maxStudents trong LecturerCapacity khi chấp nhận đề tài
+        // maxStudents đã được giảm khi sinh viên đăng ký/đề xuất. Khi approve, giữ nguyên.
 
         // Lưu thay đổi vào database
         projectTopicRepository.save(projectTopic);
@@ -286,17 +286,16 @@ public class ThesisServiceImpl implements ThesisService {
         // Lưu thay đổi (cascade sẽ cập nhật SuggestedTopic hoặc Register)
         projectTopicRepository.save(projectTopic);
         
-        // HOÀN TRẢ slot khi từ chối đề tài: giảm currentStudents (hủy giữ chỗ)
+        // HOÀN TRẢ slot khi từ chối đề tài: tăng maxStudents (hoàn trả slot)
         if (registrationPeriodId != null) {
             LecturerCapacity currentCapacity = lecturerCapacityRepository
                     .findByLecturerIdAndRegistrationPeriodId(projectTopic.getSupervisorId(), registrationPeriodId)
                     .orElse(null);
             if (currentCapacity != null) {
                 System.out.println("Capacity trước khi hoàn trả (reject): maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
-                if (currentCapacity.getCurrentStudents() != null && currentCapacity.getCurrentStudents() > 0) {
-                    currentCapacity.decreaseCurrentStudents();
-                    lecturerCapacityRepository.save(currentCapacity);
-                }
+                // Tăng maxStudents để hoàn trả slot
+                currentCapacity.setMaxStudents(currentCapacity.getMaxStudents() + 1);
+                lecturerCapacityRepository.save(currentCapacity);
                 System.out.println("Capacity sau khi hoàn trả (reject): maxStudents=" + currentCapacity.getMaxStudents() + ", currentStudents=" + currentCapacity.getCurrentStudents());
             }
         }
@@ -311,34 +310,6 @@ public class ThesisServiceImpl implements ThesisService {
         notificationServiceClient.sendNotification(notificationRequest);
     }
 
-    /**
-     * Giảm currentStudents trong LecturerCapacity khi giảng viên chấp nhận đề tài
-     */
-    private void decreaseLecturerCapacity(Integer lecturerId, Integer periodId) {
-        try {
-            System.out.println("=== BẮT ĐẦU decreaseLecturerCapacity ===");
-            System.out.println("Lecturer ID: " + lecturerId + ", Period ID: " + periodId);
-            
-            LecturerCapacity capacity = lecturerCapacityRepository
-                    .findByLecturerIdAndRegistrationPeriodId(lecturerId, periodId)
-                    .orElse(null);
-            
-            if (capacity != null && capacity.getCurrentStudents() > 0) {
-                System.out.println("Trước khi giảm: currentStudents=" + capacity.getCurrentStudents());
-                capacity.decreaseCurrentStudents();
-                lecturerCapacityRepository.save(capacity);
-                System.out.println("Đã giảm currentStudents cho lecturer " + lecturerId + " trong period " + periodId + ". Hiện tại: " + capacity.getCurrentStudents());
-            } else {
-                System.out.println("Không thể giảm currentStudents - capacity không tồn tại hoặc đã = 0");
-                if (capacity != null) {
-                    System.out.println("Capacity tồn tại nhưng currentStudents=" + capacity.getCurrentStudents());
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi khi giảm currentStudents: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public Page<GetThesisResponse> filterTheses(ThesisSpecificationFilterRequest filterRequest) {

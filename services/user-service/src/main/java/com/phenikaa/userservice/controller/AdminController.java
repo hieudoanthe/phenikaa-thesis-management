@@ -10,15 +10,16 @@ import com.phenikaa.userservice.entity.User;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/user-service/admin")
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -39,7 +40,8 @@ public class AdminController {
     public Page<GetUserResponse> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size) {
-        return userService.getAllUsers(page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        return userService.getAllUsersGroupedByUsername(pageable);
     }
 
     @DeleteMapping("/delete-user")

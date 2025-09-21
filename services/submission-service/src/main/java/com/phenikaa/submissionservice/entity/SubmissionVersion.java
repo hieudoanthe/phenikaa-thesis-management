@@ -28,13 +28,13 @@ public class SubmissionVersion {
     @Column(name = "report_title")
     private String reportTitle;
     
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "nvarchar(255)")
     private String description;
     
     @Column(name = "file_path")
     private String filePath;
     
-    @Column(name = "change_log", columnDefinition = "TEXT")
+    @Column(name = "change_log", columnDefinition = "nvarchar(255)")
     private String changeLog;
     
     @Column(name = "created_at")

@@ -2,6 +2,8 @@ server:
   port: 8080
 
 spring:
+  config:
+    import: optional:file:.env[.properties],optional:file:../.env[.properties],optional:file:../../.env[.properties],optional:classpath:.env[.properties]
   main:
     web-application-type: reactive
   application:
@@ -19,68 +21,68 @@ spring:
 
       routes:
         - id: auth-service
-#          uri: lb://auth-service
+          #          uri: lb://auth-service
           uri: ${AUTH_SERVICE_URL:https://auth-service-production-c217.up.railway.app}
           predicates:
             - Path=/api/auth/**
 
         - id: user-service
-#          uri: lb://user-service
+          #          uri: lb://user-service
           uri: ${USER_SERVICE_URL:https://user-service-production-495b.up.railway.app}
           predicates:
-            - Path=/api/user-service/student/**, /api/admin/**, /api/teacher/**, /internal/users/**
+            - Path=/api/user-service/student/**, /api/user-service/admin/**, /api/teacher/**, /internal/users/**
 
         - id: thesis-service
-#          uri: lb://thesis-service
+          #          uri: lb://thesis-service
           uri: ${THESIS_SERVICE_URL:https://thesis-service-production.up.railway.app}
           predicates:
             - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**
 
         - id: assign-service
-#          uri: lb://assign-service
+          #          uri: lb://assign-service
           uri: ${ASSIGN_SERVICE_URL:https://assign-service-production.up.railway.app}
           predicates:
             - Path=/api/assign-service/**, /internal/assignments/**
 
         - id: profile-service
-#          uri: lb://profile-service
+          #          uri: lb://profile-service
           uri: ${PROFILE_SERVICE_URL:https://profile-service-production-5af6.up.railway.app}
           predicates:
             - Path=/api/profile-service/**, /internal/profiles/**
 
         - id: academic-config-service
-#          uri: lb://academic-config-service
+          #          uri: lb://academic-config-service
           uri: ${ACADEMIC_CONFIG_SERVICE_URL:https://academic-config-service-production.up.railway.app}
           predicates:
             - Path=/api/academic-config-service/**, /internal/academic/**
 
         - id: eval-service
-#          uri: lb://eval-service
+          #          uri: lb://eval-service
           uri: ${EVAL_SERVICE_SERVICE_URL:https://eval-service-production.up.railway.app}
           predicates:
             - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**, /internal/evaluations/**
 
         - id: submission-service
           uri: lb://submission-service
-#          uri: ${SUBMISSION_SERVICE_URL}
+          #          uri: ${SUBMISSION_SERVICE_URL}
           predicates:
             - Path=/api/submission-service/**, /internal/submissions/**
 
         - id: communication-log-service
           uri: lb://communication-log-service
-#          uri: ${COMMUNICATION_LOG_SERVICE_URL}
+          #          uri: ${COMMUNICATION_LOG_SERVICE_URL}
           predicates:
             - Path=/notifications/**, /chat/**, /api/communication-log-service/**
 
         - id: communication-log-service-ws
           uri: lb:ws://communication-log-service
-#          uri: ${COMMUNICATION_LOG_SERVICE_WS_URL}
+          #          uri: ${COMMUNICATION_LOG_SERVICE_WS_URL}
           predicates:
             - Path=/ws/notifications/**, /ws/chat/**
 
         - id: statistics-service
           uri: lb://statistics-service
-#          uri: ${STATISTICS_SERVICE_URL}
+          #          uri: ${STATISTICS_SERVICE_URL}
           predicates:
             - Path=/api/statistics-service/**
 

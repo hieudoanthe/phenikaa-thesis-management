@@ -10,4 +10,5 @@ public class CreateUserRequest {
     private String username;
     private String password;
     private Set<Integer> roleIds;
+    private Integer periodId;
 }

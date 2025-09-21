@@ -26,7 +26,7 @@ public class SuggestedTopic {
     @Column(name = "suggested_for")
     private Integer suggestedFor;
 
-    @Column(name = "reason", columnDefinition = "TEXT")
+    @Column(name = "reason", columnDefinition = "nvarchar(255)")
     private String reason;
 
     @Column(name = "suggestion_status")

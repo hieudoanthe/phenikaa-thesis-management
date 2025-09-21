@@ -28,11 +28,9 @@
     <module>services/assign-service</module>
     <module>services/eval-service</module>
     <module>services/communication-log-service</module>
-    <module>services/group-service</module>
     <module>services/profile-service</module>
     <module>services/submission-service</module>
     <module>services/auth-service</module>
-    <module>services/statistics-service</module>
   </modules>
 
   <properties>

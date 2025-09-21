@@ -31,7 +31,7 @@ public class ReportSubmission {
     @Column(name = "report_title", nullable = false)
     private String reportTitle;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "nvarchar(255)")
     private String description;
 
     @Column(name = "file_path")
@@ -58,7 +58,7 @@ public class ReportSubmission {
     @Column(name = "parent_submission_id")
     private Integer parentSubmissionId;
 
-    @Column(name = "change_log", columnDefinition = "TEXT")
+    @Column(name = "change_log", columnDefinition = "nvarchar(255)")
     private String changeLog;
 
     @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

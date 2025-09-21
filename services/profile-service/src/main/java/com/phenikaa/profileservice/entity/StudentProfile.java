@@ -19,10 +19,10 @@ public class StudentProfile {
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
-    @Column(name = "major", columnDefinition = "NVARCHAR(255)")
+    @Column(name = "major", columnDefinition = "nvarchar(255)")
     private String major;
 
-    @Column(name = "class_name", columnDefinition = "NVARCHAR(255)")
+    @Column(name = "class_name", columnDefinition = "nvarchar(255)")
     private String className;
 
     @Column(name = "academic_year")

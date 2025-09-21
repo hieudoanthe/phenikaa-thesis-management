@@ -11,4 +11,7 @@ public class GetUserResponse {
     private String username;
     private Integer status;
     private List<Integer> roleIds;
+    private String periodDescription;
+    private List<Integer> periodIds;
+    private Integer totalRegistrations;
 }

@@ -106,14 +106,24 @@ public class RegistrationPeriodServiceImpl implements RegistrationPeriodService 
             System.out.println("Period: " + p.getPeriodId() + " - " + p.getPeriodName() + " - Status: " + p.getStatus() + " - Start: " + p.getStartDate() + " - End: " + p.getEndDate()); // Debug log
         }
         
-        List<RegistrationPeriod> windowPeriods = registrationPeriodRepository.findActivePeriodsWindow(now);
-        RegistrationPeriod activePeriod = windowPeriods.isEmpty() ? null : windowPeriods.get(0);
+        // Chỉ tìm các đợt có status = 'ACTIVE' và đang trong khoảng thời gian hiện tại
+        List<RegistrationPeriod> activePeriods = registrationPeriodRepository.findAllActivePeriods(now);
+        System.out.println("Số đợt ACTIVE tìm thấy: " + activePeriods.size()); // Debug log
+        
+        RegistrationPeriod activePeriod = null;
+        if (!activePeriods.isEmpty()) {
+            // Nếu có nhiều đợt ACTIVE, lấy đợt có startDate gần nhất (mới nhất)
+            activePeriod = activePeriods.stream()
+                .max((p1, p2) -> p1.getStartDate().compareTo(p2.getStartDate()))
+                .orElse(null);
+        }
+        
         System.out.println("Kết quả tìm đợt đăng ký hiện tại: " + activePeriod); // Debug log
         
         if (activePeriod != null) {
             System.out.println("Tìm thấy đợt đăng ký: " + activePeriod.getPeriodId() + " - " + activePeriod.getPeriodName() + " - Status: " + activePeriod.getStatus()); // Debug log
         } else {
-            System.out.println("KHÔNG tìm thấy đợt đăng ký nào!"); // Debug log
+            System.out.println("KHÔNG tìm thấy đợt đăng ký ACTIVE nào!"); // Debug log
         }
         
         return activePeriod;

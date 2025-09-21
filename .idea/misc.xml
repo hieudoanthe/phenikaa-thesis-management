@@ -12,8 +12,10 @@
         <option value="$PROJECT_DIR$/frontend/pom.xml" />
         <option value="$PROJECT_DIR$/services/assignment-service/pom.xml" />
         <option value="$PROJECT_DIR$/services/evaluation-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/group-service/pom.xml" />
         <option value="$PROJECT_DIR$/services/notification-service/pom.xml" />
         <option value="$PROJECT_DIR$/services/progress-service/pom.xml" />
+        <option value="$PROJECT_DIR$/services/statistics-service/pom.xml" />
       </set>
     </option>
   </component>

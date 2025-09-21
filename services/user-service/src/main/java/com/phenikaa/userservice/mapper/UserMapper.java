@@ -22,13 +22,26 @@ public interface UserMapper {
 
     @Mapping(target = "passwordHash", source = "password")
     @Mapping(target = "roles", expression = "java(mapRoleIdsToRoles(createUserRequest.getRoleIds(), entityManager))")
+    @Mapping(target = "periodId", source = "periodId")
     User toEntity(CreateUserRequest createUserRequest, @Context EntityManager entityManager);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void toEntity(UpdateUserRequest updateUserRequest, @MappingTarget User user);
 
     @Mapping(target = "roleIds", expression = "java(mapRoles(user.getRoles()))")
+    @Mapping(target = "periodDescription", ignore = true)
+    @Mapping(target = "periodIds", ignore = true)
+    @Mapping(target = "totalRegistrations", ignore = true)
     GetUserResponse toDTO(User user);
+    
+    // Method để map với thông tin đợt đăng ký
+    default GetUserResponse toDTOWithPeriodInfo(User user, String periodDescription, List<Integer> periodIds, Integer totalRegistrations) {
+        GetUserResponse response = toDTO(user);
+        response.setPeriodDescription(periodDescription);
+        response.setPeriodIds(periodIds);
+        response.setTotalRegistrations(totalRegistrations);
+        return response;
+    }
 
     // Phương thức để lấy các Role từ roleIds
     default Set<Role> mapRoleIdsToRoles(Set<Integer> roleIds, @Context EntityManager em) {

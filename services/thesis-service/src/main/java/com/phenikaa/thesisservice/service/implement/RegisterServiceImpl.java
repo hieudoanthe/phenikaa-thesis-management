@@ -124,12 +124,14 @@ public class RegisterServiceImpl implements RegisterService {
         }
         
         System.out.println("Kiểm tra capacity: " + capacity); // Debug log
-        System.out.println("Có thể nhận thêm sinh viên: " + capacity.canAcceptMoreStudents()); // Debug log
+        // Kiểm tra xem còn slot trống không (maxStudents > 0)
+        boolean canAccept = capacity.getMaxStudents() > 0;
+        System.out.println("Có thể nhận thêm sinh viên: " + canAccept + " (maxStudents=" + capacity.getMaxStudents() + ")"); // Debug log
         
-        return capacity.canAcceptMoreStudents();
+        return canAccept;
     }
 
-    private void updateLecturerCapacity(Integer lecturerId, Integer periodId, boolean increase) {
+    private void updateLecturerCapacity(Integer lecturerId, Integer periodId, boolean decrease) {
         LecturerCapacity capacity = lecturerCapacityRepository
                 .findByLecturerIdAndRegistrationPeriodId(lecturerId, periodId)
                 .orElseGet(() -> {
@@ -145,12 +147,16 @@ public class RegisterServiceImpl implements RegisterService {
                             .build();
                 });
 
-        if (increase) {
-            capacity.increaseCurrentStudents();
-            System.out.println("Tăng số sinh viên cho lecturer " + lecturerId + " trong period " + periodId + ". Hiện tại: " + capacity.getCurrentStudents()); // Debug log
+        if (decrease) {
+            // Giảm maxStudents khi sinh viên đăng ký thành công
+            if (capacity.getMaxStudents() > 0) {
+                capacity.setMaxStudents(capacity.getMaxStudents() - 1);
+                System.out.println("Đã giảm maxStudents cho lecturer " + lecturerId + " trong period " + periodId + ". Còn lại: " + capacity.getMaxStudents());
+            }
         } else {
-            capacity.decreaseCurrentStudents();
-            System.out.println("Giảm số sinh viên cho lecturer " + lecturerId + " trong period " + periodId + ". Hiện tại: " + capacity.getCurrentStudents()); // Debug log
+            // Tăng maxStudents khi giảng viên từ chối (hoàn trả slot)
+            capacity.setMaxStudents(capacity.getMaxStudents() + 1);
+            System.out.println("Đã tăng maxStudents cho lecturer " + lecturerId + " trong period " + periodId + ". Hiện tại: " + capacity.getMaxStudents());
         }
 
         lecturerCapacityRepository.save(capacity);
@@ -220,8 +226,8 @@ public class RegisterServiceImpl implements RegisterService {
         log.info("Getting registrations count for today");
         LocalDate today = LocalDate.now();
         return registerRepository.countByRegisteredAtBetween(
-            today.atStartOfDay(),
-            today.plusDays(1).atStartOfDay()
+            today.atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant(),
+            today.plusDays(1).atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant()
         );
     }
     
@@ -230,8 +236,8 @@ public class RegisterServiceImpl implements RegisterService {
         log.info("Getting today's registrations");
         LocalDate today = LocalDate.now();
         List<Register> todayRegistrations = registerRepository.findByRegisteredAtBetween(
-            today.atStartOfDay(),
-            today.plusDays(1).atStartOfDay()
+            today.atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant(),
+            today.plusDays(1).atStartOfDay().atZone(java.time.ZoneId.systemDefault()).toInstant()
         );
         
         return todayRegistrations.stream()

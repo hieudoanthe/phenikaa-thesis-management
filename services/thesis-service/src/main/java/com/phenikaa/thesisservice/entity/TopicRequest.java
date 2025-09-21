@@ -33,7 +33,7 @@ public class TopicRequest {
     @Column(name = "field_of_study")
     private String fieldOfStudy;
 
-    @Column(name = "requirements", columnDefinition = "TEXT")
+    @Column(name = "requirements", columnDefinition = "nvarchar(255)")
     private String requirements;
 
     @Column(name = "topic_request_status")

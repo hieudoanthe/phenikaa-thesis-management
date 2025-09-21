@@ -15,11 +15,9 @@ spring:
             - assign-service
             - communication-log-service
             - eval-service
-            - group-service
             - profile-service
             - submission-service
             - auth-service
-            - statistics-service
 
 logging:
   level:

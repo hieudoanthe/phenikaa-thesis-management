@@ -11,7 +11,7 @@ spring:
       name: none
       password: none
   config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:}
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:},optional:file:.env[.properties],optional:file:../.env[.properties],optional:file:../../.env[.properties],optional:classpath:.env[.properties]
 
   cloud:
     config:

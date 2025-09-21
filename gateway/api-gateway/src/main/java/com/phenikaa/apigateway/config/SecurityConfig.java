@@ -50,7 +50,7 @@ public class SecurityConfig {
 
                         .pathMatchers("/api/statistics-service/**").hasAnyRole("TEACHER", "ADMIN")
                         //
-                        .pathMatchers("/api/admin/**").hasAnyRole("ADMIN", "TEACHER")
+                        .pathMatchers("/api/user-service/admin/**").hasAnyRole("ADMIN", "TEACHER")
                         .pathMatchers("/api/eval-service/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/eval-service/student/**").hasRole("STUDENT")
                         .pathMatchers( "/api/thesis-service/ai-chat/**").hasRole("STUDENT")
@@ -59,7 +59,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/user-service/student/**").hasRole("STUDENT")
                         .pathMatchers("/api/thesis-service/student/**").hasRole("STUDENT")
                         .pathMatchers("/api/thesis-service/teacher/**").hasRole("TEACHER")
-                        .pathMatchers("/api/thesis-service/admin/**").hasAnyRole("ADMIN")
+                        .pathMatchers("/api/thesis-service/admin/**").hasAnyRole("ADMIN", "STUDENT")
                         .pathMatchers("/api/profile-service/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .pathMatchers("/api/assign-service/**").hasAnyRole("STUDENT", "TEACHER")
                         .pathMatchers("/api/academic-config-service/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")

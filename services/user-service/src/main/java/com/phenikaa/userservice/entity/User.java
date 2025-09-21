@@ -18,7 +18,7 @@ public class User {
     @Column(name = "user_id")
     private Integer userId;
 
-    @Column(name = "username", unique = true, nullable = false)
+    @Column(name = "username", nullable = false)
     private String username;
 
     @Column(name = "full_name", columnDefinition = "NVARCHAR(255)")
@@ -27,8 +27,17 @@ public class User {
     @Column(name = "password_hash")
     private String passwordHash;
 
+    @Column(name = "period_id")
+    private Integer periodId;
+
     @Column(name = "status")
     private Integer status;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @Column(name = "created_by")
     private Integer createdBy;

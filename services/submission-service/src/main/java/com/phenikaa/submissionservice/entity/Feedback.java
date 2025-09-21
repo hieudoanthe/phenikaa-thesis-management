@@ -24,7 +24,7 @@ public class Feedback {
     @Column(name = "reviewer_id")
     private Integer reviewerId;
 
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "nvarchar(255)")
     private String content;
 
     @Column(name = "score")

@@ -31,10 +31,10 @@ public class DefenseQnA {
     @Column(name = "secretary_id", nullable = false)
     private Integer secretaryId; // ID thư ký ghi lại
 
-    @Column(name = "question", columnDefinition = "TEXT", nullable = false)
+    @Column(name = "question", columnDefinition = "nvarchar(255)", nullable = false)
     private String question;
 
-    @Column(name = "answer", columnDefinition = "TEXT")
+    @Column(name = "answer", columnDefinition = "nvarchar(255)")
     private String answer;
 
     @Column(name = "question_time")

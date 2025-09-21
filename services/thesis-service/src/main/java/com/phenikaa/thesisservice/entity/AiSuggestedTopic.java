@@ -26,13 +26,13 @@ public class AiSuggestedTopic {
     @Column(name = "topic_title")
     private String topicTitle;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "NVARCHAR(255)")
     private String description;
 
-    @Column(name = "objectives", columnDefinition = "TEXT")
+    @Column(name = "objectives", columnDefinition = "NVARCHAR(255)")
     private String objectives;
 
-    @Column(name = "methodology", columnDefinition = "TEXT")
+    @Column(name = "methodology", columnDefinition = "NVARCHAR(255)")
     private String methodology;
 
     @Column(name = "relevance_score")

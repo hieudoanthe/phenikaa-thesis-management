@@ -3,6 +3,7 @@ package com.phenikaa.evalservice.controller;
 import com.phenikaa.evalservice.dto.DefenseSessionDto;
 import com.phenikaa.evalservice.entity.DefenseSession;
 import com.phenikaa.evalservice.entity.StudentDefense;
+import com.phenikaa.evalservice.exception.DefenseSessionValidationException;
 import com.phenikaa.evalservice.service.DefenseSessionService;
 import com.phenikaa.evalservice.service.StudentAssignmentService;
 import lombok.RequiredArgsConstructor;
@@ -43,13 +44,16 @@ public class DefenseSessionController {
      * Tạo buổi bảo vệ mới
      */
     @PostMapping
-    public ResponseEntity<DefenseSessionDto> createSession(@RequestBody DefenseSessionDto sessionDto) {
+    public ResponseEntity<?> createSession(@RequestBody DefenseSessionDto sessionDto) {
         try {
             DefenseSessionDto createdSession = defenseSessionService.createSession(sessionDto);
             return ResponseEntity.ok(createdSession);
+        } catch (DefenseSessionValidationException e) {
+            log.error("Lỗi validation khi tạo buổi bảo vệ: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             log.error("Lỗi khi tạo buổi bảo vệ: ", e);
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
 
@@ -57,15 +61,18 @@ public class DefenseSessionController {
      * Cập nhật buổi bảo vệ
      */
     @PutMapping("/{sessionId}")
-    public ResponseEntity<DefenseSessionDto> updateSession(
+    public ResponseEntity<?> updateSession(
             @PathVariable Integer sessionId,
             @RequestBody DefenseSessionDto sessionDto) {
         try {
             DefenseSessionDto updatedSession = defenseSessionService.updateSession(sessionId, sessionDto);
             return ResponseEntity.ok(updatedSession);
+        } catch (DefenseSessionValidationException e) {
+            log.error("Lỗi validation khi cập nhật buổi bảo vệ ID {}: {}", sessionId, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             log.error("Lỗi khi cập nhật buổi bảo vệ ID {}: ", sessionId, e);
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
 

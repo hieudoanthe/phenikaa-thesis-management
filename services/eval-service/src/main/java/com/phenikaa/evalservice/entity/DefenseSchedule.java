@@ -22,7 +22,7 @@ public class DefenseSchedule {
     @Column(name = "schedule_id")
     private Integer scheduleId;
 
-    @Column(name = "schedule_name", nullable = false)
+    @Column(name = "schedule_name", nullable = false, columnDefinition = "nvarchar(255)")
     private String scheduleName; // Ví dụ: "Lịch bảo vệ Học kỳ 1 - 2025"
 
     @Column(name = "academic_year_id")

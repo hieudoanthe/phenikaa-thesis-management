@@ -12,4 +12,6 @@ public class SuggestTopicRequest {
     private String expectedOutcome;
     private Integer supervisorId;
     private String reason;
+    // Đợt đăng ký mà sinh viên chọn trên giao diện
+    private Integer registrationPeriodId;
 }

@@ -42,12 +42,19 @@ public class SuggestServiceImpl implements SuggestService {
 
     @Override
     public void suggestTopic(SuggestTopicRequest dto, Integer studentId) {
-        // Kiểm tra xem có đợt đăng ký nào đang hoạt động không (chọn đợt đầu tiên trong cửa sổ thời gian)
-        List<RegistrationPeriod> periods = registrationPeriodRepository.findActivePeriodsWindow(LocalDateTime.now());
-        if (periods.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hiện tại không có đợt đăng ký nào đang diễn ra!");
+        if (dto.getRegistrationPeriodId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu registrationPeriodId");
         }
-        RegistrationPeriod activePeriod = periods.get(0);
+        RegistrationPeriod activePeriod = registrationPeriodRepository.findById(dto.getRegistrationPeriodId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đợt đăng ký không tồn tại"));
+        // Xác thực đợt còn hiệu lực và đang ACTIVE
+        LocalDateTime now = LocalDateTime.now();
+        boolean activeWindow = activePeriod.getStatus() == RegistrationPeriod.PeriodStatus.ACTIVE
+                && !now.isBefore(activePeriod.getStartDate())
+                && !now.isAfter(activePeriod.getEndDate());
+        if (!activeWindow) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đợt đăng ký hiện không mở");
+        }
 
         // Kiểm tra xem sinh viên đã đề xuất đề tài trong đợt này chưa
         if (hasStudentSuggestedInPeriod(studentId, activePeriod.getPeriodId())) {
@@ -83,19 +90,19 @@ public class SuggestServiceImpl implements SuggestService {
                 .build();
         suggestRepository.save(suggested);
 
-        // Cập nhật sức chứa của giảng viên
-        System.out.println("=== TRƯỚC KHI TĂNG currentStudents ===");
+        // Cập nhật sức chứa của giảng viên - giảm maxStudents
+        System.out.println("=== TRƯỚC KHI GIẢM maxStudents ===");
         System.out.println("Lecturer ID: " + dto.getSupervisorId());
         System.out.println("Period ID: " + activePeriod.getPeriodId());
 
         updateLecturerCapacity(dto.getSupervisorId(), activePeriod.getPeriodId(), true);
 
-        // Kiểm tra sau khi tăng
+        // Kiểm tra sau khi giảm
         LecturerCapacity afterCapacity = lecturerCapacityRepository
                 .findByLecturerIdAndRegistrationPeriodId(dto.getSupervisorId(), activePeriod.getPeriodId())
                 .orElse(null);
         if (afterCapacity != null) {
-            System.out.println("Capacity sau khi tăng: maxStudents=" + afterCapacity.getMaxStudents() + ", currentStudents=" + afterCapacity.getCurrentStudents());
+            System.out.println("Capacity sau khi giảm: maxStudents=" + afterCapacity.getMaxStudents() + ", currentStudents=" + afterCapacity.getCurrentStudents());
         }
 
         NotificationRequest noti = new NotificationRequest(
@@ -129,7 +136,7 @@ public class SuggestServiceImpl implements SuggestService {
             capacity = LecturerCapacity.builder()
                     .lecturerId(lecturerId)
                     .registrationPeriodId(periodId)
-                    .maxStudents(period.getMaxStudentsPerLecturer()) // Lấy từ period
+                    .maxStudents(period.getMaxStudentsPerLecturer())
                     .currentStudents(0)
                     .build();
 
@@ -139,12 +146,14 @@ public class SuggestServiceImpl implements SuggestService {
         }
 
         System.out.println("Kiểm tra capacity: " + capacity); // Debug log
-        System.out.println("Có thể nhận thêm sinh viên: " + capacity.canAcceptMoreStudents()); // Debug log
+        // Kiểm tra xem còn slot trống không (maxStudents > 0)
+        boolean canAccept = capacity.getMaxStudents() > 0;
+        System.out.println("Có thể nhận thêm sinh viên: " + canAccept + " (maxStudents=" + capacity.getMaxStudents() + ")"); // Debug log
 
-        return capacity.canAcceptMoreStudents();
+        return canAccept;
     }
 
-    private void updateLecturerCapacity(Integer lecturerId, Integer periodId, boolean increase) {
+    private void updateLecturerCapacity(Integer lecturerId, Integer periodId, boolean decrease) {
         LecturerCapacity capacity = lecturerCapacityRepository
                 .findByLecturerIdAndRegistrationPeriodId(lecturerId, periodId)
                 .orElseGet(() -> {
@@ -159,10 +168,16 @@ public class SuggestServiceImpl implements SuggestService {
                             .build();
                 });
 
-        if (increase) {
-            capacity.increaseCurrentStudents();
+        if (decrease) {
+            // Giảm maxStudents khi sinh viên đăng ký/đề xuất thành công
+            if (capacity.getMaxStudents() > 0) {
+                capacity.setMaxStudents(capacity.getMaxStudents() - 1);
+                System.out.println("Đã giảm maxStudents cho lecturer " + lecturerId + " trong period " + periodId + ". Còn lại: " + capacity.getMaxStudents());
+            }
         } else {
-            capacity.decreaseCurrentStudents();
+            // Tăng maxStudents khi giảng viên từ chối (hoàn trả slot)
+            capacity.setMaxStudents(capacity.getMaxStudents() + 1);
+            System.out.println("Đã tăng maxStudents cho lecturer " + lecturerId + " trong period " + periodId + ". Hiện tại: " + capacity.getMaxStudents());
         }
 
         lecturerCapacityRepository.save(capacity);
@@ -173,5 +188,49 @@ public class SuggestServiceImpl implements SuggestService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return suggestRepository.findBySuggestedBy(studentId, pageable)
                 .map(suggestTopicMapper::toGetSuggestTopicResponse);
+    }
+
+    @Override
+    public void updateSuggestTopic(Integer suggestedId, SuggestTopicRequest dto, Integer studentId) {
+        // Tìm đề xuất đề tài
+        SuggestedTopic suggestedTopic = suggestRepository.findById(suggestedId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Đề xuất đề tài không tồn tại"));
+
+        // Kiểm tra quyền sở hữu
+        if (!suggestedTopic.getSuggestedBy().equals(studentId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền chỉnh sửa đề xuất này");
+        }
+
+        // Kiểm tra trạng thái - chỉ cho phép chỉnh sửa khi đang chờ duyệt
+        if (suggestedTopic.getSuggestionStatus() != SuggestedTopic.SuggestionStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ có thể chỉnh sửa đề tài đang chờ duyệt");
+        }
+
+        // Kiểm tra đợt đăng ký còn hiệu lực không
+        RegistrationPeriod activePeriod = registrationPeriodRepository.findById(suggestedTopic.getRegistrationPeriodId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đợt đăng ký không tồn tại"));
+        
+        LocalDateTime now = LocalDateTime.now();
+        boolean activeWindow = activePeriod.getStatus() == RegistrationPeriod.PeriodStatus.ACTIVE
+                && !now.isBefore(activePeriod.getStartDate())
+                && !now.isAfter(activePeriod.getEndDate());
+        if (!activeWindow) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đợt đăng ký hiện không mở, không thể chỉnh sửa");
+        }
+
+        // Cập nhật thông tin đề tài
+        ProjectTopic topic = suggestedTopic.getProjectTopic();
+        topic.setTitle(dto.getTitle());
+        topic.setDescription(dto.getDescription());
+        topic.setObjectives(dto.getObjectives());
+        topic.setMethodology(dto.getMethodology());
+        topic.setExpectedOutcome(dto.getExpectedOutcome());
+        topic.setSupervisorId(dto.getSupervisorId());
+        projectTopicRepository.save(topic);
+
+        // Cập nhật thông tin đề xuất
+        suggestedTopic.setReason(dto.getReason());
+        suggestedTopic.setSuggestedFor(dto.getSupervisorId());
+        suggestRepository.save(suggestedTopic);
     }
 }

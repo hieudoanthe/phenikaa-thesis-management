@@ -32,6 +32,6 @@ public interface RegisterRepository extends JpaRepository<Register, Integer> {
     List<Register> findByProjectTopicTopicId(Integer topicId);
     
     // Today's statistics
-    Long countByRegisteredAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
-    List<Register> findByRegisteredAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+    Long countByRegisteredAtBetween(java.time.Instant start, java.time.Instant end);
+    List<Register> findByRegisteredAtBetween(java.time.Instant start, java.time.Instant end);
 }
