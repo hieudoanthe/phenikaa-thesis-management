@@ -47,22 +47,38 @@ public class UserServiceClient {
                 .onErrorReturn(Map.of());
     }
 
-    @SuppressWarnings("unchecked")
-    public Flux<Map<String, Object>> getUsersByRole(String role) {
+    /**
+     * Lấy danh sách username sinh viên trong đợt đăng ký
+     */
+    public Flux<String> getStudentsByPeriod(Long periodId) {
         return webClient
                 .get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/internal/users/by-role")
-                        .queryParam("role", role)
-                        .build())
+                .uri("/internal/users/students/by-period/{periodId}", periodId)
                 .retrieve()
-                .bodyToFlux(Map.class)
-                .cast(Map.class)
-                .map(map -> {
-                    Map<String, Object> result = new HashMap<>();
-                    map.forEach((k, v) -> result.put(String.valueOf(k), v));
-                    return result;
+                .bodyToMono(Map.class)
+                .flatMapMany(wrapper -> {
+                    try {
+                        System.out.println("[UserServiceClient] wrapper keys: " + wrapper.keySet());
+                    } catch (Exception ignored) {}
+
+                    Object data = wrapper.get("data");
+                    if (!(data instanceof Iterable<?> iterable)) {
+                        return Flux.empty();
+                    }
+                    return Flux.fromIterable(iterable)
+                            .cast(Map.class)
+                            .map(item -> {
+                                try {
+                                    System.out.println("[UserServiceClient] item keys: " + item.keySet());
+                                } catch (Exception ignored) {}
+                                Object username = item.get("username");
+                                return username == null ? "" : username.toString();
+                            })
+                            .filter(s -> s != null && !s.isBlank());
                 })
-                .onErrorReturn(Map.of());
+                .onErrorResume(err -> {
+                    System.out.println("[UserServiceClient] error: " + err.getMessage());
+                    return Flux.empty();
+                });
     }
 }

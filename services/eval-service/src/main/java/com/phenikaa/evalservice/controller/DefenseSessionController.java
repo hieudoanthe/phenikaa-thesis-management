@@ -1,6 +1,8 @@
 package com.phenikaa.evalservice.controller;
 
 import com.phenikaa.evalservice.dto.DefenseSessionDto;
+import com.phenikaa.evalservice.dto.StudentAssignmentRequest;
+import com.phenikaa.evalservice.dto.StudentAssignmentResult;
 import com.phenikaa.evalservice.entity.DefenseSession;
 import com.phenikaa.evalservice.entity.StudentDefense;
 import com.phenikaa.evalservice.exception.DefenseSessionValidationException;
@@ -12,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

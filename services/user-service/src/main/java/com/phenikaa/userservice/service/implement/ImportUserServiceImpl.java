@@ -89,12 +89,16 @@ public class ImportUserServiceImpl implements ImportUserService {
         }
 
         // Xử lý batch để tránh connection timeout
-        int batchSize = 5; // Xử lý 5 user mỗi batch
+        int batchSize = 10; // Tăng batch size lên 10 user mỗi batch
         int totalRows = csvData.size();
+        
+        log.info("Bắt đầu xử lý {} dòng dữ liệu với batch size {}", totalRows, batchSize);
         
         for (int i = 0; i < csvData.size(); i += batchSize) {
             int endIndex = Math.min(i + batchSize, csvData.size());
             List<String[]> batch = csvData.subList(i, endIndex);
+            
+            log.info("Xử lý batch {}-{} / {}", i + 1, endIndex, totalRows);
             
             try {
                 BatchResult batchResult = processBatch(batch, i + 1, periodId);
@@ -102,8 +106,18 @@ public class ImportUserServiceImpl implements ImportUserService {
                 results.addAll(batchResult.results);
                 successCount += batchResult.successCount;
                 errorCount += batchResult.errorCount;
+                
+                // Log progress
+                log.info("Batch {}-{} hoàn thành: {} thành công, {} lỗi", 
+                    i + 1, endIndex, batchResult.successCount, batchResult.errorCount);
+                
+                // Thêm delay nhỏ giữa các batch để tránh quá tải
+                if (i + batchSize < csvData.size()) {
+                    Thread.sleep(100); // 100ms delay
+                }
+                
             } catch (Exception e) {
-                log.error("Lỗi khi xử lý batch {}-{}: {}", i + 1, endIndex, e.getMessage());
+                log.error("Lỗi khi xử lý batch {}-{}: {}", i + 1, endIndex, e.getMessage(), e);
                 // Thêm lỗi cho tất cả dòng trong batch này
                 for (int j = i; j < endIndex; j++) {
                     errors.add(new ImportResultResponse.ImportError(
@@ -220,23 +234,71 @@ public class ImportUserServiceImpl implements ImportUserService {
     /**
      * Xử lý một batch nhỏ để tránh connection timeout
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 300, rollbackFor = Exception.class) // 5 phút timeout
     public BatchResult processBatch(List<String[]> batch, int startRow, Integer periodId) {
         List<ImportResultResponse.ImportError> errors = new ArrayList<>();
         List<ImportResultResponse.StudentImportResult> results = new ArrayList<>();
         int successCount = 0;
         int errorCount = 0;
         
+        log.debug("Bắt đầu xử lý batch {} dòng từ dòng {}", batch.size(), startRow);
+        
         for (int i = 0; i < batch.size(); i++) {
             String[] columns = batch.get(i);
             int rowNumber = startRow + i;
             
+            // Xử lý từng user riêng biệt để tránh rollback issues
+            try {
+                ImportResultResponse.StudentImportResult result = processSingleUser(columns, rowNumber, periodId);
+                if (result != null) {
+                    results.add(result);
+                    successCount++;
+                } else {
+                    errorCount++;
+                }
+            } catch (Exception e) {
+                log.error("Lỗi khi xử lý dòng {}: {}", rowNumber, e.getMessage(), e);
+                
+                // Xử lý các loại lỗi khác nhau
+                String errorType = "processing";
+                String errorMessage = e.getMessage();
+                
+                if (e.getMessage() != null) {
+                    if (e.getMessage().contains("Connection reset") || 
+                        e.getMessage().contains("Connection timed out") ||
+                        e.getMessage().contains("AsyncRequestNotUsableException")) {
+                        errorType = "connection";
+                        errorMessage = "Lỗi kết nối - vui lòng thử lại";
+                    } else if (e.getMessage().contains("timeout")) {
+                        errorType = "timeout";
+                        errorMessage = "Timeout - vui lòng thử lại";
+                    } else if (e.getMessage().contains("constraint")) {
+                        errorType = "constraint";
+                        errorMessage = "Vi phạm ràng buộc dữ liệu";
+                    } else if (e.getMessage().contains("rollback")) {
+                        errorType = "transaction";
+                        errorMessage = "Lỗi transaction - vui lòng thử lại";
+                    }
+                }
+                
+                errors.add(new ImportResultResponse.ImportError(
+                    rowNumber, errorType, errorMessage));
+                errorCount++;
+            }
+        }
+        
+        return new BatchResult(errors, results, successCount, errorCount);
+    }
+
+    /**
+     * Xử lý một user đơn lẻ với transaction riêng biệt
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public ImportResultResponse.StudentImportResult processSingleUser(String[] columns, int rowNumber, Integer periodId) {
             try {
                 if (columns.length < 3) {
-                    errors.add(new ImportResultResponse.ImportError(
-                        rowNumber, "format", "Dòng không đủ cột dữ liệu (cần ít nhất 3 cột)"));
-                    errorCount++;
-                    continue;
+                log.warn("Dòng {} không đủ cột dữ liệu (cần ít nhất 3 cột)", rowNumber);
+                return null;
                 }
 
                 // Parse dữ liệu từ CSV (format: Họ tên, Username, Password)
@@ -248,12 +310,8 @@ public class ImportUserServiceImpl implements ImportUserService {
                 List<String> validationErrors = validateStudentData(fullName, username, password, periodId);
 
                 if (!validationErrors.isEmpty()) {
-                    for (String error : validationErrors) {
-                        errors.add(new ImportResultResponse.ImportError(
-                            rowNumber, "validation", error));
-                    }
-                    errorCount++;
-                    continue;
+                log.warn("Dòng {} có lỗi validation: {}", rowNumber, validationErrors);
+                return null;
                 }
 
                 // Tạo user mới
@@ -262,26 +320,21 @@ public class ImportUserServiceImpl implements ImportUserService {
                 // Tạo profile bất đồng bộ để tránh timeout
                 createProfileAsync(user.getUserId());
 
-                results.add(new ImportResultResponse.StudentImportResult(
-                    user.getUserId().toString(), fullName, username, true, "Tạo tài khoản thành công", user.getUserId()));
-                successCount++;
+            return new ImportResultResponse.StudentImportResult(
+                user.getUserId().toString(), fullName, username, true, "Tạo tài khoản thành công", user.getUserId());
 
             } catch (Exception e) {
-                log.error("Lỗi khi xử lý dòng {}: {}", rowNumber, e.getMessage());
-                errors.add(new ImportResultResponse.ImportError(
-                    rowNumber, "processing", "Lỗi xử lý: " + e.getMessage()));
-                errorCount++;
-            }
+            log.error("Lỗi khi xử lý user ở dòng {}: {}", rowNumber, e.getMessage(), e);
+            throw e; // Re-throw để được xử lý ở level cao hơn
         }
-        
-        return new BatchResult(errors, results, successCount, errorCount);
     }
 
     /**
      * Tạo user mới với transaction riêng
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public User createUser(String fullName, String username, String password, Integer periodId) {
+        try {
         User user = new User();
         user.setFullName(fullName);
         user.setUsername(username); // Username chính là email
@@ -300,7 +353,13 @@ public class ImportUserServiceImpl implements ImportUserService {
         entityManager.persist(user);
         entityManager.flush();
         
+            log.debug("Tạo user thành công: {}", username);
         return user;
+            
+        } catch (Exception e) {
+            log.error("Lỗi khi tạo user {}: {}", username, e.getMessage(), e);
+            throw new RuntimeException("Không thể tạo user: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -308,130 +367,256 @@ public class ImportUserServiceImpl implements ImportUserService {
      */
     @Async
     public CompletableFuture<Void> createProfileAsync(Integer userId) {
-        try {
-            profileServiceClient.createProfile(new CreateProfileRequest(userId, "STUDENT"));
-            log.info("Tạo profile thành công cho user: {}", userId);
-        } catch (Exception profileError) {
-            log.warn("Không thể tạo profile cho user {}: {}", userId, profileError.getMessage());
-            // Không throw exception, chỉ log warning
+        return createProfileAsync(userId, "STUDENT");
+    }
+
+    /**
+     * Tạo profile bất đồng bộ với role cụ thể
+     */
+    @Async
+    public CompletableFuture<Void> createProfileAsync(Integer userId, String role) {
+        int maxRetries = 3;
+        int retryCount = 0;
+        
+        while (retryCount < maxRetries) {
+            try {
+                profileServiceClient.createProfile(new CreateProfileRequest(userId, role));
+                log.info("Tạo profile thành công cho user: {} với role: {}", userId, role);
+                return CompletableFuture.completedFuture(null);
+            } catch (Exception profileError) {
+                log.warn("Không thể tạo profile cho user {}: {}, retry: {}/{}", 
+                    userId, profileError.getMessage(), retryCount + 1, maxRetries);
+            }
+            
+            retryCount++;
+            if (retryCount < maxRetries) {
+                try {
+                    Thread.sleep(1000 * retryCount); // Exponential backoff
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
         }
+        
+        log.error("Không thể tạo profile cho user {} sau {} lần thử", userId, maxRetries);
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public ImportResultResponse importTeachersFromCSV(MultipartFile file) {
-        ImportResultResponse response = new ImportResultResponse();
-        response.setSuccess(true);
-        response.setMessage("Import giảng viên thành công");
-        
-        try {
-            log.info("Bắt đầu import giảng viên từ CSV: {}", file.getOriginalFilename());
-            
-            // Parse CSV
-            List<String[]> csvData = parseCSV(file);
-            if (csvData.isEmpty()) {
-                response.setSuccess(false);
-                response.setMessage("File CSV trống");
-                return response;
-            }
-            
-            // Validate header
-            String[] headers = csvData.get(0);
-            if (headers.length != 3 || 
-                !headers[0].trim().equals("Họ và tên") ||
-                !headers[1].trim().equals("Username") ||
-                !headers[2].trim().equals("Mật khẩu")) {
-                response.setSuccess(false);
-                response.setMessage("File CSV phải có đúng 3 cột: Họ và tên, Username, Mật khẩu");
-                return response;
-            }
-            
-            // Process in batches to avoid timeout (like students)
-            List<String[]> dataRows = csvData.subList(1, csvData.size()); // Skip header
+        List<ImportResultResponse.ImportError> errors = new ArrayList<>();
+        List<ImportResultResponse.StudentImportResult> results = new ArrayList<>();
             int successCount = 0;
             int errorCount = 0;
-            List<ImportResultResponse.ImportError> errors = new ArrayList<>();
+
+        // Đọc tất cả dữ liệu trước
+        List<String[]> csvData = new ArrayList<>();
+        int rowNumber = 0;
+        
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
             
-            int batchSize = 5; // Process 5 teachers per batch
-            for (int i = 0; i < dataRows.size(); i += batchSize) {
-                int endIndex = Math.min(i + batchSize, dataRows.size());
-                List<String[]> batch = dataRows.subList(i, endIndex);
+            String line;
+            boolean isFirstRow = true;
+
+            while ((line = reader.readLine()) != null) {
+                rowNumber++;
                 
+                // Bỏ qua header row
+                if (isFirstRow) {
+                    isFirstRow = false;
+                                continue;
+                            }
+                            
+                // Bỏ qua dòng trống
+                if (line.trim().isEmpty()) {
+                                continue;
+                            }
+                            
                 try {
-                    // Process each teacher in batch
-                    for (int j = 0; j < batch.size(); j++) {
-                        String[] row = batch.get(j);
-                        int rowNumber = i + j + 2; // +2 because we skip header and start from 1
-                        
-                        try {
-                            if (row.length < 3) {
-                                errors.add(new ImportResultResponse.ImportError(rowNumber, "validation", "Thiếu thông tin"));
-                                errorCount++;
-                                continue;
-                            }
-                            
-                            String fullName = row[0].trim();
-                            String username = row[1].trim();
-                            String password = row[2].trim();
-                            
-                            // Validate data
-                            if (fullName.isEmpty() || username.isEmpty() || password.isEmpty()) {
-                                errors.add(new ImportResultResponse.ImportError(rowNumber, "validation", "Thông tin không được để trống"));
-                                errorCount++;
-                                continue;
-                            }
-                            
-                            // Check if username already exists
-                            if (userRepository.existsByUsername(username)) {
-                                errors.add(new ImportResultResponse.ImportError(rowNumber, "validation", "Username đã tồn tại"));
-                                errorCount++;
-                                continue;
-                            }
-                            
-                            // Create teacher user with new transaction
-                            createTeacherUser(fullName, username, password);
-                            successCount++;
-                            
+                    String[] columns = parseCSVLine(line);
+                    csvData.add(columns);
                         } catch (Exception e) {
-                            log.error("Lỗi khi xử lý dòng {}: {}", rowNumber, e.getMessage());
-                            errors.add(new ImportResultResponse.ImportError(rowNumber, "processing", e.getMessage()));
+                    log.error("Lỗi khi parse dòng {}: {}", rowNumber, e.getMessage());
+                    errors.add(new ImportResultResponse.ImportError(
+                        rowNumber, "parsing", "Lỗi parse: " + e.getMessage()));
                             errorCount++;
                         }
                     }
                     
-                    // Small delay between batches to avoid overwhelming the system
-                    if (endIndex < dataRows.size()) {
-                        Thread.sleep(100); // 100ms delay
+        } catch (Exception e) {
+            log.error("Lỗi khi đọc file CSV: {}", e.getMessage(), e);
+            return new ImportResultResponse(false, "Lỗi khi đọc file CSV: " + e.getMessage(), 
+                0, 0, 1, errors, results);
+        }
+
+        // Xử lý batch để tránh connection timeout
+        int batchSize = 10; // Tăng batch size lên 10 user mỗi batch
+        int totalRows = csvData.size();
+        
+        log.info("Bắt đầu xử lý {} dòng dữ liệu giảng viên với batch size {}", totalRows, batchSize);
+        
+        for (int i = 0; i < csvData.size(); i += batchSize) {
+            int endIndex = Math.min(i + batchSize, csvData.size());
+            List<String[]> batch = csvData.subList(i, endIndex);
+            
+            log.info("Xử lý batch giảng viên {}-{} / {}", i + 1, endIndex, totalRows);
+            
+            try {
+                BatchResult batchResult = processTeacherBatch(batch, i + 1);
+                errors.addAll(batchResult.errors);
+                results.addAll(batchResult.results);
+                successCount += batchResult.successCount;
+                errorCount += batchResult.errorCount;
+                
+                // Log progress
+                log.info("Batch giảng viên {}-{} hoàn thành: {} thành công, {} lỗi", 
+                    i + 1, endIndex, batchResult.successCount, batchResult.errorCount);
+                
+                // Thêm delay nhỏ giữa các batch để tránh quá tải
+                if (i + batchSize < csvData.size()) {
+                    Thread.sleep(100); // 100ms delay
                     }
                     
                 } catch (Exception e) {
-                    log.error("Lỗi khi xử lý batch {}-{}: {}", i + 1, endIndex, e.getMessage());
-                    // Add error for all rows in this batch
+                log.error("Lỗi khi xử lý batch giảng viên {}-{}: {}", i + 1, endIndex, e.getMessage(), e);
+                // Thêm lỗi cho tất cả dòng trong batch này
                     for (int j = i; j < endIndex; j++) {
                         errors.add(new ImportResultResponse.ImportError(
-                            j + 2, "batch", "Lỗi batch: " + e.getMessage()));
+                        j + 1, "batch", "Lỗi batch: " + e.getMessage()));
                         errorCount++;
                     }
                 }
             }
             
-            response.setSuccessCount(successCount);
-            response.setErrorCount(errorCount);
-            response.setErrors(errors);
-            response.setMessage(String.format("Import hoàn thành: %d thành công, %d lỗi", successCount, errorCount));
-            
-            log.info("Import giảng viên hoàn thành: {} thành công, {} lỗi", successCount, errorCount);
-            
-        } catch (Exception e) {
-            log.error("Lỗi khi import giảng viên từ CSV: {}", e.getMessage(), e);
-            response.setSuccess(false);
-            response.setMessage("Lỗi khi import giảng viên: " + e.getMessage());
-        }
-        
-        return response;
+        String message = String.format("Import giảng viên hoàn thành: %d thành công, %d lỗi", successCount, errorCount);
+        return new ImportResultResponse(true, message, totalRows, successCount, errorCount, errors, results);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    /**
+     * Xử lý một batch giảng viên nhỏ để tránh connection timeout
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public BatchResult processTeacherBatch(List<String[]> batch, int startRow) {
+        List<ImportResultResponse.ImportError> errors = new ArrayList<>();
+        List<ImportResultResponse.StudentImportResult> results = new ArrayList<>();
+        int successCount = 0;
+        int errorCount = 0;
+        
+        log.debug("Bắt đầu xử lý batch giảng viên {} dòng từ dòng {}", batch.size(), startRow);
+        
+        for (int i = 0; i < batch.size(); i++) {
+            String[] columns = batch.get(i);
+            int rowNumber = startRow + i;
+            
+            // Xử lý từng giảng viên riêng biệt để tránh rollback issues
+            try {
+                ImportResultResponse.StudentImportResult result = processSingleTeacher(columns, rowNumber);
+                if (result != null) {
+                    results.add(result);
+                    successCount++;
+                } else {
+                    errorCount++;
+                }
+            } catch (Exception e) {
+                log.error("Lỗi khi xử lý giảng viên ở dòng {}: {}", rowNumber, e.getMessage(), e);
+                
+                // Xử lý các loại lỗi khác nhau
+                String errorType = "processing";
+                String errorMessage = e.getMessage();
+                
+                if (e.getMessage() != null) {
+                    if (e.getMessage().contains("Connection reset") || 
+                        e.getMessage().contains("Connection timed out") ||
+                        e.getMessage().contains("AsyncRequestNotUsableException")) {
+                        errorType = "connection";
+                        errorMessage = "Lỗi kết nối - vui lòng thử lại";
+                    } else if (e.getMessage().contains("timeout")) {
+                        errorType = "timeout";
+                        errorMessage = "Timeout - vui lòng thử lại";
+                    } else if (e.getMessage().contains("constraint")) {
+                        errorType = "constraint";
+                        errorMessage = "Vi phạm ràng buộc dữ liệu";
+                    } else if (e.getMessage().contains("rollback")) {
+                        errorType = "transaction";
+                        errorMessage = "Lỗi transaction - vui lòng thử lại";
+                    }
+                }
+                
+                errors.add(new ImportResultResponse.ImportError(
+                    rowNumber, errorType, errorMessage));
+                errorCount++;
+            }
+        }
+        
+        return new BatchResult(errors, results, successCount, errorCount);
+    }
+
+    /**
+     * Xử lý một giảng viên đơn lẻ với transaction riêng biệt
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public ImportResultResponse.StudentImportResult processSingleTeacher(String[] columns, int rowNumber) {
+        try {
+            if (columns.length < 3) {
+                log.warn("Dòng {} không đủ cột dữ liệu (cần ít nhất 3 cột)", rowNumber);
+                return null;
+            }
+
+            // Parse dữ liệu từ CSV (format: Họ tên, Username, Password)
+            String fullName = columns[0].trim();
+            String username = columns[1].trim();
+            String password = columns[2].trim();
+
+            // Validate dữ liệu
+            List<String> validationErrors = validateTeacherData(fullName, username, password);
+
+            if (!validationErrors.isEmpty()) {
+                log.warn("Dòng {} có lỗi validation: {}", rowNumber, validationErrors);
+                return null;
+            }
+
+            // Tạo user mới
+            User user = createTeacherUser(fullName, username, password);
+            
+            // Tạo profile bất đồng bộ để tránh timeout với role TEACHER
+            createProfileAsync(user.getUserId(), "TEACHER");
+
+            return new ImportResultResponse.StudentImportResult(
+                user.getUserId().toString(), fullName, username, true, "Tạo tài khoản giảng viên thành công", user.getUserId());
+            
+        } catch (Exception e) {
+            log.error("Lỗi khi xử lý giảng viên ở dòng {}: {}", rowNumber, e.getMessage(), e);
+            throw e; // Re-throw để được xử lý ở level cao hơn
+        }
+    }
+
+    /**
+     * Validate dữ liệu giảng viên
+     */
+    private List<String> validateTeacherData(String fullName, String username, String password) {
+        List<String> errors = new ArrayList<>();
+        
+        if (fullName == null || fullName.trim().isEmpty()) {
+            errors.add("Họ tên không được để trống");
+        }
+        if (username == null || username.trim().isEmpty()) {
+            errors.add("Username không được để trống");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            errors.add("Mật khẩu không được để trống");
+        }
+
+        // Kiểm tra username đã tồn tại
+        if (username != null && !username.trim().isEmpty() && userRepository.existsByUsername(username)) {
+            errors.add("Username đã tồn tại: " + username);
+        }
+
+        return errors;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public User createTeacherUser(String fullName, String username, String password) {
         try {
             // Create User entity
@@ -443,10 +628,11 @@ public class ImportUserServiceImpl implements ImportUserService {
             user.setCreatedAt(LocalDateTime.now());
             user.setUpdatedAt(LocalDateTime.now());
             
-            // Set TEACHER role
-            Role teacherRole = roleRepository.findByRoleName(Role.RoleName.TEACHER)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy role TEACHER"));
-            user.setRoles(Set.of(teacherRole));
+            // Set role TEACHER (ID = 3)
+            Role teacherRole = entityManager.find(Role.class, 3);
+            if (teacherRole != null) {
+                user.getRoles().add(teacherRole);
+            }
             
             // Save user using entityManager like createUser
             entityManager.persist(user);
@@ -454,8 +640,13 @@ public class ImportUserServiceImpl implements ImportUserService {
             
             log.info("Đã tạo giảng viên: {} (ID: {})", username, user.getUserId());
             
-            // Create profile asynchronously
-            createProfileAsync(user.getUserId());
+            // Create profile asynchronously (không block) với role TEACHER
+            try {
+                createProfileAsync(user.getUserId(), "TEACHER");
+            } catch (Exception e) {
+                log.warn("Không thể tạo profile cho user {}: {}", user.getUserId(), e.getMessage());
+                // Không throw exception, chỉ log warning
+            }
             
             return user;
             

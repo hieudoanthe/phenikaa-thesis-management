@@ -25,9 +25,7 @@ public interface ProjectEvaluationRepository extends JpaRepository<ProjectEvalua
     
     // Tìm đánh giá theo trạng thái
     List<ProjectEvaluation> findByEvaluationStatus(ProjectEvaluation.EvaluationStatus status);
-    
-    // Kiểm tra xem đã có đánh giá chưa
-    boolean existsByTopicIdAndEvaluatorIdAndEvaluationType(Integer topicId, Integer evaluatorId, ProjectEvaluation.EvaluationType evaluationType);
+
     
     // Tìm tất cả đánh giá cụ thể (trong trường hợp có nhiều bản ghi) và sắp xếp mới nhất trước
     List<ProjectEvaluation> findAllByTopicIdAndEvaluatorIdAndEvaluationTypeOrderByEvaluatedAtDesc(Integer topicId, Integer evaluatorId, ProjectEvaluation.EvaluationType evaluationType);
@@ -36,20 +34,8 @@ public interface ProjectEvaluationRepository extends JpaRepository<ProjectEvalua
     @Query("SELECT pe FROM ProjectEvaluation pe WHERE pe.topicId = :topicId ORDER BY pe.evaluationType, pe.evaluatedAt")
     List<ProjectEvaluation> findAllByTopicIdOrderByType(@Param("topicId") Integer topicId);
     
-    // Tính điểm trung bình theo loại đánh giá
-    @Query("SELECT AVG(pe.totalScore) FROM ProjectEvaluation pe WHERE pe.topicId = :topicId AND pe.evaluationType = :evaluationType")
-    Double getAverageScoreByTopicAndType(@Param("topicId") Integer topicId, @Param("evaluationType") ProjectEvaluation.EvaluationType evaluationType);
-    
-    // Lấy đánh giá theo loại và topic
-    @Query("SELECT pe FROM ProjectEvaluation pe WHERE pe.topicId = :topicId AND pe.evaluationType = :evaluationType")
-    List<ProjectEvaluation> findByTopicIdAndEvaluationTypeList(@Param("topicId") Integer topicId, @Param("evaluationType") ProjectEvaluation.EvaluationType evaluationType);
-    
     // Thống kê - đếm theo loại đánh giá
     long countByEvaluationType(ProjectEvaluation.EvaluationType evaluationType);
-    
-    // Thống kê - điểm trung bình tổng
-    @Query("SELECT AVG(pe.totalScore) FROM ProjectEvaluation pe WHERE pe.totalScore IS NOT NULL")
-    Double findAverageScore();
     
     // Statistics methods
     Long countByEvaluationStatus(ProjectEvaluation.EvaluationStatus evaluationStatus);

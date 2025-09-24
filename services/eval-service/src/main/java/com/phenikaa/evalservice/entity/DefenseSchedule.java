@@ -34,10 +34,10 @@ public class DefenseSchedule {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @Column(name = "location")
+    @Column(name = "location", columnDefinition = "nvarchar(255)")
     private String location; // Địa điểm bảo vệ
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "nvarchar(255)")
     private String description;
 
     @Column(name = "status")

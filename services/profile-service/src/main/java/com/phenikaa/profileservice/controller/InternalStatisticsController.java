@@ -28,33 +28,9 @@ public class InternalStatisticsController {
         return profileService.getStudentProfileCount();
     }
     
-    @GetMapping("/get-lecturer-profile-count")
+    @GetMapping("/get-teacher-profile-count")
     public Long getLecturerProfileCount() {
         log.info("Getting lecturer profile count");
         return profileService.getLecturerProfileCount();
-    }
-    
-    @GetMapping("/get-profiles-by-major")
-    public List<Map<String, Object>> getProfilesByMajor(@RequestParam String major) {
-        log.info("Getting profiles by major: {}", major);
-        return profileService.getProfilesByMajor(major);
-    }
-    
-    @GetMapping("/get-profiles-by-year")
-    public List<Map<String, Object>> getProfilesByYear(@RequestParam Integer year) {
-        log.info("Getting profiles by year: {}", year);
-        return profileService.getProfilesByYear(year);
-    }
-    
-    @GetMapping("/get-student-profiles-by-supervisor")
-    public List<Map<String, Object>> getStudentProfilesBySupervisor(@RequestParam Integer supervisorId) {
-        log.info("Getting student profiles by supervisor: {}", supervisorId);
-        return profileService.getStudentProfilesBySupervisor(supervisorId);
-    }
-    
-    @GetMapping("/get-profile-by-user-id")
-    public Map<String, Object> getProfileByUserId(@RequestParam Integer userId) {
-        log.info("Getting profile by user id: {}", userId);
-        return profileService.getProfileByUserId(userId);
     }
 }

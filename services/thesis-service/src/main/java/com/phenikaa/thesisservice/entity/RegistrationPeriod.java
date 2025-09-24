@@ -79,8 +79,8 @@ public class RegistrationPeriod {
 
     // Kiểm tra xem đợt đăng ký có thể bắt đầu không
     public boolean canStart() {
-        LocalDateTime now = LocalDateTime.now();
-        return status == PeriodStatus.UPCOMING && now.isAfter(startDate);
+        // Admin có thể bắt đầu bất cứ lúc nào nếu period đang UPCOMING
+        return status == PeriodStatus.UPCOMING;
     }
 
     // Kiểm tra xem đợt đăng ký có thể kết thúc không

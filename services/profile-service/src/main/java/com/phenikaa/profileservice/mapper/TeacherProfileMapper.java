@@ -12,9 +12,9 @@ public interface TeacherProfileMapper {
     @Mapping(source = "user.userId", target = "userId")
     @Mapping(source = "user.fullName", target = "fullName")
     @Mapping(source = "teacherProfile.specialization", target = "specialization")
+    @Mapping(source = "teacherProfile.degree", target = "degree")
     @Mapping(source = "teacherProfile.department", target = "department")
     @Mapping(source = "teacherProfile.phoneNumber", target = "phoneNumber")
-    @Mapping(source = "teacherProfile.maxStudents", target = "maxStudents")
     @Mapping(source = "teacherProfile.avt", target = "avt")
 
     @BeanMapping(ignoreByDefault = true)

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface RegistrationPeriodRepository extends JpaRepository<RegistrationPeriod, Integer> {
@@ -27,7 +26,7 @@ public interface RegistrationPeriodRepository extends JpaRepository<Registration
     // Tìm đợt đăng ký theo trạng thái
     List<RegistrationPeriod> findByStatus(RegistrationPeriod.PeriodStatus status);
     
-    // Tìm đợt đăng ký sắp diễn ra
-    @Query("SELECT rp FROM RegistrationPeriod rp WHERE rp.status = 'UPCOMING' AND rp.startDate > :now ORDER BY rp.startDate ASC")
+    // Tìm đợt đăng ký sắp diễn ra (cần auto-start)
+    @Query("SELECT rp FROM RegistrationPeriod rp WHERE rp.status = 'UPCOMING' AND rp.startDate <= :now ORDER BY rp.startDate ASC")
     List<RegistrationPeriod> findUpcomingPeriods(@Param("now") LocalDateTime now);
 }

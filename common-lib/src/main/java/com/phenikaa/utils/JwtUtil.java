@@ -106,4 +106,23 @@ public class JwtUtil {
         return extractClaims(token).getExpiration();
     }
 
+    /**
+     * Generate JWT token for internal service calls
+     */
+    public String generateInternalServiceToken() {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + accessTokenExpiration);
+
+        return Jwts.builder()
+                .setSubject("internal-service")
+                .claim("roles", List.of("ROLE_ADMIN"))
+                .claim("userId", 0)
+                .claim("service", "user-service")
+                .claim("type", "internal")
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
+    }
+
 }

@@ -33,13 +33,13 @@ public class StudentDefense {
     @Column(name = "supervisor_id")
     private Integer supervisorId; // Giảng viên hướng dẫn
 
-    @Column(name = "student_name")
+    @Column(name = "student_name" , columnDefinition = "nvarchar(255)")
     private String studentName; // Tên sinh viên
 
-    @Column(name = "student_major")
+    @Column(name = "student_major", columnDefinition = "nvarchar(255)")
     private String studentMajor; // Chuyên ngành của sinh viên
 
-    @Column(name = "topic_title")
+    @Column(name = "topic_title", columnDefinition = "nvarchar(255)")
     private String topicTitle; // Tên đề tài
 
     @Column(name = "defense_order")
@@ -62,15 +62,6 @@ public class StudentDefense {
         CANCELLED,    // Đã hủy
         NO_SHOW       // Không tham gia
     }
-
-    @Column(name = "score")
-    private Double score; // Điểm bảo vệ
-
-    @Column(name = "comments")
-    private String comments; // Nhận xét của hội đồng
-
-    @Column(name = "notes")
-    private String notes;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

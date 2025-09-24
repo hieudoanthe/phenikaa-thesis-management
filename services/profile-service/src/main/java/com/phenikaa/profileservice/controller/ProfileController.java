@@ -73,7 +73,7 @@ public class ProfileController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasAnyRole('TEACHER','STUDENT')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN', 'STUDENT')")
     @GetMapping("/student/get-profile/{userId}")
     public ResponseEntity<GetStudentProfileResponse> getStudentProfile(@PathVariable Integer userId) {
         GetStudentProfileResponse response = profileService.getStudentProfile(userId);
@@ -97,14 +97,6 @@ public class ProfileController {
     public ResponseEntity<List<GetTeacherProfileResponse>> getAllTeacherProfiles() {
         List<GetTeacherProfileResponse> response = profileService.getAllTeacherProfiles();
         return ResponseEntity.ok(response);
-    }
-
-    @PreAuthorize("hasRole('TEACHER')")
-    @PutMapping("/teacher/decrease-capacity")
-    public ResponseEntity<Void> decreaseTeacherCapacity(@RequestHeader("Authorization") String token) {
-        Integer userId = jwtUtil.extractUserId(token);
-        profileService.decreaseTeacherCapacity(userId);
-        return ResponseEntity.noContent().build();
     }
 
 }

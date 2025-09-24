@@ -26,7 +26,7 @@ public class TeacherScheduleController {
     private final DefenseCommitteeRepository defenseCommitteeRepository;
 
     /**
-     * Trả về danh sách các DefenseSession mà giảng viên tham gia (không phụ thuộc student_defense)
+     * Trả về danh sách các DefenseSession mà giảng viên tham gia
      */
     @GetMapping("/evaluator/{evaluatorId}/sessions")
     public ResponseEntity<List<Map<String, Object>>> getSessionsByLecturer(@PathVariable Integer evaluatorId) {

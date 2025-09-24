@@ -15,5 +15,4 @@ public interface StudentProfileRepository extends JpaRepository <StudentProfile,
     
     // Statistics methods
     List<StudentProfile> findByMajor(String major);
-    List<StudentProfile> findByAcademicYear(Integer academicYear);
 }

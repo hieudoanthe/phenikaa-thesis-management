@@ -25,31 +25,6 @@ public class StudentProfile {
     @Column(name = "class_name", columnDefinition = "nvarchar(255)")
     private String className;
 
-    @Column(name = "academic_year")
-    private Integer academicYear;
-
-    @Column(name = "student_status")
-    @Enumerated(EnumType.STRING)
-    private StudentStatus studentStatus;
-
-    public enum StudentStatus {
-        ACTIVE,
-        INACTIVE,
-        GRADUATED
-    }
-    @PrePersist
-    protected void onCreate() {
-        if (studentStatus == null) {
-            studentStatus = StudentStatus.ACTIVE;
-        }
-        if (major == null) {
-            major = "Công nghệ thông tin";
-        }
-    }
-
-    @Column(name = "email")
-    private String email;
-
     @Column(name = "phone")
     private String phoneNumber;
 

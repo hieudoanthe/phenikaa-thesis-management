@@ -182,7 +182,29 @@ public class UserServiceImpl implements UserService {
         if (userOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
         }
-        return userMapper.toDTO(userOpt.get());
+        User user = userOpt.get();
+        // Nếu user hiện tại không có periodId, tổng hợp theo username để trả về đầy đủ periodIds
+        if (user.getUsername() != null) {
+            try {
+                List<User> sameUsernameUsers = userRepository.findAllByUsername(user.getUsername());
+                List<Integer> periodIds = sameUsernameUsers.stream()
+                        .map(User::getPeriodId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .sorted()
+                        .collect(Collectors.toList());
+                String periodDescription;
+                if (periodIds.isEmpty()) {
+                    boolean isStudent = user.getRoles() != null && user.getRoles().stream()
+                            .anyMatch(role -> role.getRoleName().name().equals("STUDENT"));
+                    periodDescription = isStudent ? "Chưa đăng ký đợt nào" : "";
+                } else {
+                    periodDescription = "Đợt " + periodIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
+                }
+                return userMapper.toDTOWithPeriodInfo(user, periodDescription, periodIds, sameUsernameUsers.size());
+            } catch (Exception ignored) {}
+        }
+        return userMapper.toDTO(user);
     }
 
     @Override

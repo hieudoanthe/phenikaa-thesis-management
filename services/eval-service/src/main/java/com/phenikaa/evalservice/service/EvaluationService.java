@@ -167,8 +167,7 @@ public class EvaluationService {
     public List<EvaluationResponse> getEvaluatorTasks(Integer evaluatorId, LocalDate date, String scope) {
         log.info("Getting evaluator tasks for evaluatorId={}, date={}, scope={}", evaluatorId, date, scope);
 
-        // Tạo StudentDefense mẫu nếu chưa có
-        createSampleStudentDefenses();
+        
 
         // Lấy tất cả student defenses với DefenseSession được fetch
         var allStudentDefenses = studentDefenseRepository.findAllWithDefenseSession();
@@ -306,50 +305,7 @@ public class EvaluationService {
         return defenseCommitteeRepository.findAll();
     }
     
-    // Method để tạo StudentDefense mẫu dựa trên DefenseCommittee
-    public void createSampleStudentDefenses() {
-        log.info("=== CREATING SAMPLE STUDENT DEFENSES ===");
-        
-        // Kiểm tra xem đã có StudentDefense chưa
-        var existingDefenses = studentDefenseRepository.findAll();
-        if (!existingDefenses.isEmpty()) {
-            log.info("StudentDefenses already exist, skipping creation");
-            return;
-        }
-        
-        // Lấy tất cả DefenseSession
-        var sessions = defenseSessionRepository.findAll();
-        if (sessions.isEmpty()) {
-            log.warn("No DefenseSessions found, cannot create StudentDefenses");
-            return;
-        }
-        
-        // Tạo StudentDefense cho mỗi session
-        for (var session : sessions) {
-            // Tạo 2-3 sinh viên mẫu cho mỗi session
-            for (int i = 1; i <= 3; i++) {
-                var studentDefense = com.phenikaa.evalservice.entity.StudentDefense.builder()
-                        .defenseSession(session)
-                        .studentId(100 + i) // ID sinh viên mẫu
-                        .topicId(1 + i) // ID đề tài mẫu
-                        .supervisorId(109) // Giảng viên hướng dẫn mẫu
-                        .studentName("Sinh viên " + i)
-                        .studentMajor("Công nghệ thông tin")
-                        .topicTitle("Đề tài mẫu " + i)
-                        .defenseOrder(i)
-                        .defenseTime(session.getStartTime())
-                        .durationMinutes(60)
-                        .status(com.phenikaa.evalservice.entity.StudentDefense.DefenseStatus.SCHEDULED)
-                        .build();
-                
-                studentDefenseRepository.save(studentDefense);
-                log.info("Created StudentDefense for session {} with student {}", 
-                    session.getSessionId(), studentDefense.getStudentId());
-            }
-        }
-        
-        log.info("=== END CREATING SAMPLE STUDENT DEFENSES ===");
-    }
+    
     
     public com.phenikaa.evalservice.entity.StudentDefense saveStudentDefense(com.phenikaa.evalservice.entity.StudentDefense studentDefense) {
         return studentDefenseRepository.save(studentDefense);
@@ -364,7 +320,6 @@ public class EvaluationService {
                 .orElseThrow(() -> new RuntimeException("Defense committee not found"));
         
         committee.setStatus(com.phenikaa.evalservice.entity.DefenseCommittee.CommitteeStatus.CONFIRMED);
-        committee.setRespondedAt(java.time.LocalDateTime.now());
         
         return defenseCommitteeRepository.save(committee);
     }
@@ -590,8 +545,6 @@ public class EvaluationService {
                 studentInfo.put("defenseTime", sd.getDefenseTime());
                 studentInfo.put("durationMinutes", sd.getDurationMinutes());
                 studentInfo.put("status", sd.getStatus());
-                studentInfo.put("score", sd.getScore());
-                studentInfo.put("comments", sd.getComments());
                 
                 // Thông tin buổi bảo vệ
                 if (sd.getDefenseSession() != null) {

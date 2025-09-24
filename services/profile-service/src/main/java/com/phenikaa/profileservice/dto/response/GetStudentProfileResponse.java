@@ -11,7 +11,6 @@ public class GetStudentProfileResponse {
     private Integer userId;
     private String fullName;
     private String major;
-    private String email;
     private String className;
     private String phoneNumber;
     private String avt;

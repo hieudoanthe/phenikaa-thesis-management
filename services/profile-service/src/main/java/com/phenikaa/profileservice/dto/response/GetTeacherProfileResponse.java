@@ -7,6 +7,7 @@ public class GetTeacherProfileResponse {
     private Integer userId;
     private String fullName;
     private String specialization;
+    private String degree;
     private String department;
     private String phoneNumber;
     private Integer maxStudents;

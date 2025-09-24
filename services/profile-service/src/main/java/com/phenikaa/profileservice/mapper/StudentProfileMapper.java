@@ -15,7 +15,6 @@ public interface StudentProfileMapper {
 
     @Mapping(source = "user.userId", target = "userId")
     @Mapping(source = "user.fullName", target = "fullName")
-    @Mapping(source = "studentProfile.email", target = "email")
     @Mapping(source = "studentProfile.major", target = "major")
     @Mapping(source = "studentProfile.className", target = "className")
     @Mapping(source = "studentProfile.phoneNumber", target = "phoneNumber")

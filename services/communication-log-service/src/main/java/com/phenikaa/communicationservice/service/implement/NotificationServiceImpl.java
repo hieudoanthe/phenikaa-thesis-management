@@ -1,7 +1,7 @@
 package com.phenikaa.communicationservice.service.implement;
 
-//import com.phenikaa.communicationservice.broadcaster.NotificationBroadcaster;
 import com.phenikaa.communicationservice.broadcaster.NotificationPublisher;
+import com.phenikaa.communicationservice.dto.request.NotificationRequest;
 import com.phenikaa.communicationservice.entity.Notification;
 import com.phenikaa.communicationservice.repository.NotificationRepository;
 import com.phenikaa.communicationservice.service.interfaces.NotificationService;
@@ -10,18 +10,24 @@ import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 
-@Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationPublisher notificationBroadcaster;
     private final ReactiveMongoTemplate mongoTemplate;
-//    private final NotificationBroadcaster notificationBroadcaster;
+
+    @Override
+    public void sendNotification(NotificationRequest request) {
+        createNotification(
+            request.getSenderId(),
+            request.getReceiverId(),
+            request.getMessage()
+        ).subscribe();
+    }
 
     @Override
     public Mono<Notification> createNotification(Integer senderId, Integer receiverId, String message) {

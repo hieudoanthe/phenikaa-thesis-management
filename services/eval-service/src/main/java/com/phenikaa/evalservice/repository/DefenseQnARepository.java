@@ -11,17 +11,8 @@ import java.util.List;
 @Repository
 public interface DefenseQnARepository extends JpaRepository<DefenseQnA, Integer> {
     
-    // Tìm Q&A theo topic
-    List<DefenseQnA> findByTopicId(Integer topicId);
-    
     // Tìm Q&A theo sinh viên
     List<DefenseQnA> findByStudentId(Integer studentId);
-    
-    // Tìm Q&A theo người hỏi
-    List<DefenseQnA> findByQuestionerId(Integer questionerId);
-    
-    // Tìm Q&A theo thư ký
-    List<DefenseQnA> findBySecretaryId(Integer secretaryId);
     
     // Tìm Q&A theo topic và sinh viên
     List<DefenseQnA> findByTopicIdAndStudentId(Integer topicId, Integer studentId);

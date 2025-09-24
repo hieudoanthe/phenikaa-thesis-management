@@ -33,7 +33,5 @@ public interface DefenseSessionRepository extends JpaRepository<DefenseSession, 
 
     // Tìm buổi bảo vệ theo địa điểm
     List<DefenseSession> findByLocation(String location);
-    
-    // Thống kê - đếm theo trạng thái
-    long countByStatus(DefenseSession.SessionStatus status);
+
 }

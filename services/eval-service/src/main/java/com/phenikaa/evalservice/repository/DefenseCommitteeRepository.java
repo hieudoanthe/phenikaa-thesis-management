@@ -17,24 +17,6 @@ public interface DefenseCommitteeRepository extends JpaRepository<DefenseCommitt
     // Tìm hội đồng theo giảng viên
     List<DefenseCommittee> findByLecturerId(Integer lecturerId);
 
-    // Tìm hội đồng theo vai trò
-    List<DefenseCommittee> findByRole(DefenseCommittee.CommitteeRole role);
-
-    // Tìm hội đồng theo trạng thái
-    List<DefenseCommittee> findByStatus(DefenseCommittee.CommitteeStatus status);
-
-    // Tìm hội đồng theo chuyên ngành
-    List<DefenseCommittee> findBySpecialization(String specialization);
-
-    // Tìm hội đồng theo khoa
-    List<DefenseCommittee> findByDepartment(String department);
-
-    // Kiểm tra giảng viên có trong hội đồng buổi nào không
-    boolean existsByLecturerIdAndDefenseSession_SessionId(Integer lecturerId, Integer sessionId);
-
     // Tìm hội đồng theo buổi và vai trò
     Optional<DefenseCommittee> findByDefenseSession_SessionIdAndRole(Integer sessionId, DefenseCommittee.CommitteeRole role);
-    
-    // Tìm hội đồng theo buổi và giảng viên
-    Optional<DefenseCommittee> findByDefenseSessionAndLecturerId(DefenseSession defenseSession, Integer lecturerId);
 }

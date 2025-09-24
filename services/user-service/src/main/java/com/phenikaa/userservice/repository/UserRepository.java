@@ -12,4 +12,5 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
     boolean existsByUsername(String username);
     boolean existsByUsernameAndPeriodId(String username, Integer periodId);
     List<User> findByPeriodId(Integer periodId);
+    List<User> findAllByUsername(String username);
 }

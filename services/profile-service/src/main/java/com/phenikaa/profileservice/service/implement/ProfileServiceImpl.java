@@ -163,19 +163,6 @@ public class ProfileServiceImpl implements ProfileService {
                 .toList();
     }
 
-    @Override
-    @Transactional
-    public void decreaseTeacherCapacity(Integer userId) {
-        TeacherProfile profile = teacherProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Teacher profile not found for userId=" + userId));
-
-        Integer current = profile.getMaxStudents();
-        if (current == null || current <= 0) {
-            throw new IllegalStateException("Giảng viên đã hết chỉ tiêu sinh viên");
-        }
-        profile.setMaxStudents(current - 1);
-        teacherProfileRepository.save(profile);
-    }
 
     // Statistics methods implementation
     @Override
@@ -201,23 +188,6 @@ public class ProfileServiceImpl implements ProfileService {
                     profileMap.put("userId", profile.getUserId());
                     profileMap.put("studentId", profile.getStudentId());
                     profileMap.put("major", profile.getMajor());
-                    profileMap.put("year", profile.getAcademicYear());
-                    profileMap.put("supervisorId", null); // Not available in current entity
-                    profileMap.put("createdAt", null); // Not available in current entity
-                    return profileMap;
-                })
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Map<String, Object>> getProfilesByYear(Integer year) {
-        return studentProfileRepository.findByAcademicYear(year).stream()
-                .map(profile -> {
-                    Map<String, Object> profileMap = new HashMap<>();
-                    profileMap.put("userId", profile.getUserId());
-                    profileMap.put("studentId", profile.getStudentId());
-                    profileMap.put("major", profile.getMajor());
-                    profileMap.put("year", profile.getAcademicYear());
                     profileMap.put("supervisorId", null); // Not available in current entity
                     profileMap.put("createdAt", null); // Not available in current entity
                     return profileMap;
@@ -234,7 +204,6 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public Map<String, Object> getProfileByUserId(Integer userId) {
-        // Try student profile first
         StudentProfile studentProfile = studentProfileRepository.findByUserId(userId).orElse(null);
         if (studentProfile != null) {
             Map<String, Object> profileMap = new HashMap<>();
@@ -242,9 +211,8 @@ public class ProfileServiceImpl implements ProfileService {
             profileMap.put("userId", studentProfile.getUserId());
             profileMap.put("studentId", studentProfile.getStudentId());
             profileMap.put("major", studentProfile.getMajor());
-            profileMap.put("year", studentProfile.getAcademicYear());
-            profileMap.put("supervisorId", null); // Not available in current entity
-            profileMap.put("createdAt", null); // Not available in current entity
+            profileMap.put("supervisorId", null);
+            profileMap.put("createdAt", null);
             return profileMap;
         }
 
@@ -254,7 +222,6 @@ public class ProfileServiceImpl implements ProfileService {
             Map<String, Object> profileMap = new HashMap<>();
             profileMap.put("type", "TEACHER");
             profileMap.put("userId", teacherProfile.getUserId());
-            profileMap.put("maxStudents", teacherProfile.getMaxStudents());
             profileMap.put("createdAt", null);
             return profileMap;
         }

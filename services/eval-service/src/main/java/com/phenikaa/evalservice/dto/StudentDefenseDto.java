@@ -49,9 +49,6 @@ public class StudentDefenseDto {
                 .defenseTime(entity.getDefenseTime())
                 .durationMinutes(entity.getDurationMinutes())
                 .status(entity.getStatus())
-                .score(entity.getScore())
-                .comments(entity.getComments())
-                .notes(entity.getNotes())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

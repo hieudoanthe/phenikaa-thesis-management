@@ -16,7 +16,7 @@ public class PeriodAutoCloseScheduler {
     /**
      * Chạy mỗi 5 phút để kiểm tra và tự động đóng các period đã hết hạn
      */
-    @Scheduled(fixedRate = 300000) // 5 phút = 300,000 ms
+    @Scheduled(fixedRate = 300000)
     public void autoCloseExpiredPeriods() {
         try {
             log.info("=== BẮT ĐẦU SCHEDULED TASK: TỰ ĐỘNG KẾT THÚC PERIOD ===");
@@ -30,7 +30,7 @@ public class PeriodAutoCloseScheduler {
     /**
      * Chạy mỗi giờ để kiểm tra chi tiết hơn
      */
-    @Scheduled(cron = "0 0 * * * *") // Mỗi giờ
+    @Scheduled(cron = "0 0 * * * *")
     public void hourlyPeriodCheck() {
         try {
             log.info("=== BẮT ĐẦU HOURLY CHECK: KIỂM TRA PERIOD ===");

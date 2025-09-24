@@ -21,14 +21,12 @@ public interface ProfileService {
     TeacherProfile updateTeacherProfile(UpdateTeacherProfileRequest request, Integer userId, MultipartFile avtFile);
     void deleteProfile(Integer userId);
     List<GetTeacherProfileResponse> getAllTeacherProfiles();
-    void decreaseTeacherCapacity(Integer userId);
     
     // Statistics methods
     Long getProfileCount();
     Long getStudentProfileCount();
     Long getLecturerProfileCount();
     List<Map<String, Object>> getProfilesByMajor(String major);
-    List<Map<String, Object>> getProfilesByYear(Integer year);
     List<Map<String, Object>> getStudentProfilesBySupervisor(Integer supervisorId);
     Map<String, Object> getProfileByUserId(Integer userId);
 }

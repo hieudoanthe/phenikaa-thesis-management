@@ -39,15 +39,6 @@ public class DefenseCommittee {
         REVIEWER       // Giảng viên phản biện
     }
 
-    @Column(name = "specialization")
-    private String specialization; // Chuyên ngành của giảng viên
-
-    @Column(name = "department")
-    private String department; // Khoa của giảng viên
-
-    @Column(name = "academic_title")
-    private String academicTitle; // Học hàm, học vị
-
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private CommitteeStatus status;
@@ -58,12 +49,6 @@ public class DefenseCommittee {
         DECLINED,      // Từ chối
         CANCELLED      // Đã hủy
     }
-
-    @Column(name = "invited_at")
-    private LocalDateTime invitedAt;
-
-    @Column(name = "responded_at")
-    private LocalDateTime respondedAt;
 
     @Column(name = "notes")
     private String notes;

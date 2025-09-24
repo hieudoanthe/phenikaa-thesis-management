@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/auth/**").permitAll()
                         // API for All requests
                         .pathMatchers("/internal/users/**").permitAll()
+                        .pathMatchers("/internal/periods/**").permitAll()
                         .pathMatchers("/internal/thesis/**").permitAll()
                         .pathMatchers("/internal/academic/**").permitAll()
                         .pathMatchers("/internal/assignments/**").permitAll()
@@ -64,6 +65,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/assign-service/**").hasAnyRole("STUDENT", "TEACHER")
                         .pathMatchers("/api/academic-config-service/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .pathMatchers("/api/communication-log-service/**").permitAll()
+                        .pathMatchers("/api/communication-service/**").permitAll()
                         // API of Chat and Notifications
                         .pathMatchers("/api/submission-service/**").permitAll()
                         .pathMatchers("/notifications/**").permitAll()

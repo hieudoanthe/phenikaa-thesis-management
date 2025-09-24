@@ -4,23 +4,29 @@ import com.phenikaa.dto.request.LoginRequest;
 import com.phenikaa.dto.request.SaveRefreshTokenRequest;
 import com.phenikaa.dto.response.AuthenticatedUserResponse;
 import com.phenikaa.dto.response.GetUserResponse;
+import com.phenikaa.userservice.service.interfaces.ImportUserService;
 import com.phenikaa.userservice.service.interfaces.RefreshTokenService;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 @RequestMapping("/internal/users")
 public class InternalUserController {
 
     private final UserService userService;
     private final RefreshTokenService refreshTokenService;
+    private final ImportUserService importUserService;
 
     @PostMapping("/verify")
     public ResponseEntity<AuthenticatedUserResponse> verifyUser(@RequestBody LoginRequest request) {
@@ -66,5 +72,24 @@ public class InternalUserController {
     @GetMapping("/by-role")
     public ResponseEntity<List<GetUserResponse>> getUsersByRole(@RequestParam String role) {
         return ResponseEntity.ok(userService.getUsersByRole(role));
+    }
+
+    @GetMapping("/students/by-period/{periodId}")
+    public ResponseEntity<?> getStudentsByPeriod(@PathVariable Integer periodId) {
+        try {
+            log.info("Lấy danh sách sinh viên theo periodId: {}", periodId);
+
+            List<Map<String, Object>> students = importUserService.getStudentsByPeriod(periodId);
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "data", students,
+                    "message", "Lấy danh sách sinh viên thành công"
+            ));
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy danh sách sinh viên theo period: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Lỗi khi lấy danh sách sinh viên: " + e.getMessage()));
+        }
     }
 }

@@ -28,6 +28,4 @@ public interface DefenseScheduleRepository extends JpaRepository<DefenseSchedule
     @Query("SELECT ds FROM DefenseSchedule ds WHERE ds.startDate >= :startDate AND ds.endDate <= :endDate")
     List<DefenseSchedule> findByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    // Tìm lịch bảo vệ theo người tạo
-    List<DefenseSchedule> findByCreatedBy(Integer createdBy);
 }

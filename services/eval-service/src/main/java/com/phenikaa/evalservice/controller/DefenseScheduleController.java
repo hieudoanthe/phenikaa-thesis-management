@@ -1,19 +1,14 @@
 package com.phenikaa.evalservice.controller;
 
 import com.phenikaa.evalservice.dto.DefenseScheduleDto;
-import com.phenikaa.evalservice.dto.StudentAssignmentRequest;
-import com.phenikaa.evalservice.dto.StudentAssignmentResult;
-import com.phenikaa.evalservice.entity.DefenseSchedule;
 import com.phenikaa.evalservice.service.StudentAssignmentService;
 import com.phenikaa.evalservice.service.DefenseScheduleService;
-import com.phenikaa.evalservice.service.DefenseSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/eval-service/admin")
@@ -21,30 +16,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DefenseScheduleController {
 
-    private final StudentAssignmentService studentAssignmentService;
     private final DefenseScheduleService defenseScheduleService;
-
-    /**
-     * Phân chia sinh viên vào các buổi bảo vệ
-     */
-    @PostMapping("/student-assignment")
-    public ResponseEntity<StudentAssignmentResult> assignStudentsToSessions(
-            @RequestBody StudentAssignmentRequest request) {
-        
-        log.info("Nhận request phân chia sinh viên cho schedule: {}", request.getScheduleId());
-        
-        try {
-            StudentAssignmentResult result = studentAssignmentService.assignStudentsToSessions(request);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("Lỗi khi phân chia sinh viên: ", e);
-            StudentAssignmentResult errorResult = new StudentAssignmentResult();
-            errorResult.setSuccess(false);
-            errorResult.setMessage("Lỗi hệ thống: " + e.getMessage());
-            errorResult.getErrors().add(e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResult);
-        }
-    }
 
     /**
      * Lấy danh sách lịch bảo vệ

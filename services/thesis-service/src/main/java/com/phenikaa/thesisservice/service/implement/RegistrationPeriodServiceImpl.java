@@ -3,9 +3,6 @@ package com.phenikaa.thesisservice.service.implement;
 import com.phenikaa.thesisservice.entity.RegistrationPeriod;
 import com.phenikaa.thesisservice.repository.RegistrationPeriodRepository;
 import com.phenikaa.thesisservice.service.interfaces.RegistrationPeriodService;
-import com.phenikaa.thesisservice.client.NotificationServiceClient;
-import com.phenikaa.thesisservice.client.UserServiceClient;
-import com.phenikaa.thesisservice.dto.request.NotificationRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +16,6 @@ import java.util.List;
 public class RegistrationPeriodServiceImpl implements RegistrationPeriodService {
 
     private final RegistrationPeriodRepository registrationPeriodRepository;
-    private final NotificationServiceClient notificationServiceClient;
-    private final UserServiceClient userServiceClient;
-
     @Override
     public RegistrationPeriod createPeriod(RegistrationPeriod period) {
         // Đảm bảo luôn tạo mới - xóa periodId nếu có
@@ -38,21 +32,7 @@ public class RegistrationPeriodServiceImpl implements RegistrationPeriodService 
         RegistrationPeriod savedPeriod = registrationPeriodRepository.save(period);
         System.out.println("Đã tạo đợt đăng ký thành công với ID: " + savedPeriod.getPeriodId()); // Debug log
 
-        // Broadcast notification email to all students using Feign
-        try {
-            List<com.phenikaa.dto.response.GetUserResponse> students = userServiceClient.getUsersByRole("STUDENT");
-            String msg = String.format("Đã mở đợt đăng ký: %s (%s - %s)",
-                    savedPeriod.getPeriodName(), savedPeriod.getStartDate(), savedPeriod.getEndDate());
-            for (var s : students) {
-                try {
-                    notificationServiceClient.sendNotification(new NotificationRequest(
-                            0, s.getUserId(), msg, "REGISTRATION_PERIOD"
-                    ));
-                } catch (Exception ignored) {}
-            }
-        } catch (Exception e) {
-            System.out.println("Broadcast to students failed: " + e.getMessage());
-        }
+        // Không gửi thông báo khi tạo thủ công
 
         return savedPeriod;
     }
@@ -140,6 +120,7 @@ public class RegistrationPeriodServiceImpl implements RegistrationPeriodService 
         if (period.canStart()) {
             period.setStatus(RegistrationPeriod.PeriodStatus.ACTIVE);
             registrationPeriodRepository.save(period);
+            // Không gửi thông báo khi admin nhấn bắt đầu thủ công
         } else {
             throw new RuntimeException("Cannot start period: " + period.getPeriodName());
         }

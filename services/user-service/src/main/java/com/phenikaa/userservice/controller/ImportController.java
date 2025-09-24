@@ -44,9 +44,19 @@ public class ImportController {
                         .body(Map.of("success", false, "message", "Chỉ chấp nhận file CSV"));
             }
 
-            ImportResultResponse result = importUserService.importStudentsFromCSV(file, periodId, academicYearId);
+            // Xử lý async để tránh timeout
+            CompletableFuture<ImportResultResponse> future = CompletableFuture.supplyAsync(() -> {
+                return importUserService.importStudentsFromCSV(file, periodId, academicYearId);
+            });
+            
+            // Chờ kết quả với timeout 15 phút
+            ImportResultResponse result = future.get(15, TimeUnit.MINUTES);
             
             return ResponseEntity.ok(result);
+        } catch (TimeoutException e) {
+            log.error("Import sinh viên timeout sau 15 phút");
+            return ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT)
+                    .body(Map.of("success", false, "message", "Import timeout - vui lòng thử lại với file nhỏ hơn"));
         } catch (Exception e) {
             log.error("Lỗi khi import sinh viên từ CSV: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -54,9 +64,7 @@ public class ImportController {
         }
     }
 
-    /**
-     * Lấy danh sách sinh viên theo đợt đăng ký
-     */
+
     @GetMapping("/students/by-period/{periodId}")
     public ResponseEntity<?> getStudentsByPeriod(@PathVariable Integer periodId) {
         try {
@@ -99,12 +107,12 @@ public class ImportController {
                 return importUserService.importTeachersFromCSV(file);
             });
             
-            // Chờ kết quả với timeout 5 phút
-            ImportResultResponse result = future.get(5, TimeUnit.MINUTES);
+            // Chờ kết quả với timeout 15 phút
+            ImportResultResponse result = future.get(15, TimeUnit.MINUTES);
             
             return ResponseEntity.ok(result);
         } catch (TimeoutException e) {
-            log.error("Import giảng viên timeout sau 5 phút");
+            log.error("Import giảng viên timeout sau 15 phút");
             return ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT)
                     .body(Map.of("success", false, "message", "Import timeout - vui lòng thử lại với file nhỏ hơn"));
         } catch (Exception e) {

@@ -6,6 +6,7 @@ import lombok.Data;
 public class UpdateTeacherProfileRequest {
     private Integer userId;
     private String specialization;
+    private String degree;
     private String department;
     private String phoneNumber;
     private Integer maxStudents;
