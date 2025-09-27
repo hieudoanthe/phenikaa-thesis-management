@@ -22,7 +22,7 @@ public class DefenseSession {
     @Column(name = "session_id")
     private Integer sessionId;
 
-    @Column(name = "session_name")
+    @Column(name = "session_name", columnDefinition = "nvarchar(255)")
     private String sessionName; // Ví dụ: "Buổi 1 - Sáng thứ 2"
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,11 +38,11 @@ public class DefenseSession {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    @Column(name = "location")
-    private String location; // Địa điểm cụ thể cho buổi này
+    @Column(name = "location", columnDefinition = "nvarchar(255)")
+    private String location;
 
     @Column(name = "max_students")
-    private Integer maxStudents; // Số sinh viên tối đa trong buổi này
+    private Integer maxStudents;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
@@ -56,7 +56,7 @@ public class DefenseSession {
         CANCELLED    // Đã hủy
     }
 
-    @Column(name = "notes")
+    @Column(name = "notes", columnDefinition = "nvarchar(255)")
     private String notes;
 
     @Column(name = "created_at")
@@ -79,7 +79,7 @@ public class DefenseSession {
             status = SessionStatus.PLANNING;
         }
         if (maxStudents == null) {
-            maxStudents = 10; // Mặc định 10 sinh viên/buổi
+            maxStudents = 5;
         }
     }
 

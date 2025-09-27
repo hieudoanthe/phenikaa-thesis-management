@@ -50,7 +50,7 @@ public class DefenseCommittee {
         CANCELLED      // Đã hủy
     }
 
-    @Column(name = "notes")
+    @Column(name = "notes", columnDefinition = "nvarchar(255)")
     private String notes;
 
     @Column(name = "created_at")

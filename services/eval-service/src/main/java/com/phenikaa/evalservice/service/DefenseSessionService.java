@@ -1,6 +1,7 @@
 package com.phenikaa.evalservice.service;
 
 import com.phenikaa.evalservice.dto.DefenseSessionDto;
+import com.phenikaa.evalservice.dto.DefenseSessionExportDto;
 import com.phenikaa.evalservice.entity.DefenseSession;
 import com.phenikaa.evalservice.entity.DefenseSchedule;
 import com.phenikaa.evalservice.entity.DefenseCommittee;
@@ -153,6 +154,63 @@ public class DefenseSessionService {
                 .orElseThrow(() -> new DefenseSessionNotFoundException(SESSION_NOT_FOUND_MESSAGE + sessionId));
         
         return DefenseSessionDto.fromEntity(session);
+    }
+
+    /**
+     * Xuất dữ liệu buổi bảo vệ (thông tin + hội đồng)
+     */
+    public DefenseSessionExportDto exportSession(Integer sessionId) {
+        DefenseSession session = defenseSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new DefenseSessionNotFoundException(SESSION_NOT_FOUND_MESSAGE + sessionId));
+        return toExportDto(session);
+    }
+
+    /**
+     * Xuất dữ liệu tất cả buổi bảo vệ
+     */
+    public List<DefenseSessionExportDto> exportAllSessions() {
+        return defenseSessionRepository.findAll().stream()
+                .map(this::toExportDto)
+                .collect(Collectors.toList());
+    }
+
+    private DefenseSessionExportDto toExportDto(DefenseSession session) {
+        Integer assigned = 0;
+        try {
+            assigned = session.getStudentDefenses() != null ? session.getStudentDefenses().size() : 0;
+        } catch (Exception ignored) {}
+
+        var committees = defenseCommitteeRepository.findByDefenseSession_SessionId(session.getSessionId())
+                .stream()
+                .map(c -> DefenseSessionExportDto.CommitteeMember.builder()
+                        .lecturerId(c.getLecturerId())
+                        .role(c.getRole())
+                        .build())
+                .toList();
+
+        String statusText;
+        switch (session.getStatus()) {
+            case PLANNING -> statusText = "Lập kế hoạch";
+            case SCHEDULED -> statusText = "Sắp diễn ra";
+            case IN_PROGRESS -> statusText = "Đang diễn ra";
+            case COMPLETED -> statusText = "Đã hoàn thành";
+            default -> statusText = "N/A";
+        }
+
+        return DefenseSessionExportDto.builder()
+                .sessionId(session.getSessionId())
+                .sessionName(session.getSessionName())
+                .universityName("Đại học Phenikaa")
+                .defenseDate(session.getDefenseDate())
+                .startTime(session.getStartTime())
+                .startTimeFormatted(session.getStartTime() != null ? session.getStartTime().toLocalTime().toString() : null)
+                .location(session.getLocation())
+                .status(statusText)
+                .maxStudents(session.getMaxStudents())
+                .assignedCount(assigned)
+                .capacity(session.getMaxStudents())
+                .committee(committees)
+                .build();
     }
 
     /**

@@ -75,8 +75,6 @@ public class RegistrationPeriodController {
         registrationPeriodService.autoCloseExpiredPeriods();
         return ResponseEntity.ok().build();
     }
-
-    // ===== LECTURER CAPACITY ENDPOINTS =====
     
     @GetMapping("/lecturer-capacity/{lecturerId}/{periodId}")
     public ResponseEntity<LecturerCapacity> getLecturerCapacity(

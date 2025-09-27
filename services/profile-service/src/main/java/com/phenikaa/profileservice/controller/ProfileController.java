@@ -66,7 +66,7 @@ public class ProfileController {
         return profileService.updateTeacherProfile(updateRequest, userId, avtFile);
     }
 
-    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER', 'STUDENT')")
     @GetMapping("/teacher/get-profile/{userId}")
     public ResponseEntity<GetTeacherProfileResponse> getTeacherProfile(@PathVariable Integer userId) {
         GetTeacherProfileResponse response = profileService.getTeacherProfile(userId);

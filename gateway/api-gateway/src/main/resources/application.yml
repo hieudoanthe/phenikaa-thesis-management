@@ -36,7 +36,7 @@ spring:
           #          uri: lb://thesis-service
           uri: ${THESIS_SERVICE_URL:https://thesis-service-production.up.railway.app}
           predicates:
-            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**, /internal/periods/**
+            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**, /internal/periods/**, /api/period-statistics/**
 
         - id: assign-service
           #          uri: lb://assign-service

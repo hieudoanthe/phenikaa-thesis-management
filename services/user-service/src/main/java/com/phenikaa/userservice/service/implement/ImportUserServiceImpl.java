@@ -141,8 +141,8 @@ public class ImportUserServiceImpl implements ImportUserService {
                 Map<String, Object> studentData = new HashMap<>();
                 studentData.put("userId", user.getUserId());
                 studentData.put("fullName", user.getFullName());
-                studentData.put("username", user.getUsername()); // Username chính là email
-                studentData.put("email", user.getUsername()); // Username = email (để hiển thị)
+                studentData.put("username", user.getUsername()); 
+                studentData.put("email", user.getUsername()); 
                 studentData.put("createdAt", user.getCreatedAt());
                 result.add(studentData);
             }

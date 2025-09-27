@@ -4,6 +4,7 @@ import com.phenikaa.thesisservice.entity.RegistrationPeriod;
 import com.phenikaa.thesisservice.repository.RegistrationPeriodRepository;
 import com.phenikaa.thesisservice.client.NotificationServiceClient;
 import com.phenikaa.thesisservice.client.UserServiceClient;
+import com.phenikaa.thesisservice.dto.response.StudentsByPeriodResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,15 +32,26 @@ public class PeriodAutoStartScheduler {
         for (RegistrationPeriod p : upcoming) {
             if (p.getStartDate() != null && !p.getStartDate().isAfter(now)) {
                 try {
-                    // Activate
+                    // Kiểm tra sinh viên trước khi kích hoạt
+                    StudentsByPeriodResponse response = userServiceClient.getStudentsByPeriod(p.getPeriodId());
+                    int studentCount = (response != null && response.isSuccess() && response.getData() != null)
+                            ? response.getData().size()
+                            : 0;
+                    log.info("API response for period {}: success={}, data size={}", p.getPeriodId(),
+                            response != null && response.isSuccess(), studentCount);
+
+                    if (studentCount <= 0) {
+                        // Chưa có sinh viên -> bỏ qua lần chạy này, sẽ thử lại ở tick sau
+                        log.info("Bỏ qua auto-start period {} vì chưa có sinh viên. Sẽ kiểm tra lại ở lần chạy sau.", p.getPeriodId());
+                        continue;
+                    }
+
+                    // Activate khi đã có sinh viên
                     p.setStatus(RegistrationPeriod.PeriodStatus.ACTIVE);
                     registrationPeriodRepository.save(p);
 
-                    // Fetch students of this period
-                    List<Map<String, Object>> students = userServiceClient.getStudentsByPeriod(p.getPeriodId());
-
-                    // Compose and send message per student via communication-log-service
-                    for (Map<String, Object> s : students) {
+                    // Gửi thông báo cho từng sinh viên
+                    for (Map<String, Object> s : response.getData()) {
                         try {
                             Integer userId = (Integer) s.get("userId");
                             com.phenikaa.thesisservice.dto.request.NotificationRequest req =
@@ -50,7 +62,8 @@ public class PeriodAutoStartScheduler {
                             log.warn("Không thể gửi thông báo cho user trong period {}: {}", p.getPeriodId(), ex.getMessage());
                         }
                     }
-                    log.info("Đã tự động kích hoạt period {} và gửi thông báo cho {} sinh viên", p.getPeriodId(), students.size());
+
+                    log.info("Đã tự động kích hoạt period {} và gửi thông báo cho {} sinh viên", p.getPeriodId(), studentCount);
                 } catch (Exception ex) {
                     log.error("Lỗi auto-start period {}: {}", p.getPeriodId(), ex.getMessage(), ex);
                 }

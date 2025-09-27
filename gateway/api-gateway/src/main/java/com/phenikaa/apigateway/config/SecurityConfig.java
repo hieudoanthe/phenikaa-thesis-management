@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .pathMatchers("/internal/evaluations/**").permitAll()
 
                         .pathMatchers("/api/statistics-service/**").hasAnyRole("TEACHER", "ADMIN")
+                        .pathMatchers("/api/period-statistics/**").hasRole("ADMIN")
                         //
                         .pathMatchers("/api/user-service/admin/**").hasAnyRole("ADMIN", "TEACHER")
                         .pathMatchers("/api/eval-service/admin/**").hasRole("ADMIN")

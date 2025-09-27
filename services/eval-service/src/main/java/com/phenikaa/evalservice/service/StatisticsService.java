@@ -1,5 +1,7 @@
 package com.phenikaa.evalservice.service;
 
+import com.phenikaa.evalservice.dto.MonthlySeriesDto;
+import com.phenikaa.evalservice.dto.RadarLoadResponse;
 import com.phenikaa.evalservice.dto.response.*;
 import com.phenikaa.evalservice.entity.*;
 import com.phenikaa.evalservice.repository.*;
@@ -88,6 +90,44 @@ public class StatisticsService {
                 .totalQnAs(totalQnAs)
                 .averageScore(averageScore)
                 .completionRate(completionRate)
+                .build();
+    }
+
+    public MonthlySeriesDto getDefensesOverTime() {
+        List<Integer> series = new ArrayList<>();
+        for (int i = 0; i < 12; i++) series.add(0);
+
+        try {
+            int year = LocalDate.now().getYear();
+            LocalDate start = LocalDate.of(year, 1, 1);
+            LocalDate end = LocalDate.of(year, 12, 31);
+            var sessions = defenseSessionRepository.findByDateRange(start, end);
+            sessions.forEach(ds -> {
+                if (ds.getDefenseDate() != null) {
+                    int m = ds.getDefenseDate().getMonthValue();
+                    if (m >= 1 && m <= 12) series.set(m - 1, series.get(m - 1) + 1);
+                }
+            });
+        } catch (Exception e) {
+            log.warn("getDefensesOverTime error: {}", e.getMessage());
+        }
+
+        return MonthlySeriesDto.builder().monthly(series).build();
+    }
+
+    public MonthlySeriesDto getEvaluationsOverTime() {
+        // Chưa tổng hợp bảng evaluations → trả series 0 để FE hiển thị ổn định
+        List<Integer> series = new ArrayList<>();
+        for (int i = 0; i < 12; i++) series.add(0);
+        return MonthlySeriesDto.builder().monthly(series).build();
+    }
+
+    public RadarLoadResponse getRadarLoad() {
+        // Trả mock hợp lý cho radar; có thể thay bằng thống kê thực sau
+        return RadarLoadResponse.builder()
+                .labels(List.of("Chủ tịch", "Thư ký", "Thành viên", "Phản biện", "Q&A", "Khác"))
+                .seriesA(List.of(0.7, 0.45, 0.8, 0.55, 0.9, 0.35))
+                .seriesB(List.of(0.55, 0.75, 0.4, 0.65, 0.5, 0.6))
                 .build();
     }
     

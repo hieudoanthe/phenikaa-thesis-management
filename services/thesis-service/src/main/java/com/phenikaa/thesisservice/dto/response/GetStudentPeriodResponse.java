@@ -12,11 +12,14 @@ import lombok.NoArgsConstructor;
 @Builder
 public class GetStudentPeriodResponse {
     private Integer registrationPeriodId;
-    private Integer studentId; // ID của sinh viên (suggestedBy hoặc studentId từ Register)
-    private Integer supervisorId; // ID của giảng viên hướng dẫn
-    private SuggestedTopic.SuggestionStatus suggestionStatus; // Trạng thái đề xuất (nếu có)
-    private String registrationType; // "REGISTERED" hoặc "SUGGESTED"
-    private Integer topicId; // ID của đề tài
-    private String topicTitle; // Tiêu đề đề tài
-    private String topicCode; // Mã đề tài
+    private Integer studentId;
+    private String username;
+    private String fullName;
+    private Integer supervisorId;
+    private String supervisorFullName;
+    private SuggestedTopic.SuggestionStatus suggestionStatus;
+    private String registrationType;
+    private Integer topicId;
+    private String topicTitle;
+    private String topicCode;
 }

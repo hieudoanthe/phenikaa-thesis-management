@@ -31,10 +31,11 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Mono<Notification> createNotification(Integer senderId, Integer receiverId, String message) {
+        String plainMessage = sanitizeForWebsocket(message);
         Notification noti = Notification.builder()
                 .senderId(senderId)
                 .receiverId(receiverId)
-                .message(message)
+                .message(plainMessage)
                 .read(false)
                 .createdAt(Instant.now())
                 .build();
@@ -87,6 +88,36 @@ public class NotificationServiceImpl implements NotificationService {
                                 }
                             });
                 });
+    }
+
+    /**
+     * Very small sanitizer to convert HTML email content to a readable WS text.
+     * - strips tags
+     * - collapses whitespace
+     * - unescapes some common entities
+     */
+    private String sanitizeForWebsocket(String input) {
+        if (input == null) return "";
+        String s = input;
+        // Remove style/script blocks quickly
+        s = s.replaceAll("(?is)<script[^>]*>.*?</script>", " ");
+        s = s.replaceAll("(?is)<style[^>]*>.*?</style>", " ");
+        // Replace <br> and block tags with line breaks
+        s = s.replaceAll("(?i)<br\\s*/?>", "\n");
+        s = s.replaceAll("(?i)</p>", "\n");
+        s = s.replaceAll("(?i)</div>", "\n");
+        // Strip all other tags
+        s = s.replaceAll("(?s)<[^>]+>", " ");
+        // Unescape a few common HTML entities
+        s = s.replace("&nbsp;", " ")
+             .replace("&amp;", "&")
+             .replace("&lt;", "<")
+             .replace("&gt;", ">")
+             .replace("&quot;", "\"")
+             .replace("&#39;", "'");
+        // Collapse excessive whitespace and trim
+        s = s.replaceAll("\\s+", " ").trim();
+        return s;
     }
 
 }

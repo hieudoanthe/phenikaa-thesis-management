@@ -1,14 +1,19 @@
 package com.phenikaa.evalservice.controller;
 
-import com.phenikaa.evalservice.dto.response.StatisticsOverviewResponse;
+import com.phenikaa.evalservice.dto.MonthlySeriesDto;
 import com.phenikaa.evalservice.dto.response.DefenseStatisticsResponse;
 import com.phenikaa.evalservice.dto.response.EvaluationStatisticsResponse;
 import com.phenikaa.evalservice.dto.response.ScoreStatisticsResponse;
+import com.phenikaa.evalservice.dto.RadarLoadResponse;
+import com.phenikaa.evalservice.dto.response.StatisticsOverviewResponse;
 import com.phenikaa.evalservice.service.StatisticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class StatisticsController {
-    
+
     private final StatisticsService statisticsService;
     
     /**
@@ -52,6 +57,14 @@ public class StatisticsController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    /**
+     * Chuỗi theo tháng: số buổi bảo vệ trong năm hiện tại
+     */
+    @GetMapping("/defenses-over-time")
+    public ResponseEntity<MonthlySeriesDto> defensesOverTime() {
+        return ResponseEntity.ok(statisticsService.getDefensesOverTime());
+    }
     
     /**
      * Lấy thống kê đánh giá
@@ -68,6 +81,22 @@ public class StatisticsController {
             log.error("Error getting evaluation statistics: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    /**
+     * Chuỗi theo tháng: số đánh giá (tạm thời 0)
+     */
+    @GetMapping("/evaluations-over-time")
+    public ResponseEntity<MonthlySeriesDto> evaluationsOverTime() {
+        return ResponseEntity.ok(statisticsService.getEvaluationsOverTime());
+    }
+
+    /**
+     * Dữ liệu radar
+     */
+    @GetMapping("/radar-load")
+    public ResponseEntity<RadarLoadResponse> radarLoad() {
+        return ResponseEntity.ok(statisticsService.getRadarLoad());
     }
     
     /**

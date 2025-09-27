@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -90,6 +92,51 @@ public class InternalUserController {
             log.error("Lỗi khi lấy danh sách sinh viên theo period: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "message", "Lỗi khi lấy danh sách sinh viên: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/students/count/by-period/{periodId}")
+    public ResponseEntity<?> getStudentCountByPeriod(@PathVariable Integer periodId) {
+        try {
+            log.info("Lấy tổng số sinh viên theo periodId: {}", periodId);
+
+            List<Map<String, Object>> students = importUserService.getStudentsByPeriod(periodId);
+            int totalCount = students.size();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "periodId", periodId,
+                    "totalStudents", totalCount,
+                    "message", "Lấy tổng số sinh viên thành công"
+            ));
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy tổng số sinh viên theo period: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Lỗi khi lấy tổng số sinh viên: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/students/unregistered/count/by-period/{periodId}")
+    public ResponseEntity<?> getUnregisteredStudentCountByPeriod(@PathVariable Integer periodId) {
+        try {
+            log.info("Lấy tổng số sinh viên chưa đăng ký theo periodId: {}", periodId);
+
+            // Lấy tất cả sinh viên trong hệ thống
+            List<GetUserResponse> allStudents = userService.getUsersByRole("STUDENT");
+            
+            
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "periodId", periodId,
+                    "unregisteredStudents", 0, 
+                    "totalStudents", allStudents.size(),
+                    "registeredStudents", 0,
+                    "message", "API chưa hoàn thiện - cần tích hợp với thesis-service"
+            ));
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy tổng số sinh viên chưa đăng ký theo period: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Lỗi khi lấy tổng số sinh viên chưa đăng ký: " + e.getMessage()));
         }
     }
 }

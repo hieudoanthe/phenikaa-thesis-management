@@ -1,8 +1,7 @@
 package com.phenikaa.evalservice.controller;
 
 import com.phenikaa.evalservice.dto.DefenseSessionDto;
-import com.phenikaa.evalservice.dto.StudentAssignmentRequest;
-import com.phenikaa.evalservice.dto.StudentAssignmentResult;
+import com.phenikaa.evalservice.dto.DefenseSessionExportDto;
 import com.phenikaa.evalservice.entity.DefenseSession;
 import com.phenikaa.evalservice.entity.StudentDefense;
 import com.phenikaa.evalservice.exception.DefenseSessionValidationException;
@@ -163,6 +162,34 @@ public class DefenseSessionController {
         } catch (Exception e) {
             log.error("Lỗi khi lấy buổi bảo vệ ID {}: ", sessionId, e);
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Xuất dữ liệu buổi bảo vệ (thông tin + hội đồng)
+     */
+    @GetMapping("/{sessionId}/export")
+    public ResponseEntity<DefenseSessionExportDto> exportSession(@PathVariable Integer sessionId) {
+        try {
+            DefenseSessionExportDto dto = defenseSessionService.exportSession(sessionId);
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            log.error("Lỗi khi export buổi bảo vệ ID {}: ", sessionId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Xuất dữ liệu tất cả buổi bảo vệ
+     */
+    @GetMapping("/export/all")
+    public ResponseEntity<List<DefenseSessionExportDto>> exportAllSessions() {
+        try {
+            List<DefenseSessionExportDto> list = defenseSessionService.exportAllSessions();
+            return ResponseEntity.ok(list);
+        } catch (Exception e) {
+            log.error("Lỗi khi export tất cả buổi bảo vệ: ", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 

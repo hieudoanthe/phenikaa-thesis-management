@@ -40,16 +40,4 @@ public class InternalStatisticsController {
         log.info("Getting user count by role: {}", role);
         return userService.getUserCountByRole(role);
     }
-    
-    @GetMapping("/get-user-count-by-status")
-    public Long getUserCountByStatus(@RequestParam Integer status) {
-        log.info("Getting user count by status: {}", status);
-        return userService.getUserCountByStatus(status);
-    }
-    
-    @GetMapping("/get-active-users-today")
-    public Long getActiveUsersToday() {
-        log.info("Getting active users today");
-        return userService.getActiveUsersToday();
-    }
 }
