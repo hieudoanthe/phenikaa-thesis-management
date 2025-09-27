@@ -11,7 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/academic-config-service")
 @RequiredArgsConstructor
-public class BaseController {
+public class AcademicController {
 
     private final AcademicService academicService;
 

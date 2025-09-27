@@ -41,6 +41,7 @@ public interface UserService {
     Long getUserCountByRole(String role);
     Long getUserCountByStatus(Integer status);
     Long getActiveUsersToday();
+    Long getStudentCountByPeriod(Integer periodId);
     
     // Group users by username with period info
     List<GetUserResponse> getAllUsersGroupedByUsername();

@@ -342,6 +342,20 @@ public class UserServiceImpl implements UserService {
         Specification<User> spec = UserSpecification.withLastLoginBetween(startOfDay, endOfDay);
         return userRepository.count(spec);
     }
+    
+    @Override
+    public Long getStudentCountByPeriod(Integer periodId) {
+        log.info("Getting student count by period: {}", periodId);
+        try {
+            // Tạo specification để lấy students trong period cụ thể
+            Specification<User> spec = UserSpecification.withRole(Role.RoleName.STUDENT)
+                .and(UserSpecification.withPeriodId(periodId));
+            return userRepository.count(spec);
+        } catch (Exception e) {
+            log.error("Error getting student count by period {}: {}", periodId, e.getMessage());
+            return 0L;
+        }
+    }
 
     /**
      * Tạo profile bất đồng bộ cho user mới

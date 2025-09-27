@@ -27,13 +27,11 @@ spring:
             - Path=/api/auth/**
 
         - id: user-service
-          #          uri: lb://user-service
           uri: ${USER_SERVICE_URL:https://user-service-production-495b.up.railway.app}
           predicates:
             - Path=/api/user-service/student/**, /api/user-service/admin/**, /api/teacher/**, /internal/users/**
 
         - id: thesis-service
-          #          uri: lb://thesis-service
           uri: ${THESIS_SERVICE_URL:https://thesis-service-production.up.railway.app}
           predicates:
             - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**, /internal/periods/**, /api/period-statistics/**
@@ -79,12 +77,6 @@ spring:
           #          uri: ${COMMUNICATION_LOG_SERVICE_WS_URL}
           predicates:
             - Path=/ws/notifications/**, /ws/chat/**
-
-        - id: statistics-service
-          uri: lb://statistics-service
-          #          uri: ${STATISTICS_SERVICE_URL}
-          predicates:
-            - Path=/api/statistics-service/**
 
 eureka:
   instance:

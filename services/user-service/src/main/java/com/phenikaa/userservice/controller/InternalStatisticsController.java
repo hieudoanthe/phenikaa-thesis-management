@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -16,19 +15,7 @@ import java.util.List;
 public class InternalStatisticsController {
     
     private final UserService userService;
-    
-    @GetMapping("/get-all-users")
-    public List<GetUserResponse> getAllUsers() {
-        log.info("Getting all users for statistics");
-        return userService.getAllUsers();
-    }
-    
-    @GetMapping("/get-users-by-role")
-    public List<GetUserResponse> getUsersByRole(@RequestParam String role) {
-        log.info("Getting users by role: {}", role);
-        return userService.getUsersByRole(role);
-    }
-    
+
     @GetMapping("/get-user-count")
     public Long getUserCount() {
         log.info("Getting total user count");
@@ -39,5 +26,11 @@ public class InternalStatisticsController {
     public Long getUserCountByRole(@RequestParam String role) {
         log.info("Getting user count by role: {}", role);
         return userService.getUserCountByRole(role);
+    }
+    
+    @GetMapping("/get-student-count-by-period")
+    public Long getStudentCountByPeriod(@RequestParam Integer periodId) {
+        log.info("Getting student count by period: {}", periodId);
+        return userService.getStudentCountByPeriod(periodId);
     }
 }

@@ -144,4 +144,12 @@ public class UserSpecification {
             return criteriaBuilder.and(startPredicate, endPredicate, notNullPredicate);
         };
     }
+    
+    /**
+     * Tạo specification để filter theo period ID
+     */
+    public static Specification<User> withPeriodId(Integer periodId) {
+        return (root, query, criteriaBuilder) -> 
+            criteriaBuilder.equal(root.get("periodId"), periodId);
+    }
 }
