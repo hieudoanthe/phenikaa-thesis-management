@@ -8,7 +8,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 // DTO class for period statistics summary
 class PeriodStatisticsSummary {
@@ -80,6 +88,17 @@ public class InternalStatisticsController {
     
     private final RegisterRepository registerRepository;
     private final SuggestRepository suggestRepository;
+
+    // DTO cho time-series point
+    static class TimeSeriesPoint {
+        public final String date;
+        public final long count;
+
+        TimeSeriesPoint(String date, long count) {
+            this.date = date;
+            this.count = count;
+        }
+    }
 
     @GetMapping("/get-registered-students-count-by-period")
     public Long getRegisteredStudentsCountByPeriod(@RequestParam Integer periodId) {
@@ -248,5 +267,91 @@ public class InternalStatisticsController {
             .setSuggestionStats(totalSuggestions, approvedSuggestions, pendingSuggestions, rejectedSuggestions)
             .setTotalUniqueStudents(totalUniqueStudents)
             .build();
+    }
+
+    // ========== Registrations Time Series ==========
+    @GetMapping("/registrations/time-series")
+    public List<TimeSeriesPoint> getRegistrationsTimeSeries(
+            @RequestParam(required = false) Instant start,
+            @RequestParam(required = false) Instant end,
+            @RequestParam(required = false) Integer periodId
+    ) {
+        // Mặc định: 30 ngày gần nhất
+        Instant now = Instant.now();
+        Instant defaultEnd = end != null ? end : now;
+        Instant defaultStart = start != null ? start : defaultEnd.minusSeconds(30L * 24 * 60 * 60);
+
+        List<Register> inRange = registerRepository.findByRegisteredAtBetween(defaultStart, defaultEnd);
+
+        // Lọc theo period nếu có
+        if (periodId != null) {
+            inRange = inRange.stream()
+                    .filter(r -> Objects.equals(r.getRegistrationPeriodId(), periodId))
+                    .toList();
+        }
+
+        // Gom nhóm theo ngày (theo múi giờ hệ thống), đếm số lượng
+        Map<LocalDate, Long> byDate = new HashMap<>();
+        ZoneId zone = ZoneId.systemDefault();
+        for (Register r : inRange) {
+            LocalDate d = r.getRegisteredAt().atZone(zone).toLocalDate();
+            byDate.put(d, byDate.getOrDefault(d, 0L) + 1);
+        }
+
+        // Bổ sung các ngày trống trong khoảng với count = 0 để vẽ biểu đồ liên tục
+        LocalDate startDate = defaultStart.atZone(zone).toLocalDate();
+        LocalDate endDate = defaultEnd.atZone(zone).toLocalDate();
+        LocalDate cursor = startDate;
+        while (!cursor.isAfter(endDate)) {
+            byDate.putIfAbsent(cursor, 0L);
+            cursor = cursor.plusDays(1);
+        }
+
+        // Trả về danh sách đã sắp xếp theo ngày
+        List<TimeSeriesPoint> results = new ArrayList<>();
+        byDate.entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .forEach(e -> results.add(new TimeSeriesPoint(e.getKey().toString(), e.getValue())));
+        return results;
+    }
+
+    // ========== Suggestions Time Series ==========
+    @GetMapping("/suggestions/time-series")
+    public List<TimeSeriesPoint> getSuggestionsTimeSeries(
+            @RequestParam(required = false) Instant start,
+            @RequestParam(required = false) Instant end,
+            @RequestParam(required = false) Integer periodId
+    ) {
+        Instant now = Instant.now();
+        Instant defaultEnd = end != null ? end : now;
+        Instant defaultStart = start != null ? start : defaultEnd.minusSeconds(30L * 24 * 60 * 60);
+
+        // Load suggestions; SuggestRepository lacks time-based methods, filter in-memory
+        List<SuggestedTopic> all = (periodId != null)
+                ? suggestRepository.findByRegistrationPeriodId(periodId)
+                : suggestRepository.findAll();
+
+        ZoneId zone = ZoneId.systemDefault();
+        Map<LocalDate, Long> byDate = new HashMap<>();
+        for (SuggestedTopic s : all) {
+            if (s.getCreatedAt() == null) continue;
+            if (s.getCreatedAt().isBefore(defaultStart) || s.getCreatedAt().isAfter(defaultEnd)) continue;
+            LocalDate d = s.getCreatedAt().atZone(zone).toLocalDate();
+            byDate.put(d, byDate.getOrDefault(d, 0L) + 1);
+        }
+
+        LocalDate startDate = defaultStart.atZone(zone).toLocalDate();
+        LocalDate endDate = defaultEnd.atZone(zone).toLocalDate();
+        LocalDate cursor = startDate;
+        while (!cursor.isAfter(endDate)) {
+            byDate.putIfAbsent(cursor, 0L);
+            cursor = cursor.plusDays(1);
+        }
+
+        List<TimeSeriesPoint> results = new ArrayList<>();
+        byDate.entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .forEach(e -> results.add(new TimeSeriesPoint(e.getKey().toString(), e.getValue())));
+        return results;
     }
 }
