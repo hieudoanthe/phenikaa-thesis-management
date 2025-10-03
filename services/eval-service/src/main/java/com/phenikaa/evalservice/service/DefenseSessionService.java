@@ -38,6 +38,11 @@ public class DefenseSessionService {
     public DefenseSessionDto createSession(DefenseSessionDto sessionDto) {
         log.info("Tạo buổi bảo vệ mới: {}", sessionDto.getSessionName());
         
+        // Chuẩn hóa dữ liệu đầu vào: nếu không có endTime, mặc định +1 giờ sau startTime
+        if (sessionDto.getStartTime() != null && sessionDto.getEndTime() == null) {
+            sessionDto.setEndTime(sessionDto.getStartTime().plusHours(1));
+        }
+
         // Validate dữ liệu đầu vào
         validateSessionData(sessionDto);
         
@@ -84,6 +89,12 @@ public class DefenseSessionService {
         
         DefenseSession existingSession = defenseSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new DefenseSessionNotFoundException(SESSION_NOT_FOUND_MESSAGE + sessionId));
+
+        // Chuẩn hóa: nếu không có endTime hoặc endTime không sau startTime thì mặc định +1 giờ
+        if (sessionDto.getStartTime() != null && (sessionDto.getEndTime() == null ||
+                !sessionDto.getStartTime().isBefore(sessionDto.getEndTime()))) {
+            sessionDto.setEndTime(sessionDto.getStartTime().plusHours(1));
+        }
 
         // Validate dữ liệu đầu vào (loại trừ session hiện tại khỏi kiểm tra xung đột)
         validateSessionDataForUpdate(sessionDto, sessionId);
@@ -369,10 +380,11 @@ public class DefenseSessionService {
             throw new DefenseSessionValidationException("Số lượng giảng viên phản biện không được vượt quá 1 người");
         }
 
-        // Validate thời gian
-        if (sessionDto.getStartTime() != null && sessionDto.getEndTime() != null && 
-            sessionDto.getStartTime().isAfter(sessionDto.getEndTime())) {
-            throw new DefenseSessionValidationException("Thời gian bắt đầu không được sau thời gian kết thúc");
+        // Validate thời gian (endTime phải sau startTime)
+        if (sessionDto.getStartTime() != null && sessionDto.getEndTime() != null) {
+            if (!sessionDto.getStartTime().isBefore(sessionDto.getEndTime())) {
+                throw new DefenseSessionValidationException("Thời gian kết thúc phải sau thời gian bắt đầu");
+            }
         }
 
         // Validate phòng không trùng cùng thời gian
@@ -396,10 +408,11 @@ public class DefenseSessionService {
             throw new DefenseSessionValidationException("Số lượng giảng viên phản biện không được vượt quá 1 người");
         }
 
-        // Validate thời gian
-        if (sessionDto.getStartTime() != null && sessionDto.getEndTime() != null && 
-            sessionDto.getStartTime().isAfter(sessionDto.getEndTime())) {
-            throw new DefenseSessionValidationException("Thời gian bắt đầu không được sau thời gian kết thúc");
+        // Validate thời gian (endTime phải sau startTime)
+        if (sessionDto.getStartTime() != null && sessionDto.getEndTime() != null) {
+            if (!sessionDto.getStartTime().isBefore(sessionDto.getEndTime())) {
+                throw new DefenseSessionValidationException("Thời gian kết thúc phải sau thời gian bắt đầu");
+            }
         }
 
         // Validate phòng không trùng cùng thời gian (loại trừ session hiện tại)
@@ -540,7 +553,9 @@ public class DefenseSessionService {
         }
         
         // Hai khoảng thời gian trùng lặp nếu:
-        // start1 < end2 AND start2 < end1
-        return start1.isBefore(end2) && start2.isBefore(end1);
+        // 1) start1 < end2 AND start2 < end1 (chồng lên nhau)
+        // 2) Hoặc bắt đầu đúng cùng thời điểm (start1 == start2)
+        return (start1.isBefore(end2) && start2.isBefore(end1))
+                || start1.equals(start2);
     }
 }

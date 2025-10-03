@@ -27,10 +27,14 @@ public interface ThesisServiceClient {
     List<Map<String, Object>> getSuggestedStudentsByPeriod(@PathVariable String periodId);
 
     /**
-     * Lấy danh sách tất cả sinh viên (đăng ký + đề xuất) theo đợt đăng ký
+     * Lấy danh sách tất cả sinh viên (đăng ký + đề xuất) theo đợt đăng ký (có phân trang)
+     * Trả về wrapper dạng { content, page, size, totalElements, totalPages }
      */
     @GetMapping("/api/thesis-service/student-period/all/{periodId}")
-    List<Map<String, Object>> getAllStudentsByPeriod(@PathVariable String periodId);
+    Map<String, Object> getAllStudentsByPeriod(
+            @PathVariable String periodId,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size);
 
     /**
      * Lấy danh sách sinh viên theo đợt đăng ký (alias cho /all/{periodId})

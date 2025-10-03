@@ -34,9 +34,12 @@ public class AutoAssignService {
                         .build();
             }
 
-            // 1) Lấy sinh viên theo đợt
-            List<Map<String, Object>> students = thesisServiceClient.getAllStudentsByPeriod(String.valueOf(req.getPeriodId()));
-            if (students == null) students = Collections.emptyList();
+            // 1) Lấy sinh viên theo đợt (phân trang - lấy nhiều nhất 1000 dòng cho preview)
+            Map<String, Object> page = thesisServiceClient.getAllStudentsByPeriod(String.valueOf(req.getPeriodId()), 0, 1000);
+            Object content = page != null ? page.get("content") : null;
+            List<Map<String, Object>> students = (content instanceof List)
+                    ? (List<Map<String, Object>>) content
+                    : Collections.emptyList();
 
             // 2) Lấy danh sách giảng viên (từ profile-service per lecturerId khi cần) – ở đây lazy khi match
 
@@ -117,7 +120,7 @@ public class AutoAssignService {
                 // Pha 1: exact match
                 List<SessionPreviewDto> exact = available.stream()
                         .filter(s -> hasExactMatchReviewer(sessionReviewers, reviewerSpecialization, toIntSafe(s.getSessionId()), major))
-                        .sorted(Comparator.comparingInt(sizeFn))
+                        .sorted(Comparator.comparingInt(sizeFn).reversed())
                         .collect(Collectors.toList());
                 SessionPreviewDto ses = null;
                 if (!exact.isEmpty()) {
@@ -126,14 +129,14 @@ public class AutoAssignService {
                     // Pha 2: related match (AI <-> Data)
                     List<SessionPreviewDto> related = available.stream()
                             .filter(s -> hasRelatedMatchReviewer(sessionReviewers, reviewerSpecialization, toIntSafe(s.getSessionId()), major))
-                            .sorted(Comparator.comparingInt(sizeFn))
+                            .sorted(Comparator.comparingInt(sizeFn).reversed())
                             .collect(Collectors.toList());
                     if (!related.isEmpty()) {
                         ses = related.get(0);
                     } else {
                         // Pha 3: bất kỳ buổi còn chỗ
                         ses = available.stream()
-                                .sorted(Comparator.comparingInt(sizeFn))
+                                .sorted(Comparator.comparingInt(sizeFn).reversed())
                                 .findFirst()
                                 .orElse(null);
                     }

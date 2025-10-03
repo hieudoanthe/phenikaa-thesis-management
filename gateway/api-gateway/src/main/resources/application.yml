@@ -99,3 +99,9 @@ logging:
   level:
     org.springframework.security: WARN
     org.springframework.web.socket: DEBUG
+    org.springframework.cloud.loadbalancer: DEBUG
+    org.springframework.cloud.circuitbreaker: WARN
+
+resilience4j:
+  circuitbreaker:
+    instances: {}
