@@ -34,7 +34,7 @@ public class ReportSubmissionRequest {
     @NotNull(message = "Loại submission không được để trống")
     private Integer submissionType; // 1: Báo cáo tiến độ, 2: Báo cáo cuối kỳ, 3: Báo cáo khác
     
-    private LocalDate deadline;
+    private LocalDate deadline; // Optional for updates, required for creates
     
     private Integer status = 1; // 1: Đã nộp, 2: Đang xem xét, 3: Đã duyệt, 4: Từ chối
     

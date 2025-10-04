@@ -13,6 +13,9 @@ import java.util.Optional;
 @Repository
 public interface StudentDefenseRepository extends JpaRepository<StudentDefense, Integer> {
 
+    // Tìm sinh viên theo ID sinh viên
+    List<StudentDefense> findByStudentId(Integer studentId);
+
     // Tìm sinh viên theo đề tài
     Optional<StudentDefense> findByTopicId(Integer topicId);
 

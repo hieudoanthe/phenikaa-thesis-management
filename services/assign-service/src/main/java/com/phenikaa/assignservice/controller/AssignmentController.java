@@ -13,7 +13,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/assign-service")
@@ -187,6 +191,56 @@ public class AssignmentController {
             log.error("Lỗi khi lấy assignments theo assignedBy: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Không thể lấy assignments: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Lấy deadlines của sinh viên dạng lịch trình
+     */
+    @GetMapping("/student/{studentId}/deadlines")
+    public ResponseEntity<?> getStudentDeadlinesSchedule(@PathVariable Integer studentId) {
+        try {
+            log.info("Nhận request lấy lịch deadlines cho sinh viên: {}", studentId);
+            
+            List<AssignmentResponse> assignments = assignmentService.getAssignmentsByAssignedTo(studentId);
+            
+            // Chuyển đổi thành format phù hợp cho schedule
+            List<Map<String, Object>> scheduleItems = assignments.stream()
+                    .filter(assignment -> assignment.getDueDate() != null) // Chỉ lấy assignments có deadline
+                    .map(assignment -> {
+                        Map<String, Object> scheduleItem = new HashMap<>();
+                        scheduleItem.put("assignmentId", assignment.getAssignmentId());
+                        scheduleItem.put("eventType", "deadline");
+                        scheduleItem.put("title", assignment.getTitle());
+                        scheduleItem.put("description", assignment.getDescription());
+                        scheduleItem.put("dueDate", assignment.getDueDate().toString());
+                        scheduleItem.put("dueTime", "23:59"); // Default deadline time
+                        scheduleItem.put("priority", assignment.getPriority());
+                        scheduleItem.put("status", getDeadlineStatus(assignment.getDueDate()));
+                        scheduleItem.put("location", "Online"); // Deadlines thường online
+                        return scheduleItem;
+                    })
+                    .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(Map.of("success", true, "data", scheduleItems));
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy lịch deadlines cho sinh viên {}: {}", studentId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Không thể lấy lịch deadlines: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Xác định trạng thái deadline
+     */
+    private String getDeadlineStatus(LocalDate dueDate) {
+        LocalDate today = LocalDate.now();
+        if (dueDate.isBefore(today)) {
+            return "completed"; // Đã qua hạn
+        } else if (dueDate.isBefore(today.plusDays(3))) {
+            return "urgent"; // Có hạn trong 3 ngày
+        } else {
+            return "upcoming"; // Còn xa
         }
     }
 

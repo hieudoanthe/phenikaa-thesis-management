@@ -71,4 +71,10 @@ public interface ReportSubmissionRepository extends JpaRepository<ReportSubmissi
 
     // Tìm báo cáo theo topic và trạng thái
     List<ReportSubmission> findByTopicIdAndStatus(Integer topicId, Integer status);
+    
+    // Tìm báo cáo mới nhất của một người dùng
+    Optional<ReportSubmission> findFirstBySubmittedByOrderBySubmittedAtDesc(Integer submittedBy);
+    
+    // Kiểm tra sự tồn tại của báo cáo theo người nộp và loại
+    boolean existsBySubmittedByAndSubmissionType(Integer submittedBy, Integer submissionType);
 }

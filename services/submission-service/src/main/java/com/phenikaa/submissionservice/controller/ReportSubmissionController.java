@@ -3,6 +3,7 @@ package com.phenikaa.submissionservice.controller;
 import com.phenikaa.submissionservice.dto.request.ReportSubmissionRequest;
 import com.phenikaa.submissionservice.dto.request.SubmissionFilterRequest;
 import com.phenikaa.submissionservice.dto.response.ReportSubmissionResponse;
+import com.phenikaa.submissionservice.dto.response.SubmissionStatusResponse;
 import com.phenikaa.submissionservice.service.ReportSubmissionService;
 import com.phenikaa.submissionservice.service.interfaces.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
@@ -276,6 +277,18 @@ public class ReportSubmissionController {
                 return MediaType.IMAGE_GIF;
             default:
                 return MediaType.APPLICATION_OCTET_STREAM;
+        }
+    }
+
+    @GetMapping("/submissions/status/{userId}")
+    public ResponseEntity<SubmissionStatusResponse> getSubmissionStatus(@PathVariable Integer userId) {
+        try {
+            log.info("Getting submission status for user: {}", userId);
+            SubmissionStatusResponse response = reportSubmissionService.checkSubmissionStatus(userId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error getting submission status for user {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

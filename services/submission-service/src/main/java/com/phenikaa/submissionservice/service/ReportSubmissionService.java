@@ -1,10 +1,14 @@
 package com.phenikaa.submissionservice.service;
 
-import com.phenikaa.submissionservice.client.CommunicationServiceClient;
+import com.phenikaa.submissionservice.client.NotificationServiceClient;
+import com.phenikaa.submissionservice.client.UserServiceClient;
+import com.phenikaa.dto.response.GetUserResponse;
 import com.phenikaa.submissionservice.dto.request.ReportSubmissionRequest;
 import com.phenikaa.submissionservice.dto.response.ReportSubmissionResponse;
+import com.phenikaa.submissionservice.dto.response.SubmissionStatusResponse;
 import com.phenikaa.submissionservice.entity.ReportSubmission;
 import com.phenikaa.submissionservice.exception.ReportSubmissionException;
+import com.phenikaa.submissionservice.exception.SubmissionStatusException;
 import com.phenikaa.submissionservice.repository.ReportSubmissionRepository;
 import com.phenikaa.submissionservice.service.interfaces.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 
 import com.phenikaa.submissionservice.dto.request.SubmissionFilterRequest;
@@ -27,17 +32,20 @@ import com.phenikaa.submissionservice.dto.request.SubmissionFilterRequest;
 public class ReportSubmissionService {
     
     private final ReportSubmissionRepository reportSubmissionRepository;
-    private final CommunicationServiceClient communicationServiceClient;
+    private final NotificationServiceClient communicationServiceClient;
     private final FileStorageService cloudinaryService;
+    private final UserServiceClient userServiceClient;
     
     public ReportSubmissionService(
             ReportSubmissionRepository reportSubmissionRepository,
-            CommunicationServiceClient communicationServiceClient,
-            @Qualifier("cloudinaryFileService") FileStorageService cloudinaryService
+            NotificationServiceClient communicationServiceClient,
+            @Qualifier("cloudinaryFileService") FileStorageService cloudinaryService,
+            UserServiceClient userServiceClient
     ) {
         this.reportSubmissionRepository = reportSubmissionRepository;
         this.communicationServiceClient = communicationServiceClient;
         this.cloudinaryService = cloudinaryService;
+        this.userServiceClient = userServiceClient;
     }
     
     // Constants
@@ -97,7 +105,10 @@ public class ReportSubmissionService {
             submission.setReportTitle(request.getReportTitle());
             submission.setDescription(request.getDescription());
             submission.setSubmissionType(request.getSubmissionType());
-            submission.setDeadline(request.getDeadline());
+            // Only update deadline if provided (for update operations, deadline might be null)
+            if (request.getDeadline() != null) {
+                submission.setDeadline(request.getDeadline());
+            }
             submission.setIsFinal(request.getIsFinal());
             
             // Xử lý file mới nếu có
@@ -265,38 +276,6 @@ public class ReportSubmissionService {
         }
     }
     
-    /**
-     * Convert entity to response DTO
-     */
-    private ReportSubmissionResponse convertToResponse(ReportSubmission submission) {
-        ReportSubmissionResponse response = ReportSubmissionResponse.builder()
-                .submissionId(submission.getSubmissionId())
-                .topicId(submission.getTopicId())
-                .submittedBy(submission.getSubmittedBy())
-                .assignmentId(submission.getAssignmentId())
-                .reportTitle(submission.getReportTitle())
-                .description(submission.getDescription())
-                .filePath(submission.getFilePath())
-                .submissionType(submission.getSubmissionType())
-                .submittedAt(submission.getSubmittedAt())
-                .deadline(submission.getDeadline())
-                .status(submission.getStatus())
-                .isFinal(submission.getIsFinal())
-                .build();
-        
-        // Thông tin bổ sung sẽ được tự động tính toán bởi getter methods
-        
-        // Thêm phản hồi nếu có
-        if (submission.getFeedbacks() != null && !submission.getFeedbacks().isEmpty()) {
-            response.setFeedbackCount(submission.getFeedbacks().size());
-            response.setHasFeedback(true);
-        } else {
-            response.setFeedbackCount(0);
-            response.setHasFeedback(false);
-        }
-        
-        return response;
-    }
     
     /**
      * Gửi thông báo qua communication-log-service
@@ -324,5 +303,189 @@ public class ReportSubmissionService {
             log.error("Error sending notification for submission {}: {}", 
                 submission.getSubmissionId(), e.getMessage());
         }
+    }
+
+    /**
+     * Check submission status for thesis progress calculation
+     */
+    public SubmissionStatusResponse checkSubmissionStatus(Integer userId) {
+        try {
+            log.info("Checking submission status for user: {}", userId);
+            
+            // Get latest submission by user
+            Optional<ReportSubmission> latestSubmission = 
+                reportSubmissionRepository.findFirstBySubmittedByOrderBySubmittedAtDesc(userId);
+            
+            // Check milestone completion based on submissionType
+            boolean softCopySubmitted = reportSubmissionRepository.existsBySubmittedByAndSubmissionType(userId, 2); // Báo cáo KLTN PDF
+            boolean hardCopySubmitted = reportSubmissionRepository.existsBySubmittedByAndSubmissionType(userId, 3); // Bản cứng
+            boolean finalCopySubmitted = reportSubmissionRepository.existsBySubmittedByAndSubmissionType(userId, 4); // Bìa đỏ
+            
+            // Defense completion - TODO: Currently hardcoded to false, integrate with eval-service to check actual defense status
+            // This would require calling eval-service API to check if student has successfully completed defense session
+            boolean defenseCompleted = false;
+            
+            // Calculate progress
+            int completedMilestones = 0;
+            if (softCopySubmitted) completedMilestones++;
+            if (hardCopySubmitted) completedMilestones++;
+            if (defenseCompleted) completedMilestones++;
+            if (finalCopySubmitted) completedMilestones++;
+            
+            int totalMilestones = 4;
+            int progressPercentage = Math.round((completedMilestones * 100.0f) / totalMilestones);
+            
+            // Get submission type descriptions
+            String lastSubmissionTypeDesc = "";
+            LocalDateTime lastSubmissionDate = null;
+            Integer lastSubmissionType = null;
+            Integer lastSubmittedAssignmentId = null;
+            
+            if (latestSubmission.isPresent()) {
+                ReportSubmission latest = latestSubmission.get();
+                lastSubmissionDate = latest.getSubmittedAt();
+                lastSubmissionType = latest.getSubmissionType();
+                lastSubmissionTypeDesc = getSubmissionTypeDescription(latest.getSubmissionType());
+                lastSubmittedAssignmentId = latest.getAssignmentId();
+            }
+            
+            // Build milestones detail
+            List<SubmissionStatusResponse.MilestoneDetail> milestones = List.of(
+                SubmissionStatusResponse.MilestoneDetail.builder()
+                    .id("soft_copy_submission")
+                    .name("Nộp bản mềm PDF")
+                    .weight(25)
+                    .completed(softCopySubmitted)
+                    .completedAt(softCopySubmitted ? lastSubmissionDate : null)
+                    .description("Báo cáo KLTN dưới dạng PDF")
+                    .build(),
+                SubmissionStatusResponse.MilestoneDetail.builder()
+                    .id("hard_copy_submission")
+                    .name("Nộp bản cứng")
+                    .weight(25)
+                    .completed(hardCopySubmitted)
+                    .completedAt(hardCopySubmitted ? lastSubmissionDate : null)
+                    .description("Bản cứng của đồ án")
+                    .build(),
+                SubmissionStatusResponse.MilestoneDetail.builder()
+                    .id("thesis_defense")
+                    .name("Bảo vệ luận văn")
+                    .weight(30)
+                    .completed(defenseCompleted)
+                    .completedAt(defenseCompleted ? lastSubmissionDate : null)
+                    .description("Tham gia bảo vệ đồ án")
+                    .build(),
+                SubmissionStatusResponse.MilestoneDetail.builder()
+                    .id("final_hard_copy")
+                    .name("Nộp bản cứng bìa đỏ")
+                    .weight(20)
+                    .completed(finalCopySubmitted)
+                    .completedAt(finalCopySubmitted ? lastSubmissionDate : null)
+                    .description("Bản cứng với bìa đỏ sau khi bảo vệ")
+                    .build()
+            );
+            
+            return SubmissionStatusResponse.builder()
+                .userId(userId)
+                .username("Student") // Default username
+                .softCopySubmitted(softCopySubmitted)
+                .hardCopySubmitted(hardCopySubmitted)
+                .defenseCompleted(defenseCompleted)
+                .finalCopySubmitted(finalCopySubmitted)
+                .progressPercentage(progressPercentage)
+                .completedMilestones(completedMilestones)
+                .totalMilestones(totalMilestones)
+                .lastSubmissionDate(lastSubmissionDate)
+                .lastSubmissionType(lastSubmissionType)
+                .lastSubmissionTypeDescription(lastSubmissionTypeDesc)
+                .lastSubmittedAssignmentId(lastSubmittedAssignmentId)
+                .milestones(milestones)
+                .build();
+                
+        } catch (Exception e) {
+            log.error("Error checking submission status for user {}: {}", userId, e.getMessage(), e);
+            throw new SubmissionStatusException("Failed to check submission status for user: " + userId, e);
+        }
+    }
+    
+    /**
+     * Get submission type description
+     */
+    private String getSubmissionTypeDescription(Integer submissionType) {
+        return switch (submissionType) {
+            case 1 -> "Báo cáo tiến độ";
+            case 2 -> "Báo cáo KLTN (PDF)";
+            case 3 -> "Bản cứng";
+            case 4 -> "Bản cứng bìa đỏ";
+            case 5 -> "Báo cáo đánh giá";
+            default -> "Không xác định";
+        };
+    }
+    
+    /**
+     * Convert entity to response DTO with populated studentName
+     */
+    private ReportSubmissionResponse convertToResponse(ReportSubmission submission) {
+        if (submission == null) {
+            return null;
+        }
+        
+        String studentName = "Sinh viên " + submission.getSubmittedBy(); // Default fallback
+        
+        try {
+            // Try to get fullName from user-service
+            GetUserResponse userResponse = userServiceClient.getUserById(submission.getSubmittedBy());
+            if (userResponse != null && userResponse.getFullName() != null && !userResponse.getFullName().trim().isEmpty()) {
+                studentName = userResponse.getFullName();
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch user info for userId {}: {}", submission.getSubmittedBy(), e.getMessage());
+        }
+        
+        ReportSubmissionResponse response = ReportSubmissionResponse.builder()
+                .submissionId(submission.getSubmissionId())
+                .topicId(submission.getTopicId())
+                .submittedBy(submission.getSubmittedBy())
+                .reportTitle(submission.getReportTitle())
+                .description(submission.getDescription())
+                .filePath(submission.getFilePath())
+                .submissionType(submission.getSubmissionType())
+                .submittedAt(submission.getSubmittedAt())
+                .status(submission.getStatus())
+                .isFinal(submission.getIsFinal())
+                .submissionTypeName(getSubmissionTypeDescription(submission.getSubmissionType()))
+                .statusName(getSubmissionStatusName(submission.getStatus()))
+                .fullName(studentName)
+                .fileName(getFileNameFromPath(submission.getFilePath()))
+                .build();
+        
+        return response;
+    }
+    
+    /**
+     * Get status name
+     */
+    private String getSubmissionStatusName(Integer status) {
+        if (status == null) return "Không xác định";
+        return switch (status) {
+            case 1 -> "Đã nộp";
+            case 2 -> "Đang xem xét";
+            case 3 -> "Đã duyệt";
+            case 4 -> "Từ chối";
+            default -> "Không xác định";
+        };
+    }
+    
+    /**
+     * Extract filename from file path
+     */
+    private String getFileNameFromPath(String filePath) {
+        if (filePath == null || filePath.isEmpty()) return null;
+        
+        int lastSlashIndex = filePath.lastIndexOf('/');
+        if (lastSlashIndex >= 0 && lastSlashIndex < filePath.length() - 1) {
+            return filePath.substring(lastSlashIndex + 1);
+        }
+        return filePath;
     }
 }

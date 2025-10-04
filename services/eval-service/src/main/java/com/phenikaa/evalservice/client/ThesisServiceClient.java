@@ -77,4 +77,22 @@ public interface ThesisServiceClient {
      */
     @GetMapping("/api/thesis-service/admin/current")
     Map<String, Object> getCurrentPeriod();
+
+    /**
+     * Lấy thông tin giảng viên hướng dẫn theo ID
+     */
+    @GetMapping("/api/thesis-service/teacher/{teacherId}")
+    Map<String, Object> getSupervisorById(@PathVariable Integer teacherId);
+
+    /**
+     * Lấy thông tin sinh viên theo ID
+     */
+    @GetMapping("/api/thesis-service/student/{studentId}")
+    Map<String, Object> getStudentInfo(@PathVariable Integer studentId);
+
+    /**
+     * Lấy danh sách deadline của sinh viên
+     */
+    @GetMapping("/api/thesis-service/student/{studentId}/deadlines")
+    List<Map<String, Object>>getStudentDeadlines(@PathVariable Integer studentId);
 }
