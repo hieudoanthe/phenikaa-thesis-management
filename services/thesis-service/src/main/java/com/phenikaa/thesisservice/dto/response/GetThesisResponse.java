@@ -21,6 +21,7 @@ public class GetThesisResponse {
     private ProjectTopic.TopicStatus topicStatus;
     private ProjectTopic.ApprovalStatus approvalStatus;
     private String supervisorName;
+    private Integer supervisorId;
 
     // Custom Builder Pattern
     public static GetThesisResponseBuilder builder() {
@@ -111,6 +112,11 @@ public class GetThesisResponse {
 
         public GetThesisResponseBuilder supervisorName(String supervisorName) {
             response.supervisorName = supervisorName;
+            return this;
+        }
+
+        public GetThesisResponseBuilder supervisorId(Integer supervisorId) {
+            response.supervisorId = supervisorId;
             return this;
         }
 

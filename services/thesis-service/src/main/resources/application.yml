@@ -28,5 +28,5 @@ logging:
 ai:
   gemini:
     api-key: AIzaSyCUuAhB8wbCCCqrhlTXT83Sbe5c17GTJlU
-    model-name: gemini-1.5-flash
+    model-name: gemini-2.0-flash
     temperature: 0.7

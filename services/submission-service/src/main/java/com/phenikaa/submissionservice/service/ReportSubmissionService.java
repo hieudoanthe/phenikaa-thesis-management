@@ -2,6 +2,7 @@ package com.phenikaa.submissionservice.service;
 
 import com.phenikaa.submissionservice.client.NotificationServiceClient;
 import com.phenikaa.submissionservice.client.UserServiceClient;
+import com.phenikaa.submissionservice.client.ThesisServiceClient;
 import com.phenikaa.dto.response.GetUserResponse;
 import com.phenikaa.submissionservice.dto.request.ReportSubmissionRequest;
 import com.phenikaa.submissionservice.dto.response.ReportSubmissionResponse;
@@ -35,17 +36,20 @@ public class ReportSubmissionService {
     private final NotificationServiceClient communicationServiceClient;
     private final FileStorageService cloudinaryService;
     private final UserServiceClient userServiceClient;
+    private final ThesisServiceClient thesisServiceClient;
     
     public ReportSubmissionService(
             ReportSubmissionRepository reportSubmissionRepository,
             NotificationServiceClient communicationServiceClient,
             @Qualifier("cloudinaryFileService") FileStorageService cloudinaryService,
-            UserServiceClient userServiceClient
+            UserServiceClient userServiceClient,
+            ThesisServiceClient thesisServiceClient
     ) {
         this.reportSubmissionRepository = reportSubmissionRepository;
         this.communicationServiceClient = communicationServiceClient;
         this.cloudinaryService = cloudinaryService;
         this.userServiceClient = userServiceClient;
+        this.thesisServiceClient = thesisServiceClient;
     }
     
     // Constants
@@ -278,26 +282,49 @@ public class ReportSubmissionService {
     
     
     /**
-     * Gửi thông báo qua communication-log-service
+     * Gửi thông báo qua communication-log-service cho giảng viên hướng dẫn
      */
     private void sendSubmissionNotification(ReportSubmission submission, String notificationType) {
         try {
+            // Lấy thông tin topic để lấy supervisorId
+            Map<String, Object> topicInfo = thesisServiceClient.getTopicById(submission.getTopicId());
+            Integer supervisorId = (Integer) topicInfo.get("supervisorId");
+            
+            if (supervisorId == null) {
+                log.warn("Could not find supervisorId for topic: {}", submission.getTopicId());
+                return;
+            }
+            
+            // Lấy tên sinh viên để hiển thị trong thông báo
+            String studentName = "Sinh viên";
+            try {
+                GetUserResponse studentInfo = userServiceClient.getUserById(submission.getSubmittedBy());
+                if (studentInfo != null && studentInfo.getFullName() != null) {
+                    studentName = studentInfo.getFullName();
+                }
+            } catch (Exception e) {
+                log.warn("Could not get student name for user: {}", submission.getSubmittedBy());
+            }
+            
             Map<String, Object> notification = Map.of(
                 "type", notificationType,
-                "receiverId", submission.getSubmittedBy(),
-                "message", String.format("Báo cáo '%s' đã được %s", 
-                    submission.getReportTitle(), 
-                    notificationType.equals("SUBMISSION_CREATED") ? "tạo mới" : "cập nhật"),
+                "receiverId", supervisorId, // Gửi cho giảng viên hướng dẫn
+                "message", String.format("Sinh viên %s đã %s báo cáo '%s'", 
+                    studentName,
+                    notificationType.equals("SUBMISSION_CREATED") ? "nộp" : "cập nhật", 
+                    submission.getReportTitle()),
                 "data", Map.of(
                     "submissionId", submission.getSubmissionId(),
                     "topicId", submission.getTopicId(),
                     "reportTitle", submission.getReportTitle(),
+                    "submittedBy", submission.getSubmittedBy(),
+                    "studentName", studentName,
                     "submittedAt", submission.getSubmittedAt()
                 )
             );
             
             communicationServiceClient.sendNotification(notification);
-            log.info("Notification sent for submission: {}", submission.getSubmissionId());
+            log.info("Notification sent to supervisor {} for submission: {}", supervisorId, submission.getSubmissionId());
             
         } catch (Exception e) {
             log.error("Error sending notification for submission {}: {}", 

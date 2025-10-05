@@ -49,7 +49,6 @@ public class SecurityConfig {
                         .pathMatchers("/internal/submissions/**").permitAll()
                         .pathMatchers("/internal/evaluations/**").permitAll()
 
-                        .pathMatchers("/api/statistics-service/**").hasAnyRole("TEACHER", "ADMIN")
                         .pathMatchers("/api/period-statistics/**").hasRole("ADMIN")
                         //
                         .pathMatchers("/api/user-service/admin/**").hasAnyRole("ADMIN", "TEACHER")
@@ -64,7 +63,9 @@ public class SecurityConfig {
                         .pathMatchers("/api/thesis-service/admin/**").hasAnyRole("ADMIN", "STUDENT")
                         .pathMatchers("/api/profile-service/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .pathMatchers("/api/assign-service/**").hasAnyRole("STUDENT", "TEACHER")
+
                         .pathMatchers("/api/academic-config-service/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+
                         .pathMatchers("/api/communication-log-service/**").permitAll()
                         .pathMatchers("/api/communication-service/**").permitAll()
                         // API of Chat and Notifications
