@@ -14,6 +14,7 @@ public interface StudentProfileMapper {
     StudentProfile dtoToStudentProfile(StudentProfile dto);
 
     @Mapping(source = "user.userId", target = "userId")
+    @Mapping(source = "user.username", target = "username")
     @Mapping(source = "user.fullName", target = "fullName")
     @Mapping(source = "studentProfile.major", target = "major")
     @Mapping(source = "studentProfile.className", target = "className")

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class GetStudentProfileResponse {
     private Integer userId;
+    private String username;
     private String fullName;
     private String major;
     private String className;

@@ -21,6 +21,7 @@ public class ComprehensiveEvaluationPDFRequest {
     private String batch;
     private String topicTitle;
     private LocalDateTime evaluationDate;
+    private String room;
     
     // Thông tin hội đồng đánh giá
     private CommitteeMember chairman;

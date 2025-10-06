@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +17,10 @@ public interface StudentDefenseRepository extends JpaRepository<StudentDefense, 
 
     // Tìm sinh viên theo đề tài
     Optional<StudentDefense> findByTopicId(Integer topicId);
+
+    // Lấy StudentDefense kèm DefenseSession để truy cập địa điểm phòng
+    @Query("SELECT sd FROM StudentDefense sd LEFT JOIN FETCH sd.defenseSession WHERE sd.topicId = :topicId")
+    Optional<StudentDefense> findWithSessionByTopicId(@Param("topicId") Integer topicId);
 
     // Tìm sinh viên theo trạng thái
     List<StudentDefense> findByStatus(StudentDefense.DefenseStatus status);
