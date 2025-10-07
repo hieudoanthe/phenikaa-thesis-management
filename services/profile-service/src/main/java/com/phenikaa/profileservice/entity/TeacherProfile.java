@@ -19,13 +19,13 @@ public class TeacherProfile {
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
-    @Column(name = "department")
+    @Column(name = "department", columnDefinition = "nvarchar(255)")
     private String department;
 
-    @Column(name = "specialization")
+    @Column(name = "specialization", columnDefinition = "nvarchar(255)")
     private String specialization;
 
-    @Column(name = "degree")
+    @Column(name = "degree", columnDefinition = "nvarchar(255)")
     private String degree;
 
     @Column(name = "phone")

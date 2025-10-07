@@ -115,6 +115,13 @@
             <version>4.0.5</version>
         </dependency>
 
+        <!-- Sanitize rich HTML from editors for PDF rendering -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
+
     </dependencies>
 
     <build>

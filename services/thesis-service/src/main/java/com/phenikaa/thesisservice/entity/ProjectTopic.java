@@ -166,16 +166,17 @@ public class ProjectTopic {
     }
 
     /**
-     * Cập nhật trạng thái đề tài dựa trên số lượng sinh viên
+     * Cập nhật trạng thái đề tài dựa trên số lượnyg sinh viên
      */
     public void updateTopicStatusBasedOnStudents() {
         if (isFull()) {
-            // Nếu đã đủ sinh viên, chuyển sang trạng thái INACTIVE
             this.topicStatus = TopicStatus.INACTIVE;
             this.approvalStatus = ApprovalStatus.APPROVED;
         } else if (maxStudents < 4) {
-            // Nếu đã có sinh viên nhưng chưa đủ, giữ nguyên trạng thái
+            this.topicStatus = TopicStatus.ACTIVE;
             this.approvalStatus = ApprovalStatus.APPROVED;
+        } else {
+            this.topicStatus = TopicStatus.ACTIVE;
         }
     }
 }

@@ -3,9 +3,9 @@ package com.phenikaa.evalservice.service;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.phenikaa.evalservice.client.ThesisServiceClient;
 import com.phenikaa.evalservice.client.ProfileServiceClient;
-import com.phenikaa.evalservice.client.UserServiceClient;
 import com.phenikaa.evalservice.dto.request.ComprehensiveEvaluationPDFRequest;
 import com.phenikaa.evalservice.dto.response.QnAResponse;
+import com.phenikaa.evalservice.dto.response.FinalScoreResponse;
 import com.phenikaa.evalservice.entity.ProjectEvaluation;
 import com.phenikaa.evalservice.exception.PDFGenerationException;
 import com.phenikaa.evalservice.repository.ProjectEvaluationRepository;
@@ -38,6 +38,9 @@ public class ComprehensiveEvaluationPDFService {
     private final ProfileServiceClient profileServiceClient;
     private final StudentDefenseRepository studentDefenseRepository;
     private final CouncilSummaryService councilSummaryService;
+    private final ReviewerSummaryService reviewerSummaryService;
+    private final EvaluationService evaluationService;
+    private final SupervisorSummaryService supervisorSummaryService;
     
     /**
      * Tạo PDF tổng hợp đánh giá từ tất cả người chấm
@@ -149,7 +152,7 @@ public class ComprehensiveEvaluationPDFService {
             } catch (Exception ex) {
                 log.warn("Could not resolve defense room for topic {}: {}", topicId, ex.getMessage());
             }
-
+            
             // Phân loại evaluations theo loại
             int committeeCount = 0;
             for (ProjectEvaluation evaluation : evaluations) {
@@ -306,10 +309,10 @@ public class ComprehensiveEvaluationPDFService {
             if (teacherProfile != null && !teacherProfile.isEmpty()) {
                 String fullName = (String) teacherProfile.get("fullName");
                 if (fullName != null && !fullName.trim().isEmpty()) {
-                reviewer.setName(fullName);
+                    reviewer.setName(fullName);
                 String degree = (String) teacherProfile.get("degree");
                 reviewer.setTitle(degree != null && !degree.trim().isEmpty() ? degree : MASTER_TITLE);
-                String department = (String) teacherProfile.get("department");
+                    String department = (String) teacherProfile.get("department");
                     reviewer.setDepartment(department != null ? department : DEPARTMENT_NAME);
                     log.info("Successfully fetched reviewer name: {} for evaluatorId: {}", fullName, evaluation.getEvaluatorId());
                 } else {
@@ -353,10 +356,10 @@ public class ComprehensiveEvaluationPDFService {
             if (teacherProfile != null && !teacherProfile.isEmpty()) {
                 String fullName = (String) teacherProfile.get("fullName");
                 if (fullName != null && !fullName.trim().isEmpty()) {
-                supervisor.setName(fullName);
+                    supervisor.setName(fullName);
                 String degree = (String) teacherProfile.get("degree");
                 supervisor.setTitle(degree != null && !degree.trim().isEmpty() ? degree : MASTER_TITLE);
-                String department = (String) teacherProfile.get("department");
+                    String department = (String) teacherProfile.get("department");
                     supervisor.setDepartment(department != null ? department : DEPARTMENT_NAME);
                     log.info("Successfully fetched supervisor name: {} for evaluatorId: {}", fullName, evaluation.getEvaluatorId());
                 } else {
@@ -504,15 +507,15 @@ public class ComprehensiveEvaluationPDFService {
         html.append("</div>");
         
         // Section II: Committee Members (as list)
-        html.append("<div class='section'>");
+            html.append("<div class='section'>");
         html.append("<h2>II. Thành phần</h2>");
         html.append("<ol class='member-list' style='margin-top:0; padding-left:20px;'>");
-        if (request.getChairman() != null) {
+            if (request.getChairman() != null) {
             String chairmanName = (request.getChairman().getTitle() != null && !request.getChairman().getTitle().trim().isEmpty() ? request.getChairman().getTitle() + " ." : "")
                     + (request.getChairman().getName() != null ? request.getChairman().getName() : "");
             html.append("<li><span class='member-name'>").append(chairmanName).append("</span><span class='member-role'>Chủ tịch</span></li>");
-        }
-        if (request.getSecretary() != null) {
+            }
+            if (request.getSecretary() != null) {
             String secretaryName = (request.getSecretary().getTitle() != null && !request.getSecretary().getTitle().trim().isEmpty() ? request.getSecretary().getTitle() + " ." : "")
                     + (request.getSecretary().getName() != null ? request.getSecretary().getName() : "");
             html.append("<li><span class='member-name'>").append(secretaryName).append("</span><span class='member-role'>Thư ký</span></li>");
@@ -523,7 +526,7 @@ public class ComprehensiveEvaluationPDFService {
             html.append("<li><span class='member-name'>").append(memberName).append("</span><span class='member-role'>Giảng viên phản biện</span></li>");
         }
         html.append("</ol>");
-        html.append("</div>");
+                html.append("</div>");
         
         // Section III: Q&A Summary (from backend DefenseQnA)
         html.append("<div class='section'>");
@@ -567,10 +570,7 @@ public class ComprehensiveEvaluationPDFService {
             html.append("<li>................................................................................</li>");
             html.append("</ol>");
         }
-        html.append("</div>");
-        
-        // Page break for second page
-        html.append("<div class='page-break'></div>");
+                html.append("</div>");
         
         // Section V: Council Evaluation Content (from CouncilSummary, supports JSON content)
         html.append("<div class='section'>");
@@ -592,11 +592,11 @@ public class ComprehensiveEvaluationPDFService {
 
                         boolean any = !(isBlank(meaning) && isBlank(structure) && isBlank(methodology) && isBlank(results) && isBlank(prosCons));
                         html.append("<ol class='info-list'>");
-                        html.append(renderCouncilItem("Ý nghĩa của đồ án/khóa luận:", meaning));
-                        html.append(renderCouncilItem("Về nội dung, kết cấu của đồ án/khóa luận:", structure));
-                        html.append(renderCouncilItem("Phương pháp nghiên cứu:", methodology));
-                        html.append(renderCouncilItem("Các kết quả nghiên cứu đạt được:", results));
-                        html.append(renderCouncilItem("Những ưu điểm, nhược điểm và nội dung cần bổ sung, chỉnh sửa:", prosCons));
+                        html.append(renderCouncilItemRich("Ý nghĩa của đồ án/khóa luận:", meaning));
+                        html.append(renderCouncilItemRich("Về nội dung, kết cấu của đồ án/khóa luận:", structure));
+                        html.append(renderCouncilItemRich("Phương pháp nghiên cứu:", methodology));
+                        html.append(renderCouncilItemRich("Các kết quả nghiên cứu đạt được:", results));
+                        html.append(renderCouncilItemRich("Những ưu điểm, nhược điểm và nội dung cần bổ sung, chỉnh sửa:", prosCons));
                         html.append("</ol>");
                     } catch (Exception jsonEx) {
                         // Not a JSON; render raw as simple paragraph block
@@ -619,11 +619,22 @@ public class ComprehensiveEvaluationPDFService {
         }
         html.append("</div>");
         
-        // Section VI: Final Score
+        // Section VI: Final Score (fetch from evaluationService)
         html.append("<div class='section'>");
-        html.append("<h2>VI. ĐIỂM KẾT LUẬN</h2>");
-        html.append("<p><strong>Điểm kết luận:</strong> <span class='underline'>9</span></p>");
-        html.append("<p><strong>Bằng chữ:</strong> <span class='underline'>Chín phẩy</span></p>");
+        try {
+            FinalScoreResponse fs = evaluationService.calculateFinalScore(request.getTopicId());
+            Float score = (fs != null ? fs.getFinalScore() : null);
+            String scoreText = (score != null) ? String.format("%.1f", score) : "...";
+            String inWords = (score != null) ? toVietnameseScoreWords(score) : "...";
+            html.append("<h2>VI. Điểm kết luận: ")
+                .append(scoreText)
+                .append(" (Bằng chữ: ")
+                .append(inWords)
+                .append(")</h2>");
+        } catch (Exception ex) {
+            log.warn("Could not fetch final score for topic {}: {}", request.getTopicId(), ex.getMessage());
+            html.append("<h2>VI. Điểm kết luận: ... (Bằng chữ: ...)</h2>");
+        }
         html.append("</div>");
         
         // Signatures
@@ -644,11 +655,6 @@ public class ComprehensiveEvaluationPDFService {
             html.append("<p>").append(request.getSecretary().getName()).append("</p>");
         }
         html.append("</div>");
-        html.append("</div>");
-        
-        // Footer
-        html.append("<div class='footer'>");
-        html.append("<p>BM.ĐT.19.17 (02-15/05/2025)-BL: 5 năm</p>");
             html.append("</div>");
         
         return html.toString();
@@ -673,11 +679,65 @@ public class ComprehensiveEvaluationPDFService {
                 .replace(">", "&gt;");
     }
 
+    // Render limited rich HTML safely: allow a small set of tags used by our editor
+    private static String renderRich(String html) {
+        if (html == null || html.isBlank()) return "";
+        try {
+            org.jsoup.safety.Safelist safelist = org.jsoup.safety.Safelist.basic();
+            safelist.addTags("ul", "ol", "li", "span", "u");
+            safelist.addAttributes("span", "style");
+            String cleaned = org.jsoup.Jsoup.clean(html, safelist);
+            return cleaned;
+        } catch (Exception e) {
+            return safeText(html);
+        }
+    }
+
+    // Convert a float score like 9.0 or 9.5 to simple Vietnamese words, e.g., "Chín phẩy năm"
+    private static String toVietnameseScoreWords(Float score) {
+        try {
+            if (score == null) return "";
+            float rounded = Math.round(score * 10f) / 10f; // one decimal rounding
+            int integerPart = (int)Math.floor(rounded);
+            int tenth = Math.round((rounded - integerPart) * 10f);
+            String[] nums = {"không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín", "mười"};
+            if (integerPart == 10 && tenth == 0) {
+                return "Mười";
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append(capitalize(nums[Math.min(Math.max(integerPart,0),10)]));
+            if (tenth > 0) {
+                sb.append(" phẩy ");
+                sb.append(nums[Math.min(tenth,10)]);
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private static String capitalize(String s) {
+        if (s == null || s.isEmpty()) return s;
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
     private static String renderCouncilItem(String label, String value) {
         String content = isBlank(value)
                 ? "................................................................................"
                 : safeText(value);
         // Render as numbered item with label and value on a new line (no nested numbering inside)
+        StringBuilder sb = new StringBuilder();
+        sb.append("<li>");
+        sb.append("<div><strong>").append(label).append("</strong></div>");
+        sb.append("<div class='comments-box'>").append(content).append("</div>");
+        sb.append("</li>");
+        return sb.toString();
+    }
+
+    private static String renderCouncilItemRich(String label, String html) {
+        String content = isBlank(html)
+                ? "................................................................................"
+                : renderRich(html);
         StringBuilder sb = new StringBuilder();
         sb.append("<li>");
         sb.append("<div><strong>").append(label).append("</strong></div>");
@@ -713,18 +773,17 @@ public class ComprehensiveEvaluationPDFService {
         html.append("<h1>CỦA THÀNH VIÊN HỘI ĐỒNG</h1>");
         html.append("</div>");
         
-        // Section I: General Information
+        // Section I: General Information (list)
             html.append("<div class='section'>");
         html.append("<h2>I. Thông tin chung (HĐ 2)</h2>");
-        html.append("<table class='info-table'>");
-        html.append("<tr><td>Người đánh giá:</td><td>").append(member.getName()).append("</td></tr>");
-        html.append("<tr><td>Đơn vị công tác:</td><td>").append(member.getDepartment()).append("</td></tr>");
-        html.append("<tr><td>Học hàm, học vị:</td><td>").append(member.getTitle()).append("</td></tr>");
-        html.append("<tr><td>Họ tên sinh viên:</td><td>").append(request.getStudentName()).append("</td></tr>");
-        html.append("<tr><td>Mã SV:</td><td>").append(request.getStudentIdNumber()).append("</td></tr>");
-        html.append("<tr><td>Ngành (CTĐT):</td><td>").append(request.getMajor()).append("</td></tr>");
-        html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
-        html.append("</table>");
+        html.append("<ol class='info-list'>");
+        html.append("<li>Người đánh giá: <strong>").append(member.getName() != null ? member.getName() : "").append("</strong></li>");
+        html.append("<li>Đơn vị công tác: <strong>").append(member.getDepartment() != null ? member.getDepartment() : "").append("</strong></li>");
+        html.append("<li>Học hàm, học vị: <strong>").append(member.getTitle() != null ? member.getTitle() : "").append("</strong></li>");
+        html.append("<li>Họ tên sinh viên: <strong>").append(request.getStudentName() != null ? request.getStudentName() : "").append("</strong><span class='inline-gap'>Mã SV: <strong>").append(request.getStudentIdNumber() != null ? request.getStudentIdNumber() : "").append("</strong></span></li>");
+        html.append("<li>Ngành (CTĐT): <strong>").append(request.getMajor() != null ? request.getMajor() : "").append("</strong></li>");
+        html.append("<li>Tên đề tài: <strong><em>").append(request.getTopicTitle() != null ? request.getTopicTitle() : "").append("</em></strong></li>");
+        html.append("</ol>");
             html.append("</div>");
         
         // Section II: Evaluation
@@ -744,15 +803,12 @@ public class ComprehensiveEvaluationPDFService {
         
         // Footer
         html.append("<div class='footer'>");
-        html.append("<div class='signature-section'>");
+        html.append("<div class='signature-section' style='text-align:right; page-break-inside: avoid; break-inside: avoid;'>");
         html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
         html.append("<p><strong>").append(role).append("</strong></p>");
         html.append("<p>(Ký, ghi rõ họ tên)</p>");
         html.append("<div class='signature-space'></div>");
         html.append("<p>").append(member.getName()).append("</p>");
-        html.append("</div>");
-        html.append("<div class='form-info'>");
-        html.append("<p>BM.ĐT.19.16 (02-15/05/2025)-BL: 5 năm</p>");
         html.append("</div>");
         html.append("</div>");
         
@@ -786,18 +842,17 @@ public class ComprehensiveEvaluationPDFService {
         html.append("<h1>CỦA GIẢNG VIÊN PHẢN BIỆN</h1>");
         html.append("</div>");
         
-        // Section I: General Information
+        // Section I: General Information (list)
             html.append("<div class='section'>");
         html.append("<h2>I. Thông tin chung</h2>");
-        html.append("<table class='info-table'>");
-        html.append("<tr><td>Người đánh giá:</td><td>").append(reviewer.getName()).append("</td></tr>");
-        html.append("<tr><td>Học hàm, học vị:</td><td>").append(reviewer.getTitle()).append("</td></tr>");
-        html.append("<tr><td>Đơn vị công tác:</td><td>").append(reviewer.getDepartment()).append("</td></tr>");
-        html.append("<tr><td>Họ tên sinh viên:</td><td>").append(request.getStudentName()).append("</td></tr>");
-        html.append("<tr><td>Mã SV:</td><td>").append(request.getStudentIdNumber()).append("</td></tr>");
-        html.append("<tr><td>Ngành (CTĐT):</td><td>").append(request.getMajor()).append("</td></tr>");
-        html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
-        html.append("</table>");
+        html.append("<ol class='info-list'>");
+        html.append("<li>Người đánh giá: <strong>").append(reviewer.getName() != null ? reviewer.getName() : "").append("</strong></li>");
+        html.append("<li>Học hàm, học vị: <strong>").append(reviewer.getTitle() != null ? reviewer.getTitle() : "").append("</strong></li>");
+        html.append("<li>Đơn vị công tác: <strong>").append(reviewer.getDepartment() != null ? reviewer.getDepartment() : "").append("</strong></li>");
+        html.append("<li>Họ tên sinh viên: <strong>").append(request.getStudentName() != null ? request.getStudentName() : "").append("</strong><span class='inline-gap'>Mã SV: <strong>").append(request.getStudentIdNumber() != null ? request.getStudentIdNumber() : "").append("</strong></span></li>");
+        html.append("<li>Ngành (CTĐT): <strong>").append(request.getMajor() != null ? request.getMajor() : "").append("</strong></li>");
+        html.append("<li>Tên đề tài: <strong><em>").append(request.getTopicTitle() != null ? request.getTopicTitle() : "").append("</em></strong></li>");
+        html.append("</ol>");
         html.append("</div>");
         
         // Section II: Evaluation
@@ -817,18 +872,17 @@ public class ComprehensiveEvaluationPDFService {
         
         // Footer
         html.append("<div class='footer'>");
-        html.append("<div class='signature-section'>");
+        html.append("<div class='signature-section' style='text-align:right; page-break-inside: avoid; break-inside: avoid;'>");
         html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
         html.append("<p><strong>GIẢNG VIÊN PHẢN BIỆN</strong></p>");
         html.append("<p>(Ký, ghi rõ họ tên)</p>");
         html.append("<div class='signature-space'></div>");
         html.append("<p>").append(reviewer.getName()).append("</p>");
         html.append("</div>");
-        html.append("<div class='form-info'>");
-        html.append("<p>BM.ĐT.19.15 (02-15/05/2025)-BL: 5 năm</p>");
-        html.append("</div>");
         html.append("</div>");
         
+        // Ensure the next section starts on a new page
+        html.append("<div class='page-after'></div>");
         return html.toString();
     }
     
@@ -872,37 +926,99 @@ public class ComprehensiveEvaluationPDFService {
         html.append("</table>");
         html.append("</div>");
         
-        // Review Content
+        // Review Content (pull from ReviewerSummary)
         html.append("<div class='section'>");
         html.append("<h2>NỘI DUNG NHẬN XÉT</h2>");
-        html.append("<p><strong>1. Nhận xét ĐAKLTN:</strong></p>");
-        html.append("<p><strong>- Bố cục, hình thức trình bày:</strong></p>");
-        html.append("<p>Đồ án gồm 4 chương, nội dung rõ ràng, bố cục trình bày theo quy định của một khóa luận tốt nghiệp</p>");
-        html.append("<p><strong>- Đảm bảo tính cấp thiết, hiện đại, không trùng lặp:</strong></p>");
-        html.append("<p>Đồ án có tính cấp thiết nội dung phù hợp với hiện tại không trùng lặp với các đề tài khác.</p>");
-        html.append("<p><strong>- Nội dung:</strong></p>");
-        html.append("<p><strong>Nhận xét chung</strong></p>");
-        html.append("<p><strong>Mục tiêu:</strong></p>");
-        html.append("<p>Đồ án đặt ra mục tiêu xây dựng một hệ thống phần mềm quản lý toàn diện cho cửa hàng bánh sinh nhật, tối ưu quy trình đặt hàng trực tuyến và cung cấp giao diện quản trị trực quan cho người quản lý.</p>");
-        html.append("<p><strong>Phạm vi:</strong></p>");
-        html.append("<p>Hệ thống được triển khai dưới dạng ứng dụng web, phù hợp cho cửa hàng bánh quy mô nhỏ hoặc vừa. Dữ liệu được quản lý tập trung thông qua MongoDB.</p>");
-        html.append("<p><strong>Đối tượng sử dụng:</strong></p>");
-        html.append("<p>Hệ thống phục vụ hai nhóm đối tượng chính: Quản trị viên (Admin) và Khách hàng.</p>");
-        html.append("<p><strong>Quản trị viên</strong> có các chức năng: quản lý sản phẩm, danh mục, đơn hàng, người dùng, mã giảm giá, bài viết và xem thống kê doanh thu.</p>");
-        html.append("<p><strong>Khách hàng</strong> có thể: xem, tìm kiếm, đặt bánh, theo dõi đơn hàng, thanh toán trực tuyến hoặc khi nhận hàng, và quản lý thông tin cá nhân.</p>");
-        html.append("<p><strong>Công nghệ sử dụng:</strong></p>");
-        html.append("<p><strong>+ Frontend:</strong> Next.js kết hợp TypeScript và Tailwind CSS.</p>");
-        html.append("<p><strong>+ Backend:</strong> NestJS (Node.js framework).</p>");
-        html.append("<p><strong>+ Cơ sở dữ liệu:</strong> MongoDB.</p>");
-        html.append("<p><strong>Bố cục báo cáo:</strong></p>");
-        html.append("<p>Báo cáo đồ án được trình bày rõ ràng với 4 chương chính: Tổng quan đề tài, Phân tích thiết kế hệ thống, Phát triển và triển khai phần mềm, và Kiểm thử phần mềm.</p>");
+        try {
+            var rsOpt = reviewerSummaryService.getByTopicId(request.getTopicId());
+            if (rsOpt.isPresent() && rsOpt.get().getContent() != null && !rsOpt.get().getContent().isBlank()) {
+                String raw = rsOpt.get().getContent();
+                try {
+                    com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                    java.util.Map<?,?> obj = om.readValue(raw, java.util.Map.class);
+                    String presentation = getStringOr(obj, "presentation", "");
+                    String necessity = getStringOr(obj, "necessity", "");
+                    String general = getStringOr(obj, "general", "");
+                    String goals = getStringOr(obj, "goals", "");
+                    String scope = getStringOr(obj, "scope", "");
+                    String audience = getStringOr(obj, "audience", "");
+                    String techFrontend = getStringOr(obj, "techFrontend", "");
+                    String techBackend = getStringOr(obj, "techBackend", "");
+                    String techDatabase = getStringOr(obj, "techDatabase", "");
+                    String reportStructure = getStringOr(obj, "reportStructure", "");
+                    String implementationLevel = getStringOr(obj, "implementationLevel", "");
+                    String results = getStringOr(obj, "results", "");
+                    String prosCons = getStringOr(obj, "prosCons", "");
+                    Object approve = obj.get("conclusionApprove");
+                    String conclusionNote = getStringOr(obj, "conclusionNote", "");
+
+                    html.append("<p><strong>I. Nhận xét ĐAKLTN:</strong></p>");
+                    // Top-level bullets
+                    html.append("<ul class='bullet'>");
+                    html.append("<li><strong>- Bố cục, hình thức trình bày:</strong> ").append(renderRich(presentation)).append("</li>");
+                    html.append("<li><strong>- Đảm bảo tính cấp thiết, hiện đại, không trùng lặp:</strong> ").append(renderRich(necessity)).append("</li>");
+                    html.append("<li><strong>- Nội dung:</strong>");
+                    // Nested section under Nội dung
+                    html.append("<div><strong>Nhận xét chung</strong></div>");
+                    html.append("<ul class='dot'>");
+                    html.append("<li><strong>Mục tiêu:</strong> ").append(renderRich(goals)).append("</li>");
+                    html.append("<li><strong>Phạm vi:</strong> ").append(renderRich(scope)).append("</li>");
+                    html.append("<li><strong>Đối tượng sử dụng:</strong> ").append(renderRich(audience)).append("</li>");
+                    html.append("<li><strong>Công nghệ sử dụng:</strong>");
+                    html.append("<ul class='plus'>");
+                    html.append("<li><strong>Frontend:</strong> ").append(renderRich(techFrontend)).append("</li>");
+                    html.append("<li><strong>Backend:</strong> ").append(renderRich(techBackend)).append("</li>");
+                    html.append("<li><strong>Cơ sở dữ liệu:</strong> ").append(renderRich(techDatabase)).append("</li>");
+                    html.append("</ul>");
+                    html.append("</li>");
+                    html.append("<li><strong>Bố cục báo cáo:</strong> ").append(renderRich(reportStructure)).append("</li>");
+                    html.append("</ul>"); // end dot
+                    html.append("</li>"); // end Nội dung
+                    html.append("<li><strong>- Mức độ thực hiện:</strong> ").append(renderRich(implementationLevel)).append("</li>");
+                    html.append("</ul>"); // end bulle
+
+                    html.append("<p><strong>II. Kết quả đạt được:</strong> ").append(renderRich(results)).append("</p>");
+                    html.append("<p><strong>III. Ưu nhược điểm:</strong> ").append(renderRich(prosCons)).append("</p>");
+                    if (approve instanceof Boolean b) {
+                        html.append("<div class='conclusion-row'>");
+                        html.append("<div class='col-left'><strong>IV. Kết luận:</strong> Đồng ý cho bảo vệ: <span class='chkbox'>").append(b ? "✓" : "").append("</span></div>");
+                        html.append("<div class='col-right'>Không đồng ý cho bảo vệ: <span class='chkbox'>").append(!b ? "✓" : "").append("</span></div>");
+                        html.append("</div>");
+                        if (conclusionNote != null && !conclusionNote.isBlank()) {
+                            html.append("<div class='note-line'>Ghi chú: ").append(safeText(conclusionNote)).append("</div>");
+                        }
+                    } else {
+                        html.append("<div class='conclusion-row'>");
+                        html.append("<div class='col-left'><strong>IV. Kết luận:</strong> Đồng ý cho bảo vệ: <span class='chkbox'></span></div>");
+                        html.append("<div class='col-right'>Không đồng ý cho bảo vệ: <span class='chkbox'></span></div>");
+                        html.append("</div>");
+                    }
+                } catch (Exception ex) {
+                    html.append("<div class='comments-box'>").append(safeText(raw)).append("</div>");
+                }
+            } else {
+                html.append("<div class='comments-box'>");
+                html.append("...........................................................................................................................");
+                html.append("</div>");
+            }
+        } catch (Exception e) {
+            html.append("<div class='comments-box'>");
+            html.append("...........................................................................................................................");
+            html.append("</div>");
+        }
         html.append("</div>");
         
-        // Footer
         html.append("<div class='footer'>");
-        html.append("<p>BM.DT.19.14 (02-15/05/2025)-BL: 5 năm</p>");
+        html.append("<div class='signature-section' style='text-align:right; page-break-inside: avoid; break-inside: avoid;'>");
+        html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
+        html.append("<p><strong>GIẢNG VIÊN PHẢN BIỆN</strong></p>");
+        html.append("<p>(Ký, ghi rõ họ tên)</p>");
+        html.append("<div class='signature-space'></div>");
+        html.append("<p>").append(reviewer.getName()).append("</p>");
         html.append("</div>");
         
+        // Đảm bảo phần kế tiếp luôn sang trang mới để không dính vào phần chữ ký
+        html.append("<div class='page-after' style='page-break-after: always; break-after: page;'></div>");
         return html.toString();
     }
     
@@ -913,7 +1029,9 @@ public class ComprehensiveEvaluationPDFService {
         StringBuilder html = new StringBuilder();
         
         // Page break
-        html.append("<div class='page-break'></div>");
+        html.append("<div class='page-break' style='page-break-before: always; break-before: page;'></div>");
+        // Wrap toàn bộ nội dung trang để tránh bị tách khối (footer nhảy lên trên)
+        html.append("<div class='page-container'>");
         
         // Header
         html.append("<div class='header'>");
@@ -933,18 +1051,17 @@ public class ComprehensiveEvaluationPDFService {
         html.append("<h1>CỦA GIẢNG VIÊN HƯỚNG DẪN</h1>");
         html.append("</div>");
         
-        // Section I: General Information
+        // Section I: General Information (list)
         html.append("<div class='section'>");
         html.append("<h2>I. Thông tin chung </h2>");
-        html.append("<table class='info-table'>");
-        html.append("<tr><td>Người đánh giá:</td><td>").append(supervisor.getName()).append("</td></tr>");
-        html.append("<tr><td>Học hàm, học vị:</td><td>").append(supervisor.getTitle()).append("</td></tr>");
-        html.append("<tr><td>Đơn vị công tác:</td><td>").append(supervisor.getDepartment()).append("</td></tr>");
-        html.append("<tr><td>Họ tên sinh viên:</td><td>").append(request.getStudentName()).append("</td></tr>");
-        html.append("<tr><td>Mã SV:</td><td>").append(request.getStudentIdNumber()).append("</td></tr>");
-        html.append("<tr><td>Ngành:</td><td>").append(request.getMajor()).append("</td></tr>");
-        html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
-        html.append("</table>");
+        html.append("<ol class='info-list'>");
+        html.append("<li>Người đánh giá: <strong>").append(supervisor.getName() != null ? supervisor.getName() : "").append("</strong></li>");
+        html.append("<li>Học hàm, học vị: <strong>").append(supervisor.getTitle() != null ? supervisor.getTitle() : "").append("</strong></li>");
+        html.append("<li>Đơn vị công tác: <strong>").append(supervisor.getDepartment() != null ? supervisor.getDepartment() : "").append("</strong></li>");
+        html.append("<li>Họ tên sinh viên: <strong>").append(request.getStudentName() != null ? request.getStudentName() : "").append("</strong><span class='inline-gap'>Mã SV: <strong>").append(request.getStudentIdNumber() != null ? request.getStudentIdNumber() : "").append("</strong></span></li>");
+        html.append("<li>Ngành: <strong>").append(request.getMajor() != null ? request.getMajor() : "").append("</strong></li>");
+        html.append("<li>Tên đề tài: <strong><em>").append(request.getTopicTitle() != null ? request.getTopicTitle() : "").append("</em></strong></li>");
+        html.append("</ol>");
         html.append("</div>");
         
         // Section II: Evaluation
@@ -964,16 +1081,15 @@ public class ComprehensiveEvaluationPDFService {
         
         // Footer
         html.append("<div class='footer'>");
-        html.append("<div class='signature-section'>");
+        html.append("<div class='signature-section' style='text-align:right; page-break-inside: avoid; break-inside: avoid;'>");
         html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
         html.append("<p><strong>GIẢNG VIÊN HƯỚNG DẪN</strong></p>");
         html.append("<p>(Ký, ghi rõ họ tên)</p>");
         html.append("<div class='signature-space'></div>");
         html.append("<p>").append(supervisor.getName()).append("</p>");
         html.append("</div>");
-        html.append("<div class='form-info'>");
-        html.append("<p>BM.ĐT.19.23 (02-15/05/2025)-BL: 5 năm</p>");
         html.append("</div>");
+        // Kết thúc wrapper trang
         html.append("</div>");
         
         return html.toString();
@@ -1002,55 +1118,93 @@ public class ComprehensiveEvaluationPDFService {
         
         // Title
         html.append("<div class='title'>");
-        html.append("<h1>NHẬN XÉT ĐỒ ÁN TỐT NGHIỆP CỦA GIẢNG VIÊN HƯỚNG DẪN</h1>");
+        html.append("<h1>NHẬN XÉT ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP</h1>");
+        html.append("<h1>CỦA GIẢNG VIÊN HƯỚNG DẪN</h1>");
         html.append("</div>");
         
         // Project Information
         html.append("<div class='section'>");
         html.append("<table class='info-table'>");
         html.append("<tr><td>Giảng viên hướng dẫn:</td><td>").append(supervisor.getName()).append("</td></tr>");
-        html.append("<tr><td>Khoa:</td><td>Hệ thống thông tin</td></tr>");
+        html.append("<tr><td>Khoa:</td><td>").append(supervisor.getDepartment() != null ? supervisor.getDepartment() : DEPARTMENT_NAME).append("</td></tr>");
         html.append("<tr><td>Tên đề tài:</td><td>").append(request.getTopicTitle()).append("</td></tr>");
         html.append("<tr><td>Sinh viên thực hiện:</td><td>").append(request.getStudentName()).append("</td></tr>");
         html.append("<tr><td>Lớp:</td><td>").append(request.getClassName()).append("</td></tr>");
         html.append("</table>");
         html.append("</div>");
         
-        // Review Content
+        // Review Content from SupervisorSummary
         html.append("<div class='section'>");
         html.append("<h2>NỘI DUNG NHẬN XÉT</h2>");
-        html.append("<p><strong>I. Nhận xét ĐAKLTN (I. Review of Graduation Project):</strong></p>");
-        html.append("<p>Nhận xét về hình thức: Báo cáo được trình bày khoa học, đúng quy định. Các mục được sắp xếp hợp lý, bảng biểu và hình ảnh minh họa rõ ràng; phần phụ lục cần ghi chi tiết thay vì để đường dẫn truy cập.</p>");
-        html.append("<p>Tính cấp thiết của đề tài: Đề tài mang tính thực tiễn cao, với định hướng áp dụng tại một cơ sở kinh doanh cụ thể.</p>");
-        html.append("<p>Mục tiêu của đề tài: Mục tiêu đề tài được xác định rõ ràng xây dựng một hệ thống quản lý cửa hàng, giúp cơ sở kinh doanh dễ dàng quản lý sản phẩm và doanh thu, tối ưu năng lực vận hành.</p>");
-        html.append("<p>Nội dung của đề tài: Nội dung đề tài bám sát mục tiêu đề ra, bao gồm các phần: khảo sát thực trạng, phân tích yêu cầu, thiết kế hệ thống, triển khai và kiểm thử.</p>");
-        html.append("<p>Tài liệu tham khảo: Có trích dẫn nhưng chưa đầy đủ, cần phải bổ sung.</p>");
-        html.append("<p>Phương pháp nghiên cứu: Quy trình nghiên cứu đảm bảo tính khoa học và có sự kiểm thử để đánh giá kết quả.</p>");
-        html.append("<p>Tính sáng tạo và ứng dụng: Hệ thống có tính ứng dụng cao, có thể triển khai thực tế để hỗ trợ cơ sở kinh doanh</p>");
+        try {
+            var ssOpt = supervisorSummaryService.getByTopicId(request.getTopicId());
+            if (ssOpt.isPresent() && ssOpt.get().getContent() != null && !ssOpt.get().getContent().isBlank()) {
+                String raw = ssOpt.get().getContent();
+                try {
+                    com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                    java.util.Map<?,?> obj = om.readValue(raw, java.util.Map.class);
+                    String part1 = getStringOr(obj, "part1", "");
+                    String part2 = getStringOr(obj, "part2", "");
+                    String part3 = getStringOr(obj, "part3", "");
+                    Object approve = obj.get("conclusionApprove");
+                    String conclusionNote = getStringOr(obj, "conclusionNote", "");
+
+                    html.append("<p><strong>I. Nhận xét ĐAKLTN:</strong></p>");
+                    html.append("<div class='comments-box'>").append(renderRich(part1)).append("</div>");
+
         html.append("<p><strong>II. Nhận xét tinh thần và thái độ làm việc của sinh viên:</strong></p>");
-        html.append("<p>Sinh viên có tinh thần chủ động trong việc nghiên cứu và phát triển hệ thống. Trong quá trình thực hiện đồ án, sinh viên đáp ứng đúng tiến độ và yêu cầu đặt ra.</p>");
+                    html.append("<div class='comments-box'>").append(renderRich(part2)).append("</div>");
+
         html.append("<p><strong>III. Kết quả đạt được:</strong></p>");
-        html.append("<p>Hệ thống đã hoàn thiện các chức năng chính, bao gồm:</p>");
-        html.append("<p>Quản lý tài khoản người dùng.</p>");
-        html.append("<p>Quản lý thông tin doanh nghiệp và báo cáo tài chính.</p>");
-        html.append("<p>Quản lý thông tin sản phẩm</p>");
-        html.append("<p>Hệ thống hoạt động ổn định, giao diện trực quan, có tiềm năng tiếp tục phát triển để triển khai thực tế để hỗ trợ doanh nghiệp. Tuy nhiên, cần phải hoàn thiện và bổ sung thêm về các chức năng phân tích đa dạng hơn các dữ liệu.</p>");
-        html.append("<p><strong>IV. Kết luận:</strong></p>");
-        html.append("<p>☑ Đồng ý cho bảo vệ:</p>");
-        html.append("<p>☐ Không đồng ý cho bảo vệ:</p>");
+                    html.append("<div class='comments-box'>").append(renderRich(part3)).append("</div>");
+
+                    // Conclusion with checkboxes
+                    if (approve instanceof Boolean b) {
+                        html.append("<div class='conclusion-row'>");
+                        html.append("<div class='col-left'><strong>IV. Kết luận:</strong> Đồng ý cho bảo vệ: <span class='chkbox'>").append(b ? "✓" : "").append("</span></div>");
+                        html.append("<div class='col-right'>Không đồng ý cho bảo vệ: <span class='chkbox'>").append(!b ? "✓" : "").append("</span></div>");
+                        html.append("</div>");
+                        if (conclusionNote != null && !conclusionNote.isBlank()) {
+                            html.append("<div class='note-line'>Ghi chú: ").append(safeText(conclusionNote)).append("</div>");
+                        }
+                    } else {
+                        html.append("<div class='conclusion-row'>");
+                        html.append("<div class='col-left'><strong>IV. Kết luận:</strong> Đồng ý cho bảo vệ: <span class='chkbox'></span></div>");
+                        html.append("<div class='col-right'>Không đồng ý cho bảo vệ: <span class='chkbox'></span></div>");
+                        html.append("</div>");
+                    }
+                } catch (Exception ex) {
+                    html.append("<div class='comments-box'>").append(safeText(raw)).append("</div>");
+                }
+            } else {
+                // Empty placeholders
+                html.append("<p><strong>I. Nhận xét ĐAKLTN:</strong></p>");
+                html.append("<div class='comments-box'>...........................................................................................................................</div>");
+                html.append("<p><strong>II. Nhận xét tinh thần và thái độ làm việc của sinh viên:</strong></p>");
+                html.append("<div class='comments-box'>...........................................................................................................................</div>");
+                html.append("<p><strong>III. Kết quả đạt được:</strong></p>");
+                html.append("<div class='comments-box'>...........................................................................................................................</div>");
+                html.append("<div class='conclusion-row'><div class='col-left'><strong>IV. Kết luận:</strong> Đồng ý cho bảo vệ: <span class='chkbox'></span></div><div class='col-right'>Không đồng ý cho bảo vệ: <span class='chkbox'></span></div></div>");
+            }
+        } catch (Exception e) {
+            html.append("<p><strong>I. Nhận xét ĐAKLTN:</strong></p>");
+            html.append("<div class='comments-box'>...........................................................................................................................</div>");
+            html.append("<p><strong>II. Nhận xét tinh thần và thái độ làm việc của sinh viên:</strong></p>");
+            html.append("<div class='comments-box'>...........................................................................................................................</div>");
+            html.append("<p><strong>III. Kết quả đạt được:</strong></p>");
+            html.append("<div class='comments-box'>...........................................................................................................................</div>");
+            html.append("<div class='conclusion-row'><div class='col-left'><strong>IV. Kết luận:</strong> Đồng ý cho bảo vệ: <span class='chkbox'></span></div><div class='col-right'>Không đồng ý cho bảo vệ: <span class='chkbox'></span></div></div>");
+        }
         html.append("</div>");
         
         // Footer
         html.append("<div class='footer'>");
-        html.append("<div class='signature-section'>");
+        html.append("<div class='signature-section' style='text-align:right;'>");
         html.append("<p>Hà Nội, ngày ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("dd"))).append(" tháng ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("MM"))).append(" năm ").append(request.getEvaluationDate().format(DateTimeFormatter.ofPattern("yyyy"))).append("</p>");
         html.append("<p><strong>GIẢNG VIÊN HƯỚNG DẪN</strong></p>");
         html.append("<p>(Ký, ghi rõ họ tên)</p>");
         html.append("<div class='signature-space'></div>");
         html.append("<p>").append(supervisor.getName()).append("</p>");
-        html.append("</div>");
-        html.append("<div class='form-info'>");
-        html.append("<p>BM.DT.19.14 (02-15/05/2025)-BL: 5 năm</p>");
         html.append("</div>");
         html.append("</div>");
         
@@ -1132,12 +1286,7 @@ public class ComprehensiveEvaluationPDFService {
         table.append("</tbody>");
         table.append("</table>");
         
-        // Comments
-        if (member.getComments() != null && !member.getComments().trim().isEmpty()) {
-            table.append("<div class='comments-box'>");
-            table.append("<p><strong>Nhận xét:</strong> ").append(member.getComments()).append("</p>");
-            table.append("</div>");
-        }
+        // Comments moved to Section III; do not render here
         
         return table.toString();
     }
@@ -1209,12 +1358,7 @@ public class ComprehensiveEvaluationPDFService {
         table.append("</tbody>");
         table.append("</table>");
         
-        // Comments
-        if (reviewer.getComments() != null && !reviewer.getComments().trim().isEmpty()) {
-            table.append("<div class='comments-box'>");
-            table.append("<p><strong>Nhận xét:</strong> ").append(reviewer.getComments()).append("</p>");
-            table.append("</div>");
-        }
+        // Comments moved to Section III; do not render here
         
         return table.toString();
     }
@@ -1294,12 +1438,7 @@ public class ComprehensiveEvaluationPDFService {
         table.append("</tbody>");
         table.append("</table>");
         
-        // Comments
-        if (supervisor.getComments() != null && !supervisor.getComments().trim().isEmpty()) {
-            table.append("<div class='comments-box'>");
-            table.append("<p><strong>Nhận xét:</strong> ").append(supervisor.getComments()).append("</p>");
-            table.append("</div>");
-        }
+        // Comments moved to Section III; do not render here
         
         return table.toString();
     }
@@ -1342,18 +1481,29 @@ public class ComprehensiveEvaluationPDFService {
                     margin: 20px; 
                     line-height: 1.5; 
                     font-size: 14px;
+                    text-align: justify;
+                    text-justify: inter-word;
                 }
                 
                 .page-break {
                     page-break-before: always;
+                    break-before: page;
+                }
+                .page-after {
+                    page-break-after: always;
+                    break-after: page;
+                }
+                .page-container {
+                    page-break-inside: avoid;
+                    break-inside: avoid;
                 }
                 
                 .header { 
                     display: table; 
                     width: 100%;
-                    margin-bottom: 20px; 
-                    border-bottom: 2px solid #000; 
-                    padding-bottom: 10px; 
+                    margin-bottom: 16px; 
+                    border-bottom: none; 
+                    padding-bottom: 0; 
                 }
                 
                 .header-left, .header-right { 
@@ -1365,6 +1515,7 @@ public class ComprehensiveEvaluationPDFService {
                 .header p { 
                     margin: 2px 0; 
                     font-size: 11px; 
+                    text-align: center;
                 }
                 
                 .title { 
@@ -1381,6 +1532,7 @@ public class ComprehensiveEvaluationPDFService {
                 .section { 
                     margin: 20px 0; 
                 }
+                .section p { text-align: justify; text-justify: inter-word; }
                 
                 .section h2 { 
                     font-size: 13px; 
@@ -1420,6 +1572,7 @@ public class ComprehensiveEvaluationPDFService {
                     padding: 6px; 
                     border: 1px solid #000; 
                     vertical-align: top;
+                    text-align: justify;
                 }
                 
                 .info-table td:first-child { 
@@ -1437,6 +1590,15 @@ public class ComprehensiveEvaluationPDFService {
                 }
                 .info-list li { 
                     margin: 4px 0; 
+                }
+                /* Bulleted styles for reviewer comments */
+                .bullet { margin: 6px 0 6px 20px; padding-left: 0; list-style: none; }
+                .bullet > li { margin: 4px 0; }
+                .dot { margin: 4px 0 4px 18px; list-style: disc; }
+                .plus { margin: 4px 0 4px 18px; list-style: square; }
+                .inline-gap { 
+                    display: inline-block; 
+                    margin-left: 24px; 
                 }
                 
                 .evaluation-table th { 
@@ -1479,7 +1641,10 @@ public class ComprehensiveEvaluationPDFService {
                         #000 19px
                     );
                     line-height: 18px; 
+                    text-align: justify;
+                    text-justify: inter-word;
                 }
+                .comments-box p { margin: 0 0 6px; text-align: justify; }
 
                 .member-list { 
                     margin: 10px 0 10px 20px; 
@@ -1528,21 +1693,24 @@ public class ComprehensiveEvaluationPDFService {
                 }
                 
                 .footer { 
-                    margin-top: 40px; 
-                    display: table; 
+                    margin-top: 28px; 
+                    display: block;
                     width: 100%;
+                    page-break-inside: avoid;
                 }
                 
                 .signature-section { 
-                    display: table-cell;
-                    width: 70%;
-                    text-align: right; 
+                    display: table; 
+                    width: 100%;
+                    margin-top: 10px;
+                    page-break-inside: avoid;
                 }
                 
                 .signature-left, .signature-right {
                     display: table-cell;
                     width: 50%;
                     text-align: center;
+                    vertical-align: top;
                 }
                 
                 .signature-section p { 
@@ -1550,8 +1718,8 @@ public class ComprehensiveEvaluationPDFService {
                 }
                 
                 .signature-space { 
-                    height: 40px; 
-                    margin: 20px 0; 
+                    height: 20px; 
+                    margin: 10px 0; 
                 }
                 
                 .form-info { 
@@ -1561,6 +1729,11 @@ public class ComprehensiveEvaluationPDFService {
                     color: #666; 
                     vertical-align: bottom;
                 }
+                /* Conclusion checkboxes layout */
+                .conclusion-row { display: table; width: 100%; margin: 6px 0; }
+                .conclusion-row .col-left, .conclusion-row .col-right { display: table-cell; width: 50%; }
+                .chkbox { display: inline-block; width: 12px; height: 12px; border: 1px solid #000; line-height: 12px; text-align: center; font-size: 10px; margin-left: 6px; }
+                .note-line { margin-top: 4px; }
             </style>
             """;
     }
