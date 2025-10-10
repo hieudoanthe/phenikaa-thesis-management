@@ -27,14 +27,16 @@ public class AiChatServiceImpl implements AiChatService {
     private final LecturerCapacityRepository lecturerCapacityRepository;
     private final ProfileServiceClient profileServiceClient;
 
-    @Value("${ai.gemini.api-key:AIzaSyCUuAhB8wbCCCqrhlTXT83Sbe5c17GTJlU}")
+    @Value("${ai.gemini.api-key}")
     private String geminiApiKey;
-
+    @Value("${ai.gemini.model-name}")
+    private String geminiModelName;
     private ChatModel getChatModel() {
         return GoogleAiGeminiChatModel.builder()
                 .apiKey(geminiApiKey)
-                .modelName("gemini-2.0-flash")
-                .temperature(0.7)
+                .modelName(geminiModelName)
+                .temperature(0.45)
+                .topP(0.9)
                 .build();
     }
 

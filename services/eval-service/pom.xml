@@ -122,6 +122,21 @@
             <version>1.17.2</version>
         </dependency>
 
+        <!-- LangChain4j dependencies -->
+        <!-- Core API (chứa ChatLanguageModel) -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-core</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
+        <!-- Google Gemini integration -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-google-ai-gemini</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

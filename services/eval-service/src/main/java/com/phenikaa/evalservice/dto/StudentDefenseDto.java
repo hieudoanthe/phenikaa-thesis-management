@@ -33,24 +33,4 @@ public class StudentDefenseDto {
     private String sessionName;
     private String supervisorName;
     private String studentEmail;
-
-    // Convert từ Entity
-    public static StudentDefenseDto fromEntity(StudentDefense entity) {
-        return StudentDefenseDto.builder()
-                .studentDefenseId(entity.getStudentDefenseId())
-                .sessionId(entity.getDefenseSession() != null ? entity.getDefenseSession().getSessionId() : null)
-                .studentId(entity.getStudentId())
-                .topicId(entity.getTopicId())
-                .supervisorId(entity.getSupervisorId())
-                .studentName(entity.getStudentName())
-                .studentMajor(entity.getStudentMajor())
-                .topicTitle(entity.getTopicTitle())
-                .defenseOrder(entity.getDefenseOrder())
-                .defenseTime(entity.getDefenseTime())
-                .durationMinutes(entity.getDurationMinutes())
-                .status(entity.getStatus())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .build();
-    }
 }

@@ -3,9 +3,11 @@ package com.phenikaa.evalservice.service;
 import com.phenikaa.evalservice.client.ProfileServiceClient;
 import com.phenikaa.evalservice.client.ThesisServiceClient;
 import com.phenikaa.evalservice.dto.*;
+import com.phenikaa.evalservice.dto.request.ConfirmAutoAssignRequest;
 import com.phenikaa.evalservice.entity.DefenseSession;
 import com.phenikaa.evalservice.repository.DefenseSessionRepository;
 import com.phenikaa.evalservice.repository.DefenseCommitteeRepository;
+import com.phenikaa.evalservice.service.interfaces.AiAssignService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,9 @@ public class AutoAssignService {
     private final ProfileServiceClient profileServiceClient;
     private final DefenseSessionRepository defenseSessionRepository;
     private final DefenseCommitteeRepository defenseCommitteeRepository;
+    private final AiAssignService aiAssignService;
+    private final StudentAssignmentService studentAssignmentService;
+    private final DefenseSessionService defenseSessionService;
 
     public AutoAssignPreviewResponse preview(AutoAssignPreviewRequest req) {
         try {
@@ -38,7 +43,10 @@ public class AutoAssignService {
             Map<String, Object> page = thesisServiceClient.getAllStudentsByPeriod(String.valueOf(req.getPeriodId()), 0, 1000);
             Object content = page != null ? page.get("content") : null;
             List<Map<String, Object>> students = (content instanceof List)
-                    ? (List<Map<String, Object>>) content
+                    ? ((List<Map<String, Object>>) content).stream()
+                    .filter(Objects::nonNull)
+                    .filter(s -> "APPROVED".equalsIgnoreCase(String.valueOf(s.get("suggestionStatus"))))
+                    .collect(Collectors.toList())
                     : Collections.emptyList();
 
             // 2) Lấy danh sách giảng viên (từ profile-service per lecturerId khi cần) – ở đây lazy khi match
@@ -46,10 +54,6 @@ public class AutoAssignService {
             // 3) Chuẩn hóa & từ khóa trọng số
             // Helper normalize tiếng Việt
             final Map<String, Map<String,Integer>> WEIGHTED = buildWeightedKeywords();
-
-            // Reviewer load balancing
-            Map<Integer,Integer> reviewerLoad = new HashMap<>();
-            int maxReviewerLoad = 6;
 
             // Lấy tất cả buổi hiện có (loại bỏ buổi không hợp lệ nếu cần)
             List<DefenseSession> existing = defenseSessionRepository.findAll();
@@ -69,6 +73,7 @@ public class AutoAssignService {
                         .sessionName(ds.getSessionName())
                         .location(ds.getLocation())
                         .defenseDate(ds.getDefenseDate().atStartOfDay())
+                        .startTime(ds.getStartTime())
                         .maxStudents(max)
                         .virtualSession(false)
                         .students(new ArrayList<>())
@@ -87,7 +92,7 @@ public class AutoAssignService {
                                 try {
                                     var profile = profileServiceClient.getTeacherProfile(c.getLecturerId());
                                     String spec = stringOr(profile != null ? profile.get("specialization") : null, "");
-                                    reviewerSpecialization.put(c.getLecturerId(), normalizeMajor(spec));
+                                    reviewerSpecialization.put(c.getLecturerId(), spec);
                                 } catch (Exception ignored) {}
                             }
                         }
@@ -160,7 +165,6 @@ public class AutoAssignService {
                             .studentId(studentId)
                             .studentName(studentName)
                             .topicTitle(topicTitle)
-                            .major(major)
                             .reviewerId(reviewerId)
                             .reviewerName(reviewerName)
                             .build());
@@ -171,7 +175,6 @@ public class AutoAssignService {
                         .studentId(studentId)
                         .studentName(studentName)
                         .topicTitle(topicTitle)
-                        .major(major)
                         .reviewerId(reviewerId)
                         .reviewerName(reviewerName)
                         .build());
@@ -204,14 +207,257 @@ public class AutoAssignService {
     }
 
     public ConfirmAutoAssignResponse confirm(ConfirmAutoAssignRequest req) {
-        // Để an toàn, giữ confirm tạm thời trả về stub; sẽ implement gán thật theo repo hiện hữu nếu cần.
-        return ConfirmAutoAssignResponse.builder()
-                .success(true)
-                .totalAssigned(req != null && req.getAssignments()!=null ?
-                        req.getAssignments().stream().mapToInt(a -> a.getStudents()!=null ? a.getStudents().size():0).sum() : 0)
-                .createdSessions(0)
-                .message("Confirm received")
-                .build();
+        int totalAssigned = 0;
+        int createdSessions = 0;
+        try {
+            if (req == null || req.getAssignments() == null || req.getAssignments().isEmpty()) {
+                return ConfirmAutoAssignResponse.builder()
+                        .success(false)
+                        .totalAssigned(0)
+                        .createdSessions(0)
+                        .message("No assignments provided")
+                        .build();
+            }
+
+            Integer scheduleId = req.getScheduleId();
+            for (ConfirmAutoAssignRequest.SessionAssignmentDto s : req.getAssignments()) {
+                Integer sessionId = null;
+                boolean needCreate = (s.getSessionId() == null)
+                        || s.getSessionId().startsWith("preview-")
+                        || s.getSessionId().isBlank();
+                DefenseSession session;
+                if (needCreate) {
+                    // create new session with minimal info
+                    DefenseSessionDto dto = DefenseSessionDto.builder()
+                            .sessionName(s.getSessionName())
+                            .scheduleId(scheduleId)
+                            .defenseDate(s.getDefenseDate() != null ? s.getDefenseDate().toLocalDate() : null)
+                            .startTime(s.getDefenseDate())
+                            .endTime(s.getDefenseDate() != null ? s.getDefenseDate().plusHours(1) : null)
+                            .location(s.getLocation())
+                            .maxStudents(s.getStudents() != null ? Math.max(5, s.getStudents().size()) : 5)
+                            .notes("Created by AI confirm")
+                            .build();
+                    DefenseSessionDto created = defenseSessionService.createSession(dto);
+                    sessionId = created.getSessionId();
+                    createdSessions++;
+                } else {
+                    try {
+                        sessionId = Integer.valueOf(s.getSessionId());
+                    } catch (Exception ignored) {}
+                }
+                if (sessionId == null) {
+                    continue;
+                }
+                // assign students
+                if (s.getStudents() != null) {
+                    for (ConfirmAutoAssignRequest.StudentAssignDto st : s.getStudents()) {
+                        if (st == null || st.getStudentId() == null) continue;
+                        // enrich topic title if missing is optional; assign with minimum fields
+                        boolean ok = assignStudentToSessionInternal(sessionId, st);
+                        if (ok) totalAssigned++;
+                    }
+                }
+            }
+            return ConfirmAutoAssignResponse.builder()
+                    .success(true)
+                    .totalAssigned(totalAssigned)
+                    .createdSessions(createdSessions)
+                    .message("Confirmed")
+                    .build();
+        } catch (Exception e) {
+            return ConfirmAutoAssignResponse.builder()
+                    .success(false)
+                    .totalAssigned(totalAssigned)
+                    .createdSessions(createdSessions)
+                    .message("Error: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    private boolean assignStudentToSessionInternal(Integer sessionId, ConfirmAutoAssignRequest.StudentAssignDto st) {
+        try {
+            Integer topicId = st.getTopicId();
+            String studentName = st.getStudentName();
+            String major = st.getSpecialization();
+            String topicTitle = st.getTopicTitle();
+            
+            // Bắt buộc phải có topicId, nếu không có thì skip
+            if (topicId == null) {
+                log.warn("Sinh viên {} không có topicId, bỏ qua gán", st.getStudentId());
+                return false;
+            }
+            
+            // Lấy thông tin từ profile-service
+            try {
+                var profile = profileServiceClient.getStudentProfile(st.getStudentId());
+                if (profile != null) {
+                    if (studentName == null) studentName = stringOr(profile.get("fullName"), "Sinh viên " + st.getStudentId());
+                    if (major == null) major = stringOr(profile.get("major"), "Công nghệ thông tin");
+                }
+            } catch (Exception e) {
+                log.warn("Không thể lấy profile sinh viên {}: {}", st.getStudentId(), e.getMessage());
+            }
+            
+            
+            // Đảm bảo có giá trị mặc định
+            if (studentName == null) studentName = "Sinh viên " + st.getStudentId();
+            if (major == null) major = "Công nghệ thông tin";
+            
+            if (topicTitle == null || topicTitle.isBlank()) {
+                try {
+                    var topic = thesisServiceClient.getTopicById(topicId);
+                    if (topic != null) {
+                        String t1 = stringOr(topic.get("topicTitle"), null);
+                        String t2 = stringOr(topic.get("title"), null);
+                        topicTitle = (t1 != null && !t1.isBlank()) ? t1 : (t2 != null ? t2 : "N/A");
+                    }
+                } catch (Exception ignored) {}
+            }
+            
+            if (topicTitle == null) topicTitle = "N/A";
+            
+            return studentAssignmentService.assignStudentToSession(
+                    sessionId,
+                    st.getStudentId(),
+                    topicId,
+                    null, // Bỏ supervisorId
+                    studentName,
+                    major,
+                    topicTitle
+            );
+        } catch (Exception e) {
+            log.error("Lỗi khi gán sinh viên {} vào buổi {}: {}", st.getStudentId(), sessionId, e.getMessage());
+            return false;
+        }
+    }
+
+    public AutoAssignPreviewResponse previewWithGemini(AutoAssignPreviewRequest req) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("periodId", req != null ? req.getPeriodId() : null);
+
+        // Collect students for the given period (limit reasonable page size)
+        List<Map<String, Object>> studentInputs = new ArrayList<>();
+        try {
+            Map<String, Object> page = thesisServiceClient.getAllStudentsByPeriod(String.valueOf(req.getPeriodId()), 0, 1000);
+            Object content = page != null ? page.get("content") : null;
+            List<Map<String, Object>> students = (content instanceof List)
+                    ? ((List<Map<String, Object>>) content).stream()
+                    .filter(Objects::nonNull)
+                    .filter(s -> "APPROVED".equalsIgnoreCase(String.valueOf(s.get("suggestionStatus"))))
+                    .collect(Collectors.toList())
+                    : Collections.emptyList();
+            for (Map<String, Object> s : students) {
+                Map<String, Object> si = new HashMap<>();
+                Integer stId = toInt(s.get("studentId"));
+                si.put("studentId", stId);
+                si.put("fullName", s.get("fullName"));
+
+                // enrich topic title if missing
+                String topicTitle = stringOr(s.get("topicTitle"), "");
+                Integer topicId = toInt(s.get("topicId"));
+                if ((topicTitle == null || topicTitle.isBlank()) && topicId != null) {
+                    try {
+                        var topic = thesisServiceClient.getTopicById(topicId);
+                        if (topic != null) {
+                            String t1 = stringOr(topic.get("topicTitle"), null);
+                            String t2 = stringOr(topic.get("title"), null);
+                            topicTitle = (t1 != null && !t1.isBlank()) ? t1 : (t2 != null ? t2 : "");
+                        }
+                    } catch (Exception ignored) {}
+                }
+                if (topicTitle == null) topicTitle = "";
+                si.put("topicTitle", topicTitle);
+                studentInputs.add(si);
+            }
+        } catch (Exception ignored) {}
+        payload.put("students", studentInputs);
+
+        // Collect existing sessions and reviewer context
+        List<Map<String, Object>> sessionInputs = new ArrayList<>();
+        Map<Integer, List<Integer>> sessionReviewers = new HashMap<>();
+        Map<Integer, String> reviewerSpecialization = new HashMap<>();
+        try {
+            List<DefenseSession> existing = defenseSessionRepository.findAll();
+            for (DefenseSession ds : existing) {
+                if (ds == null) continue;
+                Map<String, Object> si = new HashMap<>();
+                si.put("sessionId", String.valueOf(ds.getSessionId()));
+                si.put("sessionName", ds.getSessionName());
+                si.put("location", ds.getLocation());
+                si.put("defenseDate", ds.getDefenseDate() != null ? ds.getDefenseDate().atStartOfDay() : null);
+                si.put("maxStudents", ds.getMaxStudents() == null ? 5 : ds.getMaxStudents());
+                sessionInputs.add(si);
+
+                // reviewers
+                var committees = defenseCommitteeRepository.findByDefenseSession_SessionId(ds.getSessionId());
+                List<Integer> reviewers = new ArrayList<>();
+                if (committees != null) {
+                    for (var c : committees) {
+                        if (c != null && c.getRole() == com.phenikaa.evalservice.entity.DefenseCommittee.CommitteeRole.REVIEWER && c.getLecturerId() != null) {
+                            reviewers.add(c.getLecturerId());
+                            if (!reviewerSpecialization.containsKey(c.getLecturerId())) {
+                                try {
+                                    var profile = profileServiceClient.getTeacherProfile(c.getLecturerId());
+                                    String spec = stringOr(profile != null ? profile.get("specialization") : null, "");
+                                    reviewerSpecialization.put(c.getLecturerId(), spec);
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    }
+                }
+                sessionReviewers.put(ds.getSessionId(), reviewers);
+            }
+        } catch (Exception ignored) {}
+        payload.put("sessions", sessionInputs);
+        payload.put("sessionReviewers", sessionReviewers);
+        payload.put("reviewerSpecialization", reviewerSpecialization);
+
+        // Directly use internal AI service instead of external ThesisAiClient
+        AutoAssignPreviewResponse aiResp = aiAssignService.generatePreview(payload);
+
+        // Enrich reviewer info when missing using known sessionReviewers/profile service
+        try {
+            if (aiResp != null && aiResp.getSessions() != null) {
+                for (SessionPreviewDto ses : aiResp.getSessions()) {
+                    Integer sid = null;
+                    try { sid = ses.getSessionId() != null ? Integer.valueOf(ses.getSessionId()) : null; } catch (Exception ignored) {}
+                    List<Integer> revs = sid != null ? sessionReviewers.getOrDefault(sid, java.util.Collections.emptyList()) : java.util.Collections.emptyList();
+                    // Enrich startTime from DB for existing sessions
+                    if (sid != null) {
+                        try {
+                            Optional<DefenseSession> sOpt = defenseSessionRepository.findById(sid);
+                            if (sOpt.isPresent() && sOpt.get().getStartTime() != null) {
+                                ses.setStartTime(sOpt.get().getStartTime());
+                            }
+                            if (sOpt.isPresent() && sOpt.get().getDefenseDate() != null && (ses.getDefenseDate() == null)) {
+                                ses.setDefenseDate(sOpt.get().getDefenseDate().atStartOfDay());
+                            }
+                            if (sOpt.isPresent() && sOpt.get().getLocation() != null && (ses.getLocation() == null || ses.getLocation().isBlank())) {
+                                ses.setLocation(sOpt.get().getLocation());
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    if (ses.getStudents() == null) continue;
+                    for (StudentPreviewDto st : ses.getStudents()) {
+                        if ((st.getReviewerId() == null || st.getReviewerId() <= 0) && !revs.isEmpty()) {
+                            st.setReviewerId(revs.get(0));
+                        }
+                        if ((st.getReviewerName() == null || st.getReviewerName().isBlank()) && st.getReviewerId() != null) {
+                            try {
+                                var prof = profileServiceClient.getTeacherProfile(st.getReviewerId());
+                                String rname = stringOr(prof != null ? prof.get("fullName") : null, null);
+                                if (rname != null && !rname.isBlank()) st.setReviewerName(rname);
+                                String rspec = stringOr(prof != null ? prof.get("specialization") : null, null);
+                                if (rspec != null && !rspec.isBlank()) st.setReviewerSpecialization(rspec);
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        return aiResp;
     }
 
     // ============== helpers ==================
@@ -223,6 +469,15 @@ public class AutoAssignService {
     }
     private static Integer toIntSafe(Object v) {
         try { return Integer.valueOf(String.valueOf(v)); } catch (Exception e) { return null; }
+    }
+    private static LocalDateTime parseDateTimeOrNow(Object v) {
+        try {
+            if (v == null) return LocalDateTime.now();
+            if (v instanceof LocalDateTime ldt) return ldt;
+            return LocalDateTime.parse(String.valueOf(v));
+        } catch (Exception e) {
+            return LocalDateTime.now();
+        }
     }
     private static String normalizeMajor(String text) {
         String n = normalizeVi(text);

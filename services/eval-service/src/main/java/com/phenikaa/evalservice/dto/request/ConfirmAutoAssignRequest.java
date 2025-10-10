@@ -1,4 +1,4 @@
-package com.phenikaa.evalservice.dto;
+package com.phenikaa.evalservice.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,7 +18,7 @@ public class ConfirmAutoAssignRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SessionAssignmentDto {
-        private String sessionId; // nếu null hoặc preview-* thì tạo mới
+        private String sessionId;
         private String sessionName;
         private String location;
         private LocalDateTime defenseDate;
@@ -30,7 +30,10 @@ public class ConfirmAutoAssignRequest {
     @AllArgsConstructor
     public static class StudentAssignDto {
         private Integer studentId;
+        private Integer topicId;
         private Integer reviewerId;
+        private String studentName;
+        private String specialization;
         private String topicTitle;
     }
 }

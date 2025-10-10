@@ -13,9 +13,9 @@ public class StudentPreviewDto {
     private Integer studentId;
     private String studentName;
     private String topicTitle;
-    private String major;
     private Integer reviewerId; 
     private String reviewerName;
+    private String reviewerSpecialization;
 }
 
 

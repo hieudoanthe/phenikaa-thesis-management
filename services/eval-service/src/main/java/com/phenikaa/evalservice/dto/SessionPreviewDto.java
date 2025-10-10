@@ -13,12 +13,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SessionPreviewDto {
-    private String sessionId; // có thể là preview-*, nếu là buổi mới
+    private String sessionId;
     private String sessionName;
     private String location;
     private LocalDateTime defenseDate;
+    private LocalDateTime startTime;
     private Integer maxStudents;
-    private Boolean virtualSession; // buổi bổ sung
+    private Boolean virtualSession;
     private List<StudentPreviewDto> students;
 }
 

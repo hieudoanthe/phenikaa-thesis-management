@@ -26,7 +26,6 @@ public class StudentAssignmentService {
 
     private final DefenseSessionRepository defenseSessionRepository;
     private final StudentDefenseRepository studentDefenseRepository;
-    private final ThesisServiceClient thesisServiceClient;
     private final NotificationServiceClient notificationServiceClient;
 
 
@@ -143,11 +142,18 @@ public class StudentAssignmentService {
      */
     private void sendAssignmentNotification(Integer studentId, DefenseSession session, String studentName, String topicTitle) {
         try {
+            // Format thời gian
+            String timeInfo = "";
+            if (session.getStartTime() != null) {
+                timeInfo = String.format(" lúc %s", session.getStartTime().toString());
+            }
+            
             // Tạo nội dung thông báo
             String message = String.format(
-                "Bạn đã được gán vào buổi bảo vệ đề tài '%s' vào ngày %s tại %s. Vui lòng chuẩn bị và có mặt đúng giờ.",
+                "Bạn đã được thêm vào buổi bảo vệ đề tài '%s' vào ngày %s%s tại %s. Vui lòng chuẩn bị và có mặt đúng giờ.",
                 topicTitle,
                 session.getDefenseDate().toString(),
+                timeInfo,
                 session.getLocation()
             );
 
@@ -176,11 +182,18 @@ public class StudentAssignmentService {
      */
     private void sendUnassignmentNotification(Integer studentId, DefenseSession session, String studentName, String topicTitle) {
         try {
+            // Format thời gian
+            String timeInfo = "";
+            if (session.getStartTime() != null) {
+                timeInfo = String.format(" lúc %s", session.getStartTime().toString());
+            }
+            
             // Tạo nội dung thông báo
             String message = String.format(
-                "Bạn đã bị hủy gán khỏi buổi bảo vệ đề tài '%s' vào ngày %s tại %s. Vui lòng liên hệ với giảng viên hướng dẫn để biết thêm thông tin.",
+                "Bạn đã bị xóa khỏi buổi bảo vệ đề tài '%s' vào ngày %s%s tại %s. Vui lòng liên hệ với giảng viên hướng dẫn để biết thêm thông tin.",
                 topicTitle,
                 session.getDefenseDate().toString(),
+                timeInfo,
                 session.getLocation()
             );
 
@@ -248,6 +261,18 @@ public class StudentAssignmentService {
             return availableSessions;
         } catch (Exception e) {
             log.error("Lỗi khi lấy danh sách buổi bảo vệ có sẵn: ", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Lấy tất cả assignments của sinh viên (tối ưu cho performance)
+     */
+    public List<StudentDefense> getAllStudentAssignments() {
+        try {
+            return studentDefenseRepository.findAllWithDefenseSession();
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy tất cả assignments: ", e);
             return new ArrayList<>();
         }
     }

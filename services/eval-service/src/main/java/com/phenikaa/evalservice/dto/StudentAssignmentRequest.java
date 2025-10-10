@@ -13,7 +13,7 @@ public class StudentAssignmentRequest {
     private String assignmentStrategy = "BY_MAJOR"; // Chiến lược phân chia: BY_MAJOR, ROUND_ROBIN, MANUAL
     
     // Các tùy chọn phân chia
-    private Integer maxStudentsPerSession = 10; // Số sinh viên tối đa mỗi buổi
+    private Integer maxStudentsPerSession = 5; // Số sinh viên tối đa mỗi buổi
     private Boolean balanceByMajor = true; // Cân bằng theo chuyên ngành
     private Boolean considerLecturerAvailability = true; // Xem xét lịch giảng viên
 }

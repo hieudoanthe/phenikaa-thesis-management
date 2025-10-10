@@ -28,3 +28,10 @@ logging:
     org.springframework: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# AI Configuration
+ai:
+  gemini:
+    api-key: AIzaSyBa4bUvYPCt1wIiKwlpt6Cd3MTMW1684vw
+    #    model-name: gemini-2.5-pro
+    model-name: gemini-2.0-flash

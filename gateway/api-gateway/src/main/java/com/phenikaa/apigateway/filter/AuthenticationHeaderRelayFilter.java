@@ -25,9 +25,6 @@ public class AuthenticationHeaderRelayFilter implements WebFilter {
                     String roles = auth.getAuthorities().stream()
                             .map(GrantedAuthority::getAuthority)
                             .collect(Collectors.joining(","));
-
-                    log.info("Relay headers → X-Username={}, X-Roles={}, X-Internal-Secret=abc123", username, roles);
-
                     ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                             .header("X-Username", username)
                             .header("X-Roles", roles)

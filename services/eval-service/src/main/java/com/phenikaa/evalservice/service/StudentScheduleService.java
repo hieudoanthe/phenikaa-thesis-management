@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class StudentScheduleService {
 
-    private final DefenseSessionRepository defenseSessionRepository;
     private final StudentDefenseRepository studentDefenseRepository;
     private final ThesisServiceClient thesisServiceClient;
 

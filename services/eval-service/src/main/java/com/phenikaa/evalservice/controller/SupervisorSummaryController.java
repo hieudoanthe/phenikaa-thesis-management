@@ -1,7 +1,7 @@
 package com.phenikaa.evalservice.controller;
 
 import com.phenikaa.evalservice.entity.SupervisorSummary;
-import com.phenikaa.evalservice.service.SupervisorSummaryService;
+import com.phenikaa.evalservice.service.implement.SupervisorSummaryServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +12,7 @@ import java.util.Map;
 @RequestMapping("/api/eval-service/teacher/supervisor-summary")
 @RequiredArgsConstructor
 public class SupervisorSummaryController {
-    private final SupervisorSummaryService service;
+    private final SupervisorSummaryServiceImpl service;
 
     @GetMapping("/{topicId}")
     public ResponseEntity<SupervisorSummary> get(@PathVariable Integer topicId) {

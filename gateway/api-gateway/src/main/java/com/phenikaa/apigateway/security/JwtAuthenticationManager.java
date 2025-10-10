@@ -35,7 +35,6 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
 
-        log.info("Permission: {}", authentication.getName());
         Authentication auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
         return Mono.just(auth);
     }

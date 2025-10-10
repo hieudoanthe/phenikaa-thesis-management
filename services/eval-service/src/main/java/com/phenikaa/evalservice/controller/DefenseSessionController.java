@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -294,16 +295,15 @@ public class DefenseSessionController {
             List<StudentDefense> assignments = studentAssignmentService.getAssignedStudents(sessionId);
             List<Map<String, Object>> result = assignments.stream()
                 .map(assignment -> {
-                    Map<String, Object> map = Map.of(
-                        "studentId", assignment.getStudentId(),
-                        "studentName", assignment.getStudentName(),
-                        "studentMajor", assignment.getStudentMajor(),
-                        "topicId", assignment.getTopicId(),
-                        "topicTitle", assignment.getTopicTitle(),
-                        "supervisorId", assignment.getSupervisorId(),
-                        "defenseOrder", assignment.getDefenseOrder(),
-                        "status", assignment.getStatus().toString()
-                    );
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("studentId", assignment.getStudentId());
+                    map.put("studentName", assignment.getStudentName() != null ? assignment.getStudentName() : "N/A");
+                    map.put("studentMajor", assignment.getStudentMajor() != null ? assignment.getStudentMajor() : "N/A");
+                    map.put("topicId", assignment.getTopicId());
+                    map.put("topicTitle", assignment.getTopicTitle() != null ? assignment.getTopicTitle() : "N/A");
+                    map.put("supervisorId", assignment.getSupervisorId());
+                    map.put("defenseOrder", assignment.getDefenseOrder());
+                    map.put("status", assignment.getStatus() != null ? assignment.getStatus().toString() : "N/A");
                     return map;
                 })
                 .collect(Collectors.toList());
@@ -311,6 +311,37 @@ public class DefenseSessionController {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Lỗi khi lấy danh sách sinh viên đã gán cho buổi bảo vệ {}: ", sessionId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Lấy tất cả assignments của sinh viên (tối ưu cho performance)
+     * @return Danh sách tất cả assignments
+     */
+    @GetMapping("/student-assignments")
+    public ResponseEntity<List<Map<String, Object>>> getAllStudentAssignments() {
+        try {
+            List<StudentDefense> allAssignments = studentAssignmentService.getAllStudentAssignments();
+            List<Map<String, Object>> result = allAssignments.stream()
+                .filter(assignment -> assignment.getDefenseSession() != null) // Lọc bỏ assignments có defenseSession null
+                .map(assignment -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("studentId", assignment.getStudentId());
+                    map.put("sessionId", assignment.getDefenseSession().getSessionId());
+                    map.put("sessionName", assignment.getDefenseSession().getSessionName());
+                    map.put("location", assignment.getDefenseSession().getLocation());
+                    map.put("defenseDate", assignment.getDefenseSession().getDefenseDate());
+                    map.put("startTime", assignment.getDefenseSession().getStartTime());
+                    map.put("endTime", assignment.getDefenseSession().getEndTime());
+                    map.put("defenseOrder", assignment.getDefenseOrder());
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy tất cả assignments: ", e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -341,4 +372,5 @@ public class DefenseSessionController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
 }

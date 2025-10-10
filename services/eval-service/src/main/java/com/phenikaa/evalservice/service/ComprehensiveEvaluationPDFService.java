@@ -10,6 +10,7 @@ import com.phenikaa.evalservice.entity.ProjectEvaluation;
 import com.phenikaa.evalservice.exception.PDFGenerationException;
 import com.phenikaa.evalservice.repository.ProjectEvaluationRepository;
 import com.phenikaa.evalservice.repository.StudentDefenseRepository;
+import com.phenikaa.evalservice.service.implement.SupervisorSummaryServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,7 +41,7 @@ public class ComprehensiveEvaluationPDFService {
     private final CouncilSummaryService councilSummaryService;
     private final ReviewerSummaryService reviewerSummaryService;
     private final EvaluationService evaluationService;
-    private final SupervisorSummaryService supervisorSummaryService;
+    private final SupervisorSummaryServiceImpl supervisorSummaryService;
     
     /**
      * Tạo PDF tổng hợp đánh giá từ tất cả người chấm

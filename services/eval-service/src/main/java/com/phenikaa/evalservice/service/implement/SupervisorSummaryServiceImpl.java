@@ -1,4 +1,4 @@
-package com.phenikaa.evalservice.service;
+package com.phenikaa.evalservice.service.implement;
 
 import com.phenikaa.evalservice.entity.SupervisorSummary;
 import com.phenikaa.evalservice.repository.StudentDefenseRepository;
@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class SupervisorSummaryService {
+public class SupervisorSummaryServiceImpl {
     private final SupervisorSummaryRepository repository;
     private final StudentDefenseRepository studentDefenseRepository;
 
