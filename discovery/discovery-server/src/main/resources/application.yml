@@ -1,13 +1,13 @@
 server:
-  port: 8761
+  port: ${DISCOVERY_SERVER_PORT}
 
 spring:
   application:
-    name: discovery-server
+    name: ${DISCOVERY_SERVER_NAME}
 
 eureka:
   client:
-    register-with-eureka: false  # Eureka server không tự đăng ký chính nó
-    fetch-registry: false
+    register-with-eureka: ${EUREKA_CLIENT_REGISTER_WITH_EUREKA}
+    fetch-registry: ${EUREKA_CLIENT_FETCH_REGISTRY}
   server:
-    enable-self-preservation: false  # (tùy chọn) để dễ debug lúc dev
+    enable-self-preservation: ${EUREKA_SERVER_ENABLE_SELF_PRESERVATION}

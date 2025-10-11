@@ -1,107 +1,94 @@
 server:
-  port: 8080
+  port: ${API_GATEWAY_PORT}
 
 spring:
   config:
     import: optional:file:.env[.properties],optional:file:../.env[.properties],optional:file:../../.env[.properties],optional:classpath:.env[.properties]
   main:
-    web-application-type: reactive
+    web-application-type: ${SPRING_MAIN_WEB_APPLICATION_TYPE}
   application:
-    name: api-gateway
+    name: ${API_GATEWAY_NAME}
   security:
     user:
-      name: none
-      password: none
+      name: ${SPRING_SECURITY_USER_NAME}
+      password: ${SPRING_SECURITY_USER_PASSWORD}
   cloud:
     gateway:
       discovery:
         locator:
-          enabled: true
-          lower-case-service-id: true
+          enabled: ${SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_ENABLED}
+          lower-case-service-id: ${SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_LOWER_CASE_SERVICE_ID}
 
       routes:
-        - id: auth-service
-          #          uri: lb://auth-service
+        - id: ${AUTH_SERVICE_NAME}
           uri: ${AUTH_SERVICE_URL:https://auth-service-production-c217.up.railway.app}
           predicates:
             - Path=/api/auth/**
 
-        - id: user-service
+        - id: ${USER_SERVICE_NAME}
           uri: ${USER_SERVICE_URL:https://user-service-production-495b.up.railway.app}
           predicates:
             - Path=/api/user-service/student/**, /api/user-service/admin/**, /api/teacher/**, /internal/users/**
 
-        - id: thesis-service
+        - id: ${THESIS_SERVICE_NAME}
           uri: ${THESIS_SERVICE_URL:https://thesis-service-production.up.railway.app}
           predicates:
             - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**, /internal/periods/**, /api/period-statistics/**
 
-        - id: assign-service
-          #          uri: lb://assign-service
+        - id: ${ASSIGN_SERVICE_NAME}
           uri: ${ASSIGN_SERVICE_URL:https://assign-service-production.up.railway.app}
           predicates:
             - Path=/api/assign-service/**, /internal/assignments/**
 
-        - id: profile-service
-          #          uri: lb://profile-service
+        - id: ${PROFILE_SERVICE_NAME}
           uri: ${PROFILE_SERVICE_URL:https://profile-service-production-5af6.up.railway.app}
           predicates:
             - Path=/api/profile-service/**, /internal/profiles/**
 
-        - id: academic-config-service
-          #          uri: lb://academic-config-service
+        - id: ${ACADEMIC_CONFIG_SERVICE_NAME}
           uri: ${ACADEMIC_CONFIG_SERVICE_URL:https://academic-config-service-production.up.railway.app}
           predicates:
             - Path=/api/academic-config-service/**, /internal/academic/**
 
-        - id: eval-service
-          #          uri: lb://eval-service
+        - id: ${EVAL_SERVICE_NAME}
           uri: ${EVAL_SERVICE_SERVICE_URL:https://eval-service-production.up.railway.app}
           predicates:
             - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**, /internal/evaluations/**
 
-        - id: submission-service
-          uri: lb://submission-service
-          #          uri: ${SUBMISSION_SERVICE_URL}
+        - id: ${SUBMISSION_SERVICE_NAME}
+          uri: ${SUBMISSION_SERVICE_URL}
           predicates:
             - Path=/api/submission-service/**, /internal/submissions/**
 
-        - id: communication-log-service
-          uri: lb://communication-log-service
-          #          uri: ${COMMUNICATION_LOG_SERVICE_URL}
+        - id: ${COMMUNICATION_LOG_SERVICE_NAME}
+          uri: ${COMMUNICATION_LOG_SERVICE_URL}
           predicates:
             - Path=/notifications/**, /chat/**, /api/communication-log-service/**, /api/communication-service/**
 
-        - id: communication-log-service-ws
-          uri: lb:ws://communication-log-service
-          #          uri: ${COMMUNICATION_LOG_SERVICE_WS_URL}
+        - id: ${COMMUNICATION_LOG_SERVICE_NAME_WS}
+          uri: ${COMMUNICATION_LOG_SERVICE_WS_URL}
           predicates:
             - Path=/ws/notifications/**, /ws/chat/**
 
 eureka:
   instance:
-    prefer-ip-address: false
-    hostname: ${RAILWAY_PUBLIC_DOMAIN:api-gateway-production-95a5.up.railway.app} # hostname public
+    prefer-ip-address: ${EURKA_INSTANCE_PREFER_IP_ADDRESS}
+    hostname: ${DOMAIN_LOCAL:api-gateway-production-95a5.up.railway.app}
     instance-id: ${spring.application.name}:${random.value}
     non-secure-port: 8080
   client:
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
-    fetch-registry: true
-    register-with-eureka: true
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+    fetch-registry: ${EUREKA_CLIENT_FETCH_REGISTRY}
+    register-with-eureka: ${EUREKA_CLIENT_REGISTER_WITH_EUREKA}
 
 jwt:
-  secret: VHJlbmRvaW5heW5ndW9pZGFuZ2RldHJhbnRyb25nbmFodGFsYW5ndW9pZGFzYW5zYW5nYm90aG9pZ2lhbmRlY2hhbXNvY2JhblRob2lnaWFuY3VhYWljdW5nZGV1ZGFuZ3F1eW5odW5oYWVkZW10aG9pZ2lhbmN1YW5ndW95ZGFuaGNob2JhbmNvbmdnaW9uZ2h1dmllY2RlbWNhdGhlZ2lvaWN1YWJhbnRoYW5jaGlhc2VjdW5nYmFu
-  expiration: 86400000
-  refresh-expiration: 604800000
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION}
 
 logging:
   level:
     org.springframework.security: WARN
     org.springframework.web.socket: DEBUG
     org.springframework.cloud.loadbalancer: DEBUG
-    org.springframework.cloud.circuitbreaker: WARN
-
-resilience4j:
-  circuitbreaker:
-    instances: {}

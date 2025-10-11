@@ -1,23 +1,25 @@
 server:
-  port: 8888
+  port: ${CONFIG_SERVER_PORT}
 
 spring:
   cloud:
     config:
       server:
         git:
-          uri: https://github.com/hieudoanthe/phenikaa-config-repo.git
-          default-label: main
+          uri: ${SPRING_CLOUD_CONFIG_SERVER_GIT_URI}
+          default-label: ${SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL}
+          username: ${SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME}
+          password: ${SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD}
           search-paths:
-            - thesis-service
-            - user-service
-            - academic-config-service
-            - assign-service
-            - communication-log-service
-            - eval-service
-            - profile-service
-            - submission-service
-            - auth-service
+            - ${USER_SERVICE_NAME}
+            - ${AUTH_SERVICE_NAME}
+            - ${THESIS_SERVICE_NAME}
+            - ${ACADEMIC_CONFIG_SERVICE_NAME}
+            - ${ASSIGN_SERVICE_NAME}
+            - ${COMMUNICATION_LOG_SERVICE_NAME}
+            - ${EVAL_SERVICE_NAME}
+            - ${PROFILE_SERVICE_NAME}
+            - ${SUBMISSION_SERVICE_NAME}
 
 logging:
   level:
