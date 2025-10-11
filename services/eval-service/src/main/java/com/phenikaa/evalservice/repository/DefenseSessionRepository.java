@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface DefenseSessionRepository extends JpaRepository<DefenseSession, Integer> {
@@ -25,6 +26,9 @@ public interface DefenseSessionRepository extends JpaRepository<DefenseSession, 
 
     // Tìm các buổi bảo vệ theo trạng thái
     List<DefenseSession> findByStatus(DefenseSession.SessionStatus status);
+
+    // Tìm các buổi bảo vệ theo nhiều trạng thái
+    List<DefenseSession> findByStatusIn(Set<DefenseSession.SessionStatus> statuses);
 
     // Tìm các buổi bảo vệ có thể thêm sinh viên (chưa đầy)
     @Query("SELECT ds FROM DefenseSession ds WHERE ds.status = 'SCHEDULED' AND " +

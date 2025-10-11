@@ -1,7 +1,8 @@
 package com.phenikaa.academicservice.service.interfaces;
 
+import com.phenikaa.academicservice.dto.CreateAcademicYearRequest;
+import com.phenikaa.academicservice.dto.UpdateAcademicYearRequest;
 import com.phenikaa.dto.response.GetAcademicResponse;
-import com.phenikaa.academicservice.entity.AcademicYear;
 
 import java.util.List;
 import java.util.Map;
@@ -17,8 +18,23 @@ public interface AcademicService {
     // Active một năm học
     GetAcademicResponse activateAcademicYear(Integer yearId);
     
+    // Deactivate một năm học
+    GetAcademicResponse deactivateAcademicYear(Integer yearId);
+    
+    // Tạo năm học mới
+    GetAcademicResponse createAcademicYear(CreateAcademicYearRequest request);
+    
+    // Cập nhật năm học
+    GetAcademicResponse updateAcademicYear(Integer yearId, UpdateAcademicYearRequest request);
+    
+    // Xóa năm học
+    void deleteAcademicYear(Integer yearId);
+    
     // Deactive tất cả năm học khác
-    void deactivateOtherAcademicYears(Integer yearId);
+    int deactivateOtherAcademicYears(Integer yearId);
+    
+    // Validate rằng chỉ có 1 năm học active
+    void validateSingleActiveAcademicYear();
     
     // Statistics methods
     List<Map<String, Object>> getAllAcademicYears();

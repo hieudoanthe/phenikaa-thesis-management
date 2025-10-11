@@ -23,7 +23,7 @@ public class DefenseSession {
     private Integer sessionId;
 
     @Column(name = "session_name", columnDefinition = "nvarchar(255)")
-    private String sessionName; // Ví dụ: "Buổi 1 - Sáng thứ 2"
+    private String sessionName;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_id")

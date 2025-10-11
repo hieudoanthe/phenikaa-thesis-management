@@ -124,11 +124,20 @@ public class UserServiceImpl implements UserService {
         if (userOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
         }
+        
+        User user = userOpt.get();
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(role -> role.getRoleName().name().equals("ADMIN"));
+        
+        if (isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không thể xóa tài khoản Admin!");
+        }
+        
         try {
             refreshTokenRepository.deleteByUser_UserId(userId);
         } catch (Exception ignored) {}
 
-        userRepository.delete(userOpt.get());
+        userRepository.delete(user);
         profileServiceClient.deleteProfile(userId);
     }
 
