@@ -1,12 +1,9 @@
 package com.phenikaa.userservice.controller;
 
-import com.phenikaa.dto.response.GetUserResponse;
 import com.phenikaa.userservice.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/internal/users")
@@ -18,19 +15,19 @@ public class InternalStatisticsController {
 
     @GetMapping("/get-user-count")
     public Long getUserCount() {
-        log.info("Getting total user count");
+        log.info("Đang lấy tổng số người dùng");
         return userService.getUserCount();
     }
     
     @GetMapping("/get-user-count-by-role")
     public Long getUserCountByRole(@RequestParam String role) {
-        log.info("Getting user count by role: {}", role);
+        log.info("Đang lấy số lượng người dùng theo vai trò: {}", role);
         return userService.getUserCountByRole(role);
     }
     
     @GetMapping("/get-student-count-by-period")
     public Long getStudentCountByPeriod(@RequestParam Integer periodId) {
-        log.info("Getting student count by period: {}", periodId);
+        log.info("Đang lấy số lượng sinh viên theo đợt: {}", periodId);
         return userService.getStudentCountByPeriod(periodId);
     }
 }

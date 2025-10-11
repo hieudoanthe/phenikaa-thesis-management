@@ -7,14 +7,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.*;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class DynamicFilterBuilder {
-    
-    /**
-     * Tạo specification từ dynamic filter request
-     */
+
     public static Specification<User> buildSpecification(DynamicFilterRequest request) {
         return (root, query, criteriaBuilder) -> {
             if (request.getCriteria() == null || request.getCriteria().isEmpty()) {

@@ -13,13 +13,13 @@ import java.util.List;
 public class UserSpecification {
     
     /**
-     * Tạo specification để filter người dùng theo các tiêu chí
+     * Lọc người dùng theo các tiêu chí
      */
     public static Specification<User> withFilter(UserFilterRequest filterRequest) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new java.util.ArrayList<>();
             
-            // Filter theo username
+            // Lọc theo tên đăng nhập
             if (StringUtils.hasText(filterRequest.getUsername())) {
                 predicates.add(criteriaBuilder.like(
                     criteriaBuilder.lower(root.get("username")),
@@ -27,7 +27,7 @@ public class UserSpecification {
                 ));
             }
             
-            // Filter theo fullName
+            // Lọc theo tên người dùng
             if (StringUtils.hasText(filterRequest.getFullName())) {
                 predicates.add(criteriaBuilder.like(
                     criteriaBuilder.lower(root.get("fullName")),
@@ -35,12 +35,12 @@ public class UserSpecification {
                 ));
             }
             
-            // Filter theo status
+            // Lọc theo trạng thái
             if (filterRequest.getStatus() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("status"), filterRequest.getStatus()));
             }
             
-            // Filter theo vai trò
+            // Lọc theo vai trò
             if (filterRequest.getRoleNames() != null && !filterRequest.getRoleNames().isEmpty()) {
                 Join<User, Role> roleJoin = root.join("roles", JoinType.INNER);
                 predicates.add(roleJoin.get("roleName").in(
@@ -50,7 +50,7 @@ public class UserSpecification {
                 ));
             }
             
-            // Filter theo thời gian tạo
+            // Lọc theo thời gian tạo
             if (filterRequest.getCreatedFrom() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(
                     root.get("createdBy"), filterRequest.getCreatedFrom()
@@ -63,7 +63,7 @@ public class UserSpecification {
                 ));
             }
             
-            // Filter theo thời gian đăng nhập cuối
+            // Lọc theo thời gian đăng nhập cuối
             if (filterRequest.getLastLoginFrom() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(
                     root.get("lastLogin"), filterRequest.getLastLoginFrom()
@@ -76,7 +76,7 @@ public class UserSpecification {
                 ));
             }
             
-            // Tìm kiếm theo pattern (trong username và fullName)
+            // Tìm kiếm theo pattern
             if (StringUtils.hasText(filterRequest.getSearchPattern())) {
                 String pattern = "%" + filterRequest.getSearchPattern().toLowerCase() + "%";
                 Predicate usernamePredicate = criteriaBuilder.like(
@@ -87,14 +87,12 @@ public class UserSpecification {
                 );
                 predicates.add(criteriaBuilder.or(usernamePredicate, fullNamePredicate));
             }
-            
-            // Kết hợp tất cả predicates với AND
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
     
     /**
-     * Tạo specification để tìm kiếm người dùng theo pattern
+     * Tìm kiếm người dùng theo pattern
      */
     public static Specification<User> withSearchPattern(String searchPattern) {
         return (root, query, criteriaBuilder) -> {
@@ -115,7 +113,7 @@ public class UserSpecification {
     }
     
     /**
-     * Tạo specification để filter theo vai trò
+     * Lọc theo vai trò
      */
     public static Specification<User> withRole(Role.RoleName roleName) {
         return (root, query, criteriaBuilder) -> {
@@ -125,7 +123,7 @@ public class UserSpecification {
     }
     
     /**
-     * Tạo specification để filter theo trạng thái
+     * Lọc theo trạng thái
      */
     public static Specification<User> withStatus(Integer status) {
         return (root, query, criteriaBuilder) -> 
@@ -133,7 +131,7 @@ public class UserSpecification {
     }
     
     /**
-     * Tạo specification để filter theo thời gian đăng nhập cuối
+     * Lọc theo thời gian đăng nhập cuối
      */
     public static Specification<User> withLastLoginBetween(LocalDateTime start, LocalDateTime end) {
         return (root, query, criteriaBuilder) -> {
@@ -146,7 +144,7 @@ public class UserSpecification {
     }
     
     /**
-     * Tạo specification để filter theo period ID
+     * Lọc theo đợt
      */
     public static Specification<User> withPeriodId(Integer periodId) {
         return (root, query, criteriaBuilder) -> 

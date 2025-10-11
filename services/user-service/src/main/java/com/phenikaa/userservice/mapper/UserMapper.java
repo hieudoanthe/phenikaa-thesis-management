@@ -18,8 +18,6 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-    UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
-
     @Mapping(target = "passwordHash", source = "password")
     @Mapping(target = "roles", expression = "java(mapRoleIdsToRoles(createUserRequest.getRoleIds(), entityManager))")
     @Mapping(target = "periodId", source = "periodId")

@@ -9,10 +9,8 @@ import com.phenikaa.userservice.dto.request.DynamicFilterRequest;
 import com.phenikaa.dto.response.GetUserResponse;
 import com.phenikaa.userservice.entity.User;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
-import java.util.Map;
 
 public interface UserService {
     User createUser(CreateUserRequest createUserRequest);
@@ -21,29 +19,15 @@ public interface UserService {
     void updateUser(UpdateUserRequest updateUserRequest);
     void changeStatusUser(Integer userId);
     List<GetUserResponse> getAllUsers();
-    Page<GetUserResponse> getAllUsers(int page, int size);
     GetUserResponse getUserById(Integer userId);
     List<GetUserResponse> getUserByIds(List<Integer> userIds);
-    
-    // Thêm method mới cho filter theo specification
     Page<GetUserResponse> filterUsers(UserFilterRequest filterRequest);
-    
-    // Các method filter đơn giản
     List<GetUserResponse> searchUsersByPattern(String searchPattern);
     List<GetUserResponse> getUsersByRole(String roleName);
     List<GetUserResponse> getUsersByStatus(Integer status);
-    
-    // Dynamic filter method
     Page<GetUserResponse> dynamicFilterUsers(DynamicFilterRequest dynamicFilterRequest);
-    
-    // Statistics methods
     Long getUserCount();
     Long getUserCountByRole(String role);
-    Long getUserCountByStatus(Integer status);
-    Long getActiveUsersToday();
     Long getStudentCountByPeriod(Integer periodId);
-    
-    // Group users by username with period info
-    List<GetUserResponse> getAllUsersGroupedByUsername();
     Page<GetUserResponse> getAllUsersGroupedByUsername(org.springframework.data.domain.Pageable pageable);
 }

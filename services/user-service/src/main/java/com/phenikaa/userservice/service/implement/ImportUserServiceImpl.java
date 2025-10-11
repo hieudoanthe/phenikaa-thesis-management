@@ -2,7 +2,6 @@ package com.phenikaa.userservice.service.implement;
 
 import com.phenikaa.userservice.dto.response.ImportResultResponse;
 import com.phenikaa.userservice.entity.User;
-import com.phenikaa.userservice.repository.RoleRepository;
 import com.phenikaa.userservice.repository.UserRepository;
 import com.phenikaa.userservice.service.interfaces.ImportUserService;
 import com.phenikaa.userservice.entity.Role;
@@ -33,7 +32,6 @@ import java.util.*;
 public class ImportUserServiceImpl implements ImportUserService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final ProfileServiceClient profileServiceClient;
     

@@ -19,7 +19,6 @@ import com.phenikaa.userservice.service.interfaces.UserService;
 import com.phenikaa.userservice.specification.UserSpecification;
 import com.phenikaa.userservice.filter.DynamicFilterBuilder;
 
-import java.time.LocalDateTime;
 import com.phenikaa.userservice.filter.DynamicQueryBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -73,8 +72,6 @@ public class UserServiceImpl implements UserService {
         }
 
         entityManager.persist(user);
-
-        // Tạo profile bất đồng bộ để tránh timeout
         createProfileAsync(user);
 
         return user;
@@ -102,7 +99,6 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        // 4. Build response
         return new AuthenticatedUserResponse(
                 userDetails.getUserId(),
                 userDetails.getUsername(),
@@ -128,7 +124,6 @@ public class UserServiceImpl implements UserService {
         if (userOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
         }
-        // Xoá refresh token trước để tránh lỗi ràng buộc FK
         try {
             refreshTokenRepository.deleteByUser_UserId(userId);
         } catch (Exception ignored) {}
@@ -170,20 +165,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Page<GetUserResponse> getAllUsers(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("userId").ascending());
-        return userRepository.findAll(pageable)
-                .map(userMapper::toDTO);
-    }
-
-    @Override
     public GetUserResponse getUserById(Integer userId) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
         }
         User user = userOpt.get();
-        // Nếu user hiện tại không có periodId, tổng hợp theo username để trả về đầy đủ periodIds
         if (user.getUsername() != null) {
             try {
                 List<User> sameUsernameUsers = userRepository.findAllByUsername(user.getUsername());
@@ -217,10 +204,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Page<GetUserResponse> filterUsers(UserFilterRequest filterRequest) {
-        // Tạo specification từ filter request
         Specification<User> spec = UserSpecification.withFilter(filterRequest);
-        
-        // Tạo Pageable với sorting
+
         Sort sort = Sort.by(
             filterRequest.getSortDirection().equalsIgnoreCase("DESC") ? 
             Sort.Direction.DESC : Sort.Direction.ASC,
@@ -232,8 +217,7 @@ public class UserServiceImpl implements UserService {
             filterRequest.getSize(), 
             sort
         );
-        
-        // Thực hiện query với specification và pageable
+
         Page<User> userPage = userRepository.findAll(spec, pageable);
 
         return userPage.map(userMapper::toDTO);
@@ -271,29 +255,8 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
-//    @Override
-//    public Page<GetUserResponse> dynamicFilterUsers(DynamicFilterRequest dynamicFilterRequest) {
-//        // Validate request
-//        List<String> validationErrors = DynamicQueryBuilder.validateRequest(dynamicFilterRequest);
-//        if (!validationErrors.isEmpty()) {
-//            throw new ResponseStatusException(
-//                HttpStatus.BAD_REQUEST,
-//                "Validation errors: " + String.join(", ", validationErrors)
-//            );
-//        }
-//
-//        Specification<User> spec = DynamicFilterBuilder.buildSpecification(dynamicFilterRequest);
-//
-//        Pageable pageable = DynamicQueryBuilder.buildPageable(dynamicFilterRequest);
-//
-//        Page<User> userPage = userRepository.findAll(spec, pageable);
-//
-//        return userPage.map(userMapper::toDTO);
-//    }
-
     @Override
     public Page<GetUserResponse> dynamicFilterUsers(DynamicFilterRequest dynamicFilterRequest) {
-        // Validate request
         List<String> validationErrors = DynamicQueryBuilder.getInstance().validateRequest(dynamicFilterRequest);
         if (!validationErrors.isEmpty()) {
             throw new ResponseStatusException(
@@ -328,38 +291,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Long getUserCountByStatus(Integer status) {
-        Specification<User> spec = UserSpecification.withStatus(status);
-        return userRepository.count(spec);
-    }
-
-    @Override
-    public Long getActiveUsersToday() {
-        // Lấy số user đã login trong ngày hôm nay
-        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
-        LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
-        
-        Specification<User> spec = UserSpecification.withLastLoginBetween(startOfDay, endOfDay);
-        return userRepository.count(spec);
-    }
-    
-    @Override
     public Long getStudentCountByPeriod(Integer periodId) {
-        log.info("Getting student count by period: {}", periodId);
         try {
-            // Tạo specification để lấy students trong period cụ thể
             Specification<User> spec = UserSpecification.withRole(Role.RoleName.STUDENT)
                 .and(UserSpecification.withPeriodId(periodId));
             return userRepository.count(spec);
         } catch (Exception e) {
-            log.error("Error getting student count by period {}: {}", periodId, e.getMessage());
             return 0L;
         }
     }
 
-    /**
-     * Tạo profile bất đồng bộ cho user mới
-     */
     @Async
     public CompletableFuture<Void> createProfileAsync(User user) {
         try {
@@ -367,7 +308,7 @@ public class UserServiceImpl implements UserService {
                 String roleName = String.valueOf(role.getRoleName());
                 try {
                     profileServiceClient.createProfile(new CreateProfileRequest(user.getUserId(), roleName));
-                    log.info("Tạo profile {} thành công cho user: {}", roleName, user.getUserId());
+                    log.info("Tạo profile {} thành công cho người dùng: {}", roleName, user.getUserId());
                 } catch (Exception e) {
                     log.warn("Không thể tạo profile {} cho user {}: {}", roleName, user.getUserId(), e.getMessage());
                 }
@@ -381,34 +322,27 @@ public class UserServiceImpl implements UserService {
     @Override
     public Page<GetUserResponse> getAllUsersGroupedByUsername(org.springframework.data.domain.Pageable pageable) {
         try {
-            // Lấy tất cả users
             List<User> allUsers = userRepository.findAll();
-            
-            // Group theo username
+
             Map<String, List<User>> groupedByUsername = allUsers.stream()
                 .collect(Collectors.groupingBy(User::getUsername));
             
             List<GetUserResponse> result = new ArrayList<>();
             
             for (Map.Entry<String, List<User>> entry : groupedByUsername.entrySet()) {
-                String username = entry.getKey();
                 List<User> users = entry.getValue();
-                
-                // Lấy thông tin từ user đầu tiên (vì cùng username nên thông tin cơ bản giống nhau)
+
                 User firstUser = users.get(0);
-                
-                // Tạo danh sách period IDs từ TẤT CẢ users (không chỉ firstUser)
+
                 List<Integer> periodIds = users.stream()
                     .map(User::getPeriodId)
                     .filter(Objects::nonNull)
                     .distinct()
                     .sorted()
                     .collect(Collectors.toList());
-                
-                // Tạo chuỗi mô tả đợt đăng ký
+
                 String periodDescription;
                 if (periodIds.isEmpty()) {
-                    // Kiểm tra role của user để quyết định hiển thị
                     boolean isStudent = firstUser.getRoles().stream()
                         .anyMatch(role -> role.getRoleName().name().equals("STUDENT"));
                     periodDescription = isStudent ? "Chưa đăng ký đợt nào" : "";
@@ -417,8 +351,7 @@ public class UserServiceImpl implements UserService {
                         .map(String::valueOf)
                         .collect(Collectors.joining(", "));
                 }
-                
-                // Sử dụng UserMapper để map user thành GetUserResponse với thông tin đợt đăng ký
+
                 GetUserResponse userResponse = userMapper.toDTOWithPeriodInfo(
                     firstUser, 
                     periodDescription, 
@@ -428,11 +361,9 @@ public class UserServiceImpl implements UserService {
                 
                 result.add(userResponse);
             }
-            
-            // Sắp xếp theo username
+
             result.sort((a, b) -> a.getUsername().compareTo(b.getUsername()));
-            
-            // Manual pagination
+
             int start = (int) pageable.getOffset();
             int end = Math.min((start + pageable.getPageSize()), result.size());
             List<GetUserResponse> pageContent = result.subList(start, end);
@@ -443,74 +374,8 @@ public class UserServiceImpl implements UserService {
                 result.size()
             );
         } catch (Exception e) {
-            log.error("Lỗi khi lấy danh sách users group theo username: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể lấy danh sách users: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public List<GetUserResponse> getAllUsersGroupedByUsername() {
-        try {
-            // Lấy tất cả users
-            List<User> allUsers = userRepository.findAll();
-            
-            // Group theo username
-            Map<String, List<User>> groupedByUsername = allUsers.stream()
-                .collect(Collectors.groupingBy(User::getUsername));
-            
-            List<GetUserResponse> result = new ArrayList<>();
-            
-            for (Map.Entry<String, List<User>> entry : groupedByUsername.entrySet()) {
-                String username = entry.getKey();
-                List<User> users = entry.getValue();
-                
-                // Lấy thông tin từ user đầu tiên 
-                User firstUser = users.get(0);
-                
-                List<Integer> periodIds = users.stream()
-                    .map(User::getPeriodId)
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .sorted()
-                    .collect(Collectors.toList());
-                
-                // Tạo chuỗi mô tả đợt đăng ký
-                String periodDescription;
-                if (periodIds.isEmpty()) {
-                    // Kiểm tra role của user để quyết định hiển thị
-                    boolean isStudent = firstUser.getRoles().stream()
-                        .anyMatch(role -> role.getRoleName().name().equals("STUDENT"));
-                    periodDescription = isStudent ? "Chưa đăng ký đợt nào" : "";
-                } else {
-                    periodDescription = "Đợt " + periodIds.stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(", "));
-                }
-                
-                GetUserResponse userResponse = userMapper.toDTOWithPeriodInfo(
-                    firstUser, 
-                    periodDescription, 
-                    periodIds, 
-                    users.size()
-                );
-                
-                // Debug log
-                log.info("User {} - roles size: {}, roleIds: {}, periods: {}", 
-                    username, 
-                    firstUser.getRoles() != null ? firstUser.getRoles().size() : 0,
-                    userResponse.getRoleIds(),
-                    periodIds);
-                
-                result.add(userResponse);
-            }
-            
-            // Sắp xếp theo username
-            result.sort((a, b) -> a.getUsername().compareTo(b.getUsername()));
-            
-            return result;
-        } catch (Exception e) {
-            log.error("Lỗi khi lấy danh sách users group theo username: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể lấy danh sách users: " + e.getMessage());
+            log.error("Lỗi khi lấy danh sách người dùng nhóm theo tên đăng nhập: {}", e.getMessage(), e);
+            throw new RuntimeException("Không thể lấy danh sách người dùng: " + e.getMessage());
         }
     }
 

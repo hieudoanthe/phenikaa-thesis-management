@@ -1,4 +1,4 @@
-package com.phenikaa.userservice.service;
+package com.phenikaa.userservice.service.implement;
 
 import com.phenikaa.userservice.config.CustomUserDetails;
 import com.phenikaa.userservice.entity.Role;
