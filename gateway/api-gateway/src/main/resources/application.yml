@@ -51,7 +51,7 @@ spring:
             - Path=/api/academic-config-service/**, /internal/academic/**
 
         - id: ${EVAL_SERVICE_NAME}
-          uri: ${EVAL_SERVICE_SERVICE_URL}
+          uri: ${EVAL_SERVICE_URL}
           predicates:
             - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**, /internal/evaluations/**
 
