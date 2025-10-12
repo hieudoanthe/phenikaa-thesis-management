@@ -25,4 +25,4 @@ WORKDIR /app
 COPY --from=builder /app/discovery/discovery-server/target/*.jar app.jar
 
 EXPOSE 8761
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "discovery-server.jar"]

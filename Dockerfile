@@ -30,7 +30,3 @@ COPY --from=builder /app/services/communication-log-service/target/*.jar communi
 COPY --from=builder /app/services/eval-service/target/*.jar eval-service.jar
 COPY --from=builder /app/services/assign-service/target/*.jar assign-service.jar
 COPY --from=builder /app/services/academic-config-service/target/*.jar academic-config-service.jar
-COPY --from=builder /app/services/statistics-service/target/*.jar statistics-service.jar
-
-EXPOSE 8080
-CMD ["java", "-jar", "discovery-server.jar"]
