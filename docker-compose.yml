@@ -146,7 +146,7 @@ services:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
       - DB_USERNAME=sa
-      - DB_PASSWORD=TheHieuDoan
+      - DB_PASSWORD=hai@123
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
@@ -180,7 +180,7 @@ services:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
       - DB_USERNAME=sa
-      - DB_PASSWORD=TheHieuDoan
+      - DB_PASSWORD=hai@123
       - AI_GEMINI_API_KEY=AIzaSyBa4bUvYPCt1wIiKwlpt6Cd3MTMW1684vw
       - AI_GEMINI_MODEL_NAME=gemini-2.0-flash
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
@@ -213,7 +213,7 @@ services:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
       - DB_USERNAME=sa
-      - DB_PASSWORD=TheHieuDoan
+      - DB_PASSWORD=hai@123
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
@@ -244,7 +244,7 @@ services:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
       - DB_USERNAME=sa
-      - DB_PASSWORD=TheHieuDoan
+      - DB_PASSWORD=hai@123
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
@@ -275,7 +275,7 @@ services:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
       - DB_USERNAME=sa
-      - DB_PASSWORD=TheHieuDoan
+      - DB_PASSWORD=hai@123
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
@@ -306,7 +306,7 @@ services:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
       - DB_USERNAME=sa
-      - DB_PASSWORD=TheHieuDoan
+      - DB_PASSWORD=hai@123
       - SPRING_SERVLET_MULTIPART_ENABLED=true
       - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=50MB
       - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=50MB
@@ -350,7 +350,7 @@ services:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
       - DB_USERNAME=sa
-      - DB_PASSWORD=TheHieuDoan
+      - DB_PASSWORD=hai@123
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
@@ -382,7 +382,7 @@ services:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
       - DB_USERNAME=sa
-      - DB_PASSWORD=TheHieuDoan
+      - DB_PASSWORD=hai@123
       - SPRING_MAIL_HOST=smtp.gmail.com
       - SPRING_MAIL_PORT=587
       - SPRING_MAIL_USERNAME=thehieu0814@gmail.com
