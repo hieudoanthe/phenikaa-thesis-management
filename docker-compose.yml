@@ -101,7 +101,6 @@ services:
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
     depends_on:
       - discovery-server
-      - config-server
     networks:
       - microservices-network
     restart: unless-stopped
