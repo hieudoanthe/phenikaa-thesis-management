@@ -21,37 +21,37 @@ spring:
 
       routes:
         - id: ${AUTH_SERVICE_NAME}
-          uri: ${AUTH_SERVICE_URL:https://auth-service-production-c217.up.railway.app}
+          uri: ${AUTH_SERVICE_URL}
           predicates:
             - Path=/api/auth/**
 
         - id: ${USER_SERVICE_NAME}
-          uri: ${USER_SERVICE_URL:https://user-service-production-495b.up.railway.app}
+          uri: ${USER_SERVICE_URL}
           predicates:
             - Path=/api/user-service/student/**, /api/user-service/admin/**, /api/teacher/**, /internal/users/**
 
         - id: ${THESIS_SERVICE_NAME}
-          uri: ${THESIS_SERVICE_URL:https://thesis-service-production.up.railway.app}
+          uri: ${THESIS_SERVICE_URL}
           predicates:
             - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**, /internal/periods/**, /api/period-statistics/**
 
         - id: ${ASSIGN_SERVICE_NAME}
-          uri: ${ASSIGN_SERVICE_URL:https://assign-service-production.up.railway.app}
+          uri: ${ASSIGN_SERVICE_URL}
           predicates:
             - Path=/api/assign-service/**, /internal/assignments/**
 
         - id: ${PROFILE_SERVICE_NAME}
-          uri: ${PROFILE_SERVICE_URL:https://profile-service-production-5af6.up.railway.app}
+          uri: ${PROFILE_SERVICE_URL}
           predicates:
             - Path=/api/profile-service/**, /internal/profiles/**
 
         - id: ${ACADEMIC_CONFIG_SERVICE_NAME}
-          uri: ${ACADEMIC_CONFIG_SERVICE_URL:https://academic-config-service-production.up.railway.app}
+          uri: ${ACADEMIC_CONFIG_SERVICE_URL}
           predicates:
             - Path=/api/academic-config-service/**, /internal/academic/**
 
         - id: ${EVAL_SERVICE_NAME}
-          uri: ${EVAL_SERVICE_SERVICE_URL:https://eval-service-production.up.railway.app}
+          uri: ${EVAL_SERVICE_SERVICE_URL}
           predicates:
             - Path=/api/eval-service/admin/**, /api/eval-service/teacher/**, /api/eval-service/student/**, /internal/evaluations/**
 
@@ -73,7 +73,7 @@ spring:
 eureka:
   instance:
     prefer-ip-address: ${EURKA_INSTANCE_PREFER_IP_ADDRESS}
-    hostname: ${DOMAIN_LOCAL:api-gateway-production-95a5.up.railway.app}
+    hostname: ${DOMAIN}
     instance-id: ${spring.application.name}:${random.value}
     non-secure-port: 8080
   client:
