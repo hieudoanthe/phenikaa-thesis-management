@@ -33,6 +33,3 @@ COPY --from=builder /app/services/academic-config-service/target/*.jar academic-
 
 # Expose ports
 EXPOSE 8761 8888 8080 8090 8081 8082 8083 8084 8085 8086 8087 8088
-
-# Default command (can be overridden)
-CMD ["java", "-jar", "discovery-server.jar"]
