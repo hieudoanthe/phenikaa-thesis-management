@@ -49,7 +49,7 @@ services:
       - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/hieudoanthe/phenikaa-config-repo.git
       - SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL=main
       - SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME=hieudoanthe
-      - SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD=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
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD=${GIT_TOKEN}
     depends_on:
       - discovery-server
     networks:
