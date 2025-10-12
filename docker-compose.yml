@@ -1,0 +1,415 @@
+version: '3.8'
+
+services:
+  # Redis cho Communication Log Service
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Discovery Server (Eureka) - Port 8761
+  discovery-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - DISCOVERY_SERVER_PORT=8761
+      - DISCOVERY_SERVER_NAME=discovery-server
+      - EUREKA_SERVER_ENABLE_SELF_PRESERVATION=false
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "discovery-server.jar"]
+
+  # Config Server - Port 8888
+  config-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - CONFIG_SERVER_PORT=8888
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/hieudoanthe/phenikaa-config-repo.git
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL=main
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME=hieudoanthe
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD=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
+    depends_on:
+      - discovery-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "config-server.jar"]
+
+  # API Gateway - Port 8080
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - API_GATEWAY_PORT=8080
+      - API_GATEWAY_NAME=api-gateway
+      - SPRING_MAIN_WEB_APPLICATION_TYPE=reactive
+      - SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_ENABLED=true
+      - SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_LOWER_CASE_SERVICE_ID=true
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - JWT_SECRET=VHJlbmRvaW5heW5ndW9pZGFuZ2RldHJhbnRyb25nbmFodGFsYW5ndW9pZGFzYW5zYW5nYm90aG9pZ2lhbmRlY2hhbXNvY2JhblRob2lnaWFuY3VhYWljdW5nZGV1ZGFuZ3F1eW5odW5oYWVkZW10aG9pZ2lhbmN1YW5ndW95ZGFuaGNob2JhbmNvbmdnaW9uZ2h1dmllY2RlbWNhdGhlZ2lvaWN1YWJhbnRoYW5jaGlhc2VjdW5nYmFu
+      - JWT_EXPIRATION=86400000
+      - JWT_REFRESH_EXPIRATION=604800000
+      - AUTH_SERVICE_URL=lb://auth-service
+      - USER_SERVICE_URL=lb://user-service
+      - THESIS_SERVICE_URL=lb://thesis-service
+      - ASSIGN_SERVICE_URL=lb://assign-service
+      - PROFILE_SERVICE_URL=lb://profile-service
+      - ACADEMIC_CONFIG_SERVICE_URL=lb://academic-config-service
+      - EVAL_SERVICE_SERVICE_URL=lb://eval-service
+      - SUBMISSION_SERVICE_URL=lb://submission-service
+      - COMMUNICATION_LOG_SERVICE_URL=lb://communication-log-service
+      - COMMUNICATION_LOG_SERVICE_WS_URL=lb:ws://communication-log-service
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "api-gateway.jar"]
+
+  # Auth Service - Port 8090
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8090:8090"
+    environment:
+      - AUTH_SERVICE_PORT=8090
+      - AUTH_SERVICE_NAME=auth-service
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - JWT_SECRET=VHJlbmRvaW5heW5ndW9pZGFuZ2RldHJhbnRyb25nbmFodGFsYW5ndW9pZGFzYW5zYW5nYm90aG9pZ2lhbmRlY2hhbXNvY2JhblRob2lnaWFuY3VhYWljdW5nZGV1ZGFuZ3F1eW5odW5oYWVkZW10aG9pZ2lhbmN1YW5ndW95ZGFuaGNob2JhbmNvbmdnaW9uZ2h1dmllY2RlbWNhdGhlZ2lvaWN1YWJhbnRoYW5jaGlhc2VjdW5nYmFu
+      - JWT_EXPIRATION=86400000
+      - JWT_REFRESH_EXPIRATION=604800000
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "auth-service.jar"]
+
+  # User Service - Port 8081
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - USER_SERVICE_PORT=8081
+      - USER_SERVICE_NAME=user-service
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - DB_USERNAME=sa
+      - DB_PASSWORD=TheHieuDoan
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - JWT_SECRET=VHJlbmRvaW5heW5ndW9pZGFuZ2RldHJhbnRyb25nbmFodGFsYW5ndW9pZGFzYW5zYW5nYm90aG9pZ2lhbmRlY2hhbXNvY2JhblRob2lnaWFuY3VhYWljdW5nZGV1ZGFuZ3F1eW5odW5oYWVkZW10aG9pZ2lhbmN1YW5ndW95ZGFuaGNob2JhbmNvbmdnaW9uZ2h1dmllY2RlbWNhdGhlZ2lvaWN1YWJhbnRoYW5jaGlhc2VjdW5nYmFu
+      - JWT_EXPIRATION=86400000
+      - JWT_REFRESH_EXPIRATION=604800000
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "user-service.jar"]
+
+  # Thesis Service - Port 8082
+  thesis-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: thesis-service
+    ports:
+      - "8082:8082"
+    environment:
+      - THESIS_SERVICE_PORT=8082
+      - THESIS_SERVICE_NAME=thesis-service
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - DB_USERNAME=sa
+      - DB_PASSWORD=TheHieuDoan
+      - AI_GEMINI_API_KEY=AIzaSyBa4bUvYPCt1wIiKwlpt6Cd3MTMW1684vw
+      - AI_GEMINI_MODEL_NAME=gemini-2.0-flash
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "thesis-service.jar"]
+
+  # Profile Service - Port 8083
+  profile-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: profile-service
+    ports:
+      - "8083:8083"
+    environment:
+      - PROFILE_SERVICE_PORT=8083
+      - PROFILE_SERVICE_NAME=profile-service
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - DB_USERNAME=sa
+      - DB_PASSWORD=TheHieuDoan
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "profile-service.jar"]
+
+  # Eval Service - Port 8084
+  eval-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eval-service
+    ports:
+      - "8084:8084"
+    environment:
+      - EVAL_SERVICE_PORT=8084
+      - EVAL_SERVICE_NAME=eval-service
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - DB_USERNAME=sa
+      - DB_PASSWORD=TheHieuDoan
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "eval-service.jar"]
+
+  # Assign Service - Port 8085
+  assign-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: assign-service
+    ports:
+      - "8085:8085"
+    environment:
+      - ASSIGN_SERVICE_PORT=8085
+      - ASSIGN_SERVICE_NAME=assign-service
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - DB_USERNAME=sa
+      - DB_PASSWORD=TheHieuDoan
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "assign-service.jar"]
+
+  # Submission Service - Port 8086
+  submission-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: submission-service
+    ports:
+      - "8086:8086"
+    environment:
+      - SUBMISSION_SERVICE_PORT=8086
+      - SUBMISSION_SERVICE_NAME=submission-service
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - DB_USERNAME=sa
+      - DB_PASSWORD=TheHieuDoan
+      - SPRING_SERVLET_MULTIPART_ENABLED=true
+      - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=50MB
+      - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=50MB
+      - SPRING_SERVLET_MULTIPART_FILE_SIZE_THRESHOLD=2KB
+      - FILE_STORAGE_TYPE=cloudinary
+      - FILE_STORAGE_TRADITIONAL_BASE_PATH=uploads/traditional
+      - FILE_STORAGE_BUFFER_SIZE=8192
+      - FILE_STORAGE_NIO_BASE_PATH=uploads/nio
+      - FILE_STORAGE_CLOUDINARY_ENABLED=true
+      - FILE_STORAGE_CLOUDINARY_BACKUP_LOCAL=false
+      - CLOUDINARY_CLOUD_NAME=dj5jgcpoh
+      - CLOUDINARY_API_KEY=712226843552569
+      - CLOUDINARY_API_SECRET=yEt16T302pMnbbJcQyP1drj6pcw
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "submission-service.jar"]
+
+  # Academic Config Service - Port 8087
+  academic-config-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: academic-config-service
+    ports:
+      - "8087:8087"
+    environment:
+      - ACADEMIC_CONFIG_SERVICE_PORT=8087
+      - ACADEMIC_CONFIG_SERVICE_NAME=academic-config-service
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - DB_USERNAME=sa
+      - DB_PASSWORD=TheHieuDoan
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+    depends_on:
+      - discovery-server
+      - config-server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "academic-config-service.jar"]
+
+  # Communication Log Service - Port 8088
+  communication-log-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: communication-log-service
+    ports:
+      - "8088:8088"
+    environment:
+      - COMMUNICATION_LOG_SERVICE_PORT=8088
+      - COMMUNICATION_LOG_SERVICE_NAME=communication-log-service
+      - COMMUNICATION_LOG_SERVICE_NAME_WS=communication-log-service-ws
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_CLOUD_CONFIG_LABEL=main
+      - SPRING_CLOUD_CONFIG_FAIL_FAST=false
+      - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=4
+      - SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER=1.2
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=1000
+      - DB_USERNAME=sa
+      - DB_PASSWORD=TheHieuDoan
+      - SPRING_MAIL_HOST=smtp.gmail.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=thehieu0814@gmail.com
+      - SPRING_MAIL_PASSWORD=uzsg awsr wyud xegd
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
+      # Redis configuration
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_DATABASE=0
+      - SPRING_REDIS_TIMEOUT=60000
+      - SPRING_REDIS_PASSWORD=
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+    depends_on:
+      - discovery-server
+      - config-server
+      - redis
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["java", "-jar", "communication-log-service.jar"]
+
+volumes:
+  redis_data:
+
+networks:
+  microservices-network:
+    driver: bridge
