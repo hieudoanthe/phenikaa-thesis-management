@@ -9,8 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(
         name = "api-gateway",
-        contextId = "submissionServiceClient",
-        path = "/user-service",
+        contextId = "userServiceClient",
         configuration = FeignTokenInterceptor.class
 )
 public interface UserServiceClient {

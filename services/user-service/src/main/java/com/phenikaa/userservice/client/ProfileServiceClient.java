@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 @FeignClient(
         name = "api-gateway",
         contextId = "profileServiceClient",
-        path = "/profile-service",
         configuration = FeignTokenInterceptor.class
 )
 public interface ProfileServiceClient {
@@ -19,18 +18,3 @@ public interface ProfileServiceClient {
     @DeleteMapping("/api/profile-service/admin/delete-profile/{userId}")
     void deleteProfile(@PathVariable("userId") Integer userId);
 }
-//@FeignClient(
-//        name = "api-gateway",
-//        contextId = "profileServiceClient",
-//        url = "${API_GATEWAY_URL:https://api-gateway-production-95a5.up.railway.app}",
-//        path = "/api/profile-service",
-//        configuration = FeignTokenInterceptor.class
-//)
-//public interface ProfileServiceClient {
-//
-//    @PostMapping("/admin/create-profile")
-//    void createProfile(@RequestBody CreateProfileRequest request);
-//
-//    @DeleteMapping("/admin/delete-profile/{userId}")
-//    void deleteProfile(@PathVariable("userId") Integer userId);
-//}

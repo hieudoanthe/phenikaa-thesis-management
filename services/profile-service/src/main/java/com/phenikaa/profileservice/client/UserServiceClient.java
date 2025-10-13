@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
-@FeignClient(name = "api-gateway", path = "/user-service", configuration = FeignTokenInterceptor.class)
+@FeignClient(name = "api-gateway", configuration = FeignTokenInterceptor.class)
 public interface UserServiceClient {
     @GetMapping("/internal/users/get-profile/{userId}")
     GetUserResponse getUserById(@PathVariable("userId") Integer userId);

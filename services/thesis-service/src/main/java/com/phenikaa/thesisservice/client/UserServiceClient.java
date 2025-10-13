@@ -12,8 +12,7 @@ import java.util.List;
 
 @FeignClient(
         name = "api-gateway",
-        contextId = "thesisServiceClient",
-        path = "/user-service",
+        contextId = "userServiceClient",
         configuration = FeignTokenInterceptor.class
 )
 public interface UserServiceClient {

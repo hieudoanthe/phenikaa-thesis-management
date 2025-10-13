@@ -11,7 +11,6 @@ import java.util.Map;
 @FeignClient(
         name = "api-gateway",
         contextId = "profileServiceClient",
-        path = "/profile-service",
         configuration = FeignTokenInterceptor.class
 )
 public interface ProfileServiceClient {
