@@ -71,7 +71,9 @@ services:
       dockerfile: Dockerfile
     container_name: api-gateway
     ports:
-      - "8080:8080"
+      - "8080:8080" # HTTPS port
+    volumes:
+      - ./ssl:/app/ssl:ro
     environment:
       - API_GATEWAY_PORT=${API_GATEWAY_PORT}
       - SPRING_MAIN_WEB_APPLICATION_TYPE=${SPRING_MAIN_WEB_APPLICATION_TYPE}
@@ -108,6 +110,12 @@ services:
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
       - DOMAIN=${DOMAIN}
+      # HTTPS Configuration
+      - SERVER_SSL_ENABLED=true
+      - SERVER_SSL_KEY_STORE=/app/ssl/keystore.p12
+      - SERVER_SSL_KEY_STORE_TYPE=PKCS12
+      - SERVER_SSL_KEY_STORE_PASSWORD=changeit
+      - SERVER_SSL_KEY_ALIAS=phenikaa
     depends_on:
       - discovery-server
     networks:
