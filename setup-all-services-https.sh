@@ -1,34 +1,27 @@
 #!/bin/bash
 
-echo "Configuring Nginx + SSL for all services..."
+echo "Configuring Nginx + SSL for all services with subdomains..."
 
-# Kiểm tra domain
-DOMAIN="163.61.110.164"  # Hoặc domain của bạn
+# Cấu hình domain và email
+DOMAIN="163.61.110.164"  # Thay bằng domain của bạn
 EMAIL="thehieu0814@gmail.com"  # Thay bằng email thật
 
 echo "Domain: $DOMAIN"
 echo "Email: $EMAIL"
+echo ""
 
 # Bước 1: Cài đặt Nginx và Certbot
 echo "Step 1: Installing Nginx and Certbot..."
 sudo apt update
 sudo apt install -y nginx certbot python3-certbot-nginx
 
-# Bước 2: Tạo Nginx config cho tất cả services
+# Bước 2: Tạo Nginx config cho tất cả services với subdomain
 echo "Step 2: Creating Nginx configuration for all services..."
 sudo tee /etc/nginx/sites-available/phenikaa-all-services << EOF
-# API Gateway
+# API Gateway (main domain)
 server {
     listen 80;
     server_name $DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name $DOMAIN;
-    
-    # SSL configuration will be added by Certbot
     
     location / {
         proxy_pass http://localhost:8080;
@@ -71,12 +64,6 @@ server {
 server {
     listen 80;
     server_name auth.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name auth.$DOMAIN;
     
     location / {
         proxy_pass http://localhost:8090;
@@ -84,18 +71,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # User Service
 server {
     listen 80;
-    server_name user.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name user.$DOMAIN;
     
     location / {
@@ -104,18 +90,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # Thesis Service
 server {
     listen 80;
-    server_name thesis.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name thesis.$DOMAIN;
     
     location / {
@@ -124,18 +109,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # Profile Service
 server {
     listen 80;
-    server_name profile.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name profile.$DOMAIN;
     
     location / {
@@ -144,18 +128,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # Eval Service
 server {
     listen 80;
-    server_name eval.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name eval.$DOMAIN;
     
     location / {
@@ -164,18 +147,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # Assign Service
 server {
     listen 80;
-    server_name assign.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name assign.$DOMAIN;
     
     location / {
@@ -184,18 +166,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # Submission Service
 server {
     listen 80;
-    server_name submission.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name submission.$DOMAIN;
     
     location / {
@@ -204,18 +185,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # Academic Config Service
 server {
     listen 80;
-    server_name academic.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name academic.$DOMAIN;
     
     location / {
@@ -224,18 +204,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # Communication Log Service
 server {
     listen 80;
-    server_name communication.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name communication.$DOMAIN;
     
     location / {
@@ -244,18 +223,17 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     }
 }
 
 # Eureka Dashboard
 server {
     listen 80;
-    server_name eureka.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name eureka.$DOMAIN;
     
     location / {
@@ -270,12 +248,6 @@ server {
 # Config Server
 server {
     listen 80;
-    server_name config.$DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name config.$DOMAIN;
     
     location / {
@@ -296,6 +268,11 @@ sudo rm -f /etc/nginx/sites-enabled/default
 # Bước 4: Test Nginx config
 echo "Step 4: Testing Nginx configuration..."
 sudo nginx -t
+
+if [ $? -ne 0 ]; then
+    echo "Nginx configuration test failed!"
+    exit 1
+fi
 
 # Bước 5: Start Nginx
 echo "Step 5: Starting Nginx..."
@@ -337,6 +314,7 @@ sudo systemctl start certbot.timer
 
 # Bước 9: Test SSL
 echo "Step 9: Testing SSL..."
+echo "Testing main domain:"
 curl -I https://$DOMAIN
 
 echo ""
@@ -361,3 +339,5 @@ echo ""
 echo "Test commands:"
 echo "   curl -I https://$DOMAIN"
 echo "   curl -I https://$DOMAIN/actuator/health"
+echo "   curl -I https://auth.$DOMAIN/actuator/health"
+echo "   curl -I https://user.$DOMAIN/actuator/health"
