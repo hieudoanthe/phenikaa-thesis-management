@@ -3,8 +3,8 @@
 echo "Configuring Nginx + SSL for all services with subdomains..."
 
 # Cấu hình domain và email
-DOMAIN="163.61.110.164"  # Thay bằng domain của bạn
-EMAIL="thehieu0814@gmail.com"  # Thay bằng email thật
+DOMAIN="phenikaa-thesis-hdt.site" 
+EMAIL="thehieu0814@gmail.com"
 
 echo "Domain: $DOMAIN"
 echo "Email: $EMAIL"
