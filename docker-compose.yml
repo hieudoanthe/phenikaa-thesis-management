@@ -107,6 +107,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
+      - DOMAIN=${DOMAIN}
     depends_on:
       - discovery-server
     networks:
