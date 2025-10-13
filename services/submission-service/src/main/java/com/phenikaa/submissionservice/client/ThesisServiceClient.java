@@ -10,6 +10,7 @@ import java.util.Map;
 @FeignClient(
         name = "api-gateway",
         contextId = "thesisServiceClient",
+        path = "/thesis-service",
         configuration = FeignTokenInterceptor.class
 )
 public interface ThesisServiceClient {

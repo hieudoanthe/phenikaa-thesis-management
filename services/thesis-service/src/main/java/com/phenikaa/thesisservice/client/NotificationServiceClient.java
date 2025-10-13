@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(
         name = "api-gateway",
         contextId = "notificationServiceClient",
+        path = "/communication-log-service",
         configuration = FeignTokenInterceptor.class
 )
 public interface NotificationServiceClient {

@@ -10,6 +10,7 @@ import java.util.Map;
 @FeignClient(
         name = "api-gateway",
         contextId = "notificationServiceClient",
+        path = "/communication-log-service",
         configuration = FeignTokenInterceptor.class
 )
 public interface NotificationServiceClient {
