@@ -16,7 +16,7 @@ public class UserServiceClient {
     private final WebClient webClient;
 
     public UserServiceClient(WebClient.Builder webClientBuilder,
-                             @Value("${USER_SERVICE_HOST:https://user-service-production-495b.up.railway.app}") String userServiceUrl) {
+                             @Value("${USER_SERVICE_HOST}") String userServiceUrl) {
         this.webClient = webClientBuilder.baseUrl(userServiceUrl).build();
     }
 
