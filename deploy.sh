@@ -1,15 +1,15 @@
 #!/bin/bash
 
-echo "🚀 Starting deployment of Phenikaa Thesis Management System (Monorepo)..."
+echo "Starting deployment of Phenikaa Thesis Management System (Monorepo)..."
 
 # Kiểm tra Docker
 if ! command -v docker &> /dev/null; then
-    echo "❌ Docker is not installed. Please install Docker first."
+    echo "Docker is not installed. Please install Docker first."
     exit 1
 fi
 
 if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose is not installed. Please install Docker Compose first."
+    echo "Docker Compose is not installed. Please install Docker Compose first."
     exit 1
 fi
 
@@ -17,15 +17,15 @@ fi
 mkdir -p uploads/traditional uploads/nio
 
 # Dừng các container cũ
-echo "🛑 Stopping existing containers..."
+echo "Stopping existing containers..."
 docker-compose down
 
 # Xóa các image cũ để build lại
-echo "🗑️ Removing old images..."
+echo "Removing old images..."
 docker system prune -f
 
 # Build và start services với multi-stage build
-echo "📦 Building monorepo and starting services..."
+echo "Building monorepo and starting services..."
 echo "   - Building all modules with Maven..."
 echo "   - Creating optimized runtime images..."
 
@@ -33,27 +33,27 @@ echo "   - Creating optimized runtime images..."
 docker-compose build --no-cache --parallel
 
 # Start services theo thứ tự dependency
-echo "🚀 Starting infrastructure services first..."
+echo "Starting infrastructure services first..."
 docker-compose up -d redis discovery-server
 
-echo "⏳ Waiting for infrastructure to be ready..."
+echo "Waiting for infrastructure to be ready..."
 sleep 30
 
-echo "🚀 Starting config server..."
+echo "Starting config server..."
 docker-compose up -d config-server
 
-echo "⏳ Waiting for config server..."
+echo "Waiting for config server..."
 sleep 20
 
-echo "🚀 Starting all microservices..."
+echo "Starting all microservices..."
 docker-compose up -d api-gateway auth-service user-service thesis-service profile-service eval-service assign-service submission-service academic-config-service communication-log-service
 
 # Kiểm tra trạng thái
-echo "⏳ Waiting for all services to start..."
+echo "Waiting for all services to start..."
 sleep 60
 
 # Kiểm tra health
-echo "🔍 Checking service health..."
+echo "Checking service health..."
 docker-compose ps
 
 # Function để hiển thị logs với màu
@@ -67,7 +67,7 @@ check_service_logs() {
 }
 
 # Kiểm tra logs của tất cả các service
-echo "📋 Checking service logs..."
+echo "Checking service logs..."
 
 # Infrastructure services
 check_service_logs "redis" 5
@@ -87,7 +87,7 @@ check_service_logs "academic-config-service" 10
 check_service_logs "communication-log-service" 10
 
 # Kiểm tra health status
-echo "🏥 Checking service health status..."
+echo "Checking service health status..."
 
 # Danh sách các service có health check
 health_services=(
@@ -108,12 +108,22 @@ for service_port in "${health_services[@]}"; do
     port=$(echo "$service_port" | cut -d: -f2)
 
     echo -n "Health check $service_name: "
+    
+    # Thử /actuator/health trước
     health_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:"$port"/actuator/health 2>/dev/null)
-
-    if [ "$health_status" = "200" ]; then
-        echo -e "\033[1;32m✅ UP\033[0m"
+    
+    # Nếu 401, thử root endpoint (thường không cần auth)
+    if [ "$health_status" = "401" ]; then
+        health_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:"$port"/ 2>/dev/null)
+    fi
+    
+    # Nếu vẫn 401, coi như service đang chạy nhưng cần auth
+    if [ "$health_status" = "401" ]; then
+        echo -e "\033[1;33m UP (Auth Required)\033[0m"
+    elif [ "$health_status" = "200" ]; then
+        echo -e "\033[1;32m UP\033[0m"
     else
-        echo -e "\033[1;31m❌ DOWN ($health_status)\033[0m"
+        echo -e "\033[1;31m DOWN ($health_status)\033[0m"
     fi
 done
 
@@ -121,37 +131,46 @@ done
 echo -n "Redis status: "
 redis_status=$(docker exec redis redis-cli ping 2>/dev/null)
 if [ "$redis_status" = "PONG" ]; then
-    echo -e "\033[1;32m✅ UP\033[0m"
+    echo -e "\033[1;32m UP\033[0m"
 else
-    echo -e "\033[1;31m❌ DOWN\033[0m"
+    echo -e "\033[1;31m DOWN\033[0m"
 fi
 
 # Kiểm tra Eureka
 echo -n "Eureka status: "
 eureka_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8761 2>/dev/null)
 if [ "$eureka_status" = "200" ]; then
-    echo -e "\033[1;32m✅ UP\033[0m"
+    echo -e "\033[1;32m UP\033[0m"
 else
-    echo -e "\033[1;31m❌ DOWN ($eureka_status)\033[0m"
+    echo -e "\033[1;31m DOWN ($eureka_status)\033[0m"
 fi
 
 # Kiểm tra Config Server
 echo -n "Config Server status: "
 config_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8888/actuator/health 2>/dev/null)
 if [ "$config_status" = "200" ]; then
-    echo -e "\033[1;32m✅ UP\033[0m"
+    echo -e "\033[1;32m UP\033[0m"
 else
-    echo -e "\033[1;31m❌ DOWN ($config_status)\033[0m"
+    echo -e "\033[1;31m DOWN ($config_status)\033[0m"
 fi
 
-echo "✅ Monorepo deployment completed!"
-echo "🌐 Services available at:"
+echo "Monorepo deployment completed!"
+echo "Services available at:"
 echo "   - API Gateway: http://$(curl -s ifconfig.me):8080"
+echo "   - Auth Service: http://$(curl -s ifconfig.me):8090"
+echo "   - User Service: http://$(curl -s ifconfig.me):8081"
+echo "   - Thesis Service: http://$(curl -s ifconfig.me):8082"
+echo "   - Profile Service: http://$(curl -s ifconfig.me):8083"
+echo "   - Eval Service: http://$(curl -s ifconfig.me):8084"
+echo "   - Assign Service: http://$(curl -s ifconfig.me):8085"
+echo "   - Submission Service: http://$(curl -s ifconfig.me):8086"
+echo "   - Academic Config Service: http://$(curl -s ifconfig.me):8087"
+echo "   - Communication Log Service: http://$(curl -s ifconfig.me):8088"
 echo "   - Eureka Dashboard: http://$(curl -s ifconfig.me):8761"
 echo "   - Config Server: http://$(curl -s ifconfig.me):8888"
 echo "   - Redis: $(curl -s ifconfig.me):6379"
 echo ""
-echo "📊 Monorepo Services Status:"
+echo "Monorepo Services Status:"
 echo "   - Discovery Server (Eureka): Port 8761"
 echo "   - Config Server: Port 8888"
 echo "   - API Gateway: Port 8080"
@@ -166,7 +185,7 @@ echo "   - Academic Config Service: Port 8087"
 echo "   - Communication Log Service: Port 8088"
 echo "   - Redis: Port 6379"
 echo ""
-echo "🎯 Monorepo Advantages:"
+echo "Monorepo Advantages:"
 echo "   - Single Maven build for all services"
 echo "   - Shared common-lib dependency"
 echo "   - Optimized Docker multi-stage build"

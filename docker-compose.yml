@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Redis
@@ -108,7 +108,6 @@ services:
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
       - DOMAIN=${DOMAIN}
-      - USER_SERVICE_HOST=${USER_SERVICE_HOST}
     depends_on:
       - discovery-server
     networks:
@@ -139,6 +138,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
+      - USER_SERVICE_HOST=${USER_SERVICE_HOST}
       - DOMAIN=${DOMAIN}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
     depends_on:
