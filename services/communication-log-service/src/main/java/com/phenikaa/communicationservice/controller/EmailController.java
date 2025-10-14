@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/communication-service/admin")
 @Slf4j
@@ -102,6 +104,74 @@ public class EmailController {
         } catch (Exception e) {
             log.error("Error in test email: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Gửi email reset password
+     */
+    @PostMapping("/send-password-reset-email")
+    public ResponseEntity<Map<String, Object>> sendPasswordResetEmail(@RequestBody PasswordResetEmailRequest request) {
+        log.info("Sending password reset email to: {}", request.getEmail());
+        
+        try {
+            emailServiceImpl.sendPasswordResetEmail(request.getEmail(), request.getToken(), request.getResetUrl());
+            
+            Map<String, Object> response = Map.of(
+                "success", true,
+                "message", "Email đặt lại mật khẩu đã được gửi thành công"
+            );
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error sending password reset email: {}", e.getMessage(), e);
+            
+            Map<String, Object> response = Map.of(
+                "success", false,
+                "message", "Không thể gửi email: " + e.getMessage()
+            );
+            
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    // Request DTO cho password reset email
+    public static class PasswordResetEmailRequest {
+        private String email;
+        private String token;
+        private String resetUrl;
+        
+        public PasswordResetEmailRequest() {}
+        
+        public PasswordResetEmailRequest(String email, String token, String resetUrl) {
+            this.email = email;
+            this.token = token;
+            this.resetUrl = resetUrl;
+        }
+        
+        public String getEmail() {
+            return email;
+        }
+        
+        public void setEmail(String email) {
+            this.email = email;
+        }
+        
+        public String getToken() {
+            return token;
+        }
+        
+        public void setToken(String token) {
+            this.token = token;
+        }
+        
+        public String getResetUrl() {
+            return resetUrl;
+        }
+        
+        public void setResetUrl(String resetUrl) {
+            this.resetUrl = resetUrl;
         }
     }
 }

@@ -10,8 +10,10 @@ import com.phenikaa.userservice.dto.request.UpdateUserRequest;
 import com.phenikaa.userservice.dto.request.UserFilterRequest;
 import com.phenikaa.userservice.dto.request.DynamicFilterRequest;
 import com.phenikaa.dto.response.GetUserResponse;
+import com.phenikaa.userservice.entity.PasswordResetToken;
 import com.phenikaa.userservice.entity.Role;
 import com.phenikaa.userservice.entity.User;
+import com.phenikaa.userservice.repository.PasswordResetTokenRepository;
 import com.phenikaa.userservice.mapper.UserMapper;
 import com.phenikaa.userservice.repository.UserRepository;
 import com.phenikaa.userservice.repository.RefreshTokenRepository;
@@ -41,8 +43,11 @@ import org.springframework.scheduling.annotation.Async;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -57,6 +62,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final AuthenticationManager authenticationManager;
 
     @Override
@@ -386,6 +392,137 @@ public class UserServiceImpl implements UserService {
             log.error("Lỗi khi lấy danh sách người dùng nhóm theo tên đăng nhập: {}", e.getMessage(), e);
             throw new RuntimeException("Không thể lấy danh sách người dùng: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional
+    public String createPasswordResetToken(String username) {
+        log.info("Creating password reset token for username: {}", username);
+        
+        // Tìm user theo username
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            log.warn("User not found with username: {}", username);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản với email này!");
+        }
+        
+        User user = userOpt.get();
+        
+        // Kiểm tra xem user có đang active không
+        if (user.getStatus() != 1) {
+            log.warn("User is not active: {}", username);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản không hoạt động!");
+        }
+        
+        // Đánh dấu tất cả token cũ của user này là đã sử dụng
+        passwordResetTokenRepository.markAllTokensAsUsedByUserId(user.getUserId());
+        
+        // Tạo token mới
+        String token = generateSecureToken();
+        LocalDateTime expiryDate = LocalDateTime.now().plusHours(24); // Token hết hạn sau 24 giờ
+        
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(token);
+        resetToken.setUserId(user.getUserId());
+        resetToken.setExpiryDate(expiryDate);
+        resetToken.setUsed(false);
+        
+        passwordResetTokenRepository.save(resetToken);
+        
+        log.info("Password reset token created successfully for user: {}", user.getUserId());
+        return token;
+    }
+
+    @Override
+    public boolean validatePasswordResetToken(String token) {
+        log.info("Validating password reset token");
+        
+        Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository.findValidToken(token, LocalDateTime.now());
+        if (tokenOpt.isEmpty()) {
+            log.warn("Invalid or expired token");
+            return false;
+        }
+        
+        PasswordResetToken resetToken = tokenOpt.get();
+        log.info("Token is valid for user: {}", resetToken.getUserId());
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean resetPasswordWithToken(String token, String newPassword) {
+        log.info("Resetting password with token");
+        
+        Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository.findValidToken(token, LocalDateTime.now());
+        if (tokenOpt.isEmpty()) {
+            log.warn("Invalid or expired token for password reset");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token không hợp lệ hoặc đã hết hạn!");
+        }
+        
+        PasswordResetToken resetToken = tokenOpt.get();
+        
+        // Tìm user
+        Optional<User> userOpt = userRepository.findById(resetToken.getUserId());
+        if (userOpt.isEmpty()) {
+            log.error("User not found for token: {}", resetToken.getUserId());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng!");
+        }
+        
+        User user = userOpt.get();
+        
+        // Cập nhật mật khẩu
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.setPasswordHash(encodedPassword);
+        userRepository.save(user);
+        
+        // Đánh dấu token đã sử dụng
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+        
+        log.info("Password reset successfully for user: {}", user.getUserId());
+        return true;
+    }
+
+    @Override
+    public Integer getUserIdFromToken(String token) {
+        Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository.findValidToken(token, LocalDateTime.now());
+        if (tokenOpt.isEmpty()) {
+            return null;
+        }
+        return tokenOpt.get().getUserId();
+    }
+    
+    @Override
+    @Transactional
+    public void changePassword(Integer userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!"));
+
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Mật khẩu hiện tại không đúng!");
+        }
+
+        if (newPassword == null || newPassword.isBlank() || newPassword.length() < 6) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu mới không hợp lệ!");
+        }
+
+        String encoded = passwordEncoder.encode(newPassword);
+        user.setPasswordHash(encoded);
+        userRepository.save(user);
+
+        try {
+            refreshTokenRepository.deleteByUser_UserId(userId);
+        } catch (Exception ignored) {}
+    }
+    
+    /**
+     * Tạo token bảo mật
+     */
+    private String generateSecureToken() {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[32];
+        random.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
 }

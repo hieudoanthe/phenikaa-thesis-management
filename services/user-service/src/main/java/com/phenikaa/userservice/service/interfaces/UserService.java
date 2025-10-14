@@ -30,4 +30,13 @@ public interface UserService {
     Long getUserCountByRole(String role);
     Long getStudentCountByPeriod(Integer periodId);
     Page<GetUserResponse> getAllUsersGroupedByUsername(org.springframework.data.domain.Pageable pageable);
+    
+    // Password reset methods
+    String createPasswordResetToken(String username);
+    boolean validatePasswordResetToken(String token);
+    boolean resetPasswordWithToken(String token, String newPassword);
+    Integer getUserIdFromToken(String token);
+
+    // Change password
+    void changePassword(Integer userId, String currentPassword, String newPassword);
 }

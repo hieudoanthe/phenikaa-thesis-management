@@ -72,8 +72,8 @@ spring:
 
 eureka:
   instance:
-    prefer-ip-address: true
-#    hostname: ${DOMAIN}
+    prefer-ip-address: false
+    hostname: ${DOMAIN}
     instance-id: ${spring.application.name}:${random.value}
     non-secure-port: 8080
   client:

@@ -22,3 +22,6 @@ spring:
         multiplier: ${SPRING_CLOUD_CONFIG_RETRY_MULTIPLIER}
       label: ${SPRING_CLOUD_CONFIG_LABEL}
 
+app:
+  frontend:
+    url: ${APP_FRONTEND_URL}

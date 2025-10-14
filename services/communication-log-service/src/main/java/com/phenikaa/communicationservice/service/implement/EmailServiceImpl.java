@@ -330,21 +330,88 @@ public class EmailServiceImpl {
         }
     }
 
-    @PreDestroy
-    public void cleanup() {
-        log.info("Shutting down email executor service...");
-        emailExecutor.shutdown();
-        try {
-            if (!emailExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
-                emailExecutor.shutdownNow();
-                if (!emailExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
-                    log.warn("Email executor did not terminate gracefully");
-                }
-            }
-        } catch (InterruptedException e) {
-            emailExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-        log.info("Email executor service shutdown completed");
+    /**
+     * Gửi email reset password
+     */
+    public void sendPasswordResetEmail(String email, String token, String resetUrl) throws Exception {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setTo(email);
+        helper.setSubject("[PHENIKAAHUB] Đặt lại mật khẩu");
+        helper.setText(buildPasswordResetEmailContent(email, resetUrl), true);
+
+        mailSender.send(message);
+        log.info("Password reset email sent successfully to: {}", email);
+    }
+    
+    /**
+     * Xây dựng nội dung email reset password
+     */
+    private String buildPasswordResetEmailContent(String email, String resetUrl) {
+        // Lấy tên user từ email (phần trước @)
+        String userName = email.split("@")[0];
+        
+        return String.format("""
+            <html>
+            <body style="font-family:Arial,Helvetica,sans-serif; color:#111827; margin:0; padding:20px; background-color:#f9fafb;">
+                <div style="max-width:640px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#ffffff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
+                    <!-- Header -->
+                    <div style="background:#111827;color:#fff;padding:20px;text-align:center">
+                        <h1 style="margin:0;font-size:20px;font-weight:600">[PHENIKAAHUB] Đặt lại mật khẩu</h1>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div style="padding:30px">
+                        <p style="margin:0 0 20px;font-size:16px;line-height:1.6">
+                            Xin chào <strong>%s</strong>,
+                        </p>
+                        
+                        <p style="margin:0 0 20px;font-size:16px;line-height:1.6">
+                            Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình. Vui lòng nhấp vào nút bên dưới để tạo mật khẩu mới.
+                        </p>
+                        
+                        <!-- Reset Button -->
+                        <div style="text-align:center;margin:30px 0">
+                            <a href="%s" style="display:inline-block;background:#1e3286;color:#fff;padding:12px 30px;text-decoration:none;border-radius:8px;font-weight:600;font-size:16px">
+                                Đặt lại mật khẩu
+                            </a>
+                        </div>
+                        
+                        <!-- Security Notice -->
+                        <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:20px;margin:20px 0">
+                            <h3 style="margin:0 0 15px;font-size:16px;color:#92400e;font-weight:600">Lưu ý bảo mật:</h3>
+                            <ul style="margin:0;padding-left:20px;color:#92400e;font-size:15px">
+                                <li>Link này chỉ có hiệu lực trong 24 giờ</li>
+                                <li>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này</li>
+                                <li>Không chia sẻ link này với bất kỳ ai</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Alternative Link -->
+                        <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:20px;margin:20px 0">
+                            <p style="margin:0 0 10px;font-size:14px;color:#6b7280">
+                                Nếu nút không hoạt động, bạn có thể copy và paste link này vào trình duyệt:
+                            </p>
+                            <p style="margin:0;font-size:12px;color:#374151;word-break:break-all;background:#fff;padding:10px;border-radius:4px;border:1px solid #e5e7eb">
+                                %s
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div style="padding:20px;background:#f9fafb;color:#6b7280;font-size:14px;text-align:center;border-top:1px solid #e5e7eb">
+                        <p style="margin:0;font-weight:600;color:#111827">Trân trọng,</p>
+                        <p style="margin:5px 0 0;color:#6b7280">Hệ thống quản lý đồ án tốt nghiệp</p>
+                        <p style="margin:10px 0 0;font-size:12px;color:#9ca3af">Phenikaa University</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """,
+                userName,
+                resetUrl,
+                resetUrl
+        );
     }
 }
