@@ -98,6 +98,25 @@ public class StudentPeriodController {
         return getAllStudentsByPeriod(periodId, page, size);
     }
 
+    /**
+     * Lấy danh sách sinh viên CHƯA hoàn thiện (chưa đăng ký/đề xuất) theo đợt
+     */
+    @GetMapping("/incomplete/{periodId}")
+    public ResponseEntity<?> getIncompleteStudentsByPeriod(
+            @PathVariable Integer periodId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size) {
+        try {
+            log.info("API được gọi: Lấy sinh viên chưa hoàn thiện theo đợt {}", periodId);
+            List<GetStudentPeriodResponse> students = studentPeriodService.getIncompleteStudentsByPeriod(periodId);
+            log.info("Tìm thấy {} sinh viên chưa hoàn thiện", students.size());
+            return ResponseEntity.ok(paginate(students, page, size));
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy danh sách sinh viên chưa hoàn thiện theo đợt {}: ", periodId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // Public cho sinh viên: lấy tất cả đợt ACTIVE hiện tại
     @GetMapping("/active")
     public ResponseEntity<List<RegistrationPeriod>> getActivePeriodsForStudents() {

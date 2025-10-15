@@ -64,6 +64,48 @@ public class StudentPeriodServiceImpl implements StudentPeriodService {
         return registeredStudents;
     }
 
+    @Override
+    public List<GetStudentPeriodResponse> getIncompleteStudentsByPeriod(Integer periodId) {
+        log.info("Lấy danh sách sinh viên chưa hoàn thiện theo đợt: {}", periodId);
+
+        // 1) Lấy tất cả sinh viên thuộc đợt từ user-service (đã import vào đợt)
+        var usersInPeriod = userServiceClient.getStudentsByPeriod(periodId);
+        var allStudentIds = new java.util.HashSet<Integer>();
+        if (usersInPeriod != null && usersInPeriod.getData() != null) {
+            for (var map : usersInPeriod.getData()) {
+                Object idObj = map.get("userId");
+                if (idObj instanceof Number) allStudentIds.add(((Number) idObj).intValue());
+            }
+        }
+
+        // 2) Lấy tất cả sinh viên đã đăng ký hoặc đã đề xuất trong đợt
+        var completed = new java.util.HashSet<Integer>();
+        registerRepository.findByRegistrationPeriodId(periodId).forEach(r -> completed.add(r.getStudentId()));
+        suggestRepository.findByRegistrationPeriodId(periodId).forEach(s -> completed.add(s.getSuggestedBy()));
+
+        // 3) Lọc ra những sinh viên thuộc đợt nhưng chưa có trong completed
+        var result = new java.util.ArrayList<GetStudentPeriodResponse>();
+        for (Integer studentId : allStudentIds) {
+            if (!completed.contains(studentId)) {
+                String username = getUsernameById(studentId);
+                String fullName = getFullNameById(studentId);
+                result.add(GetStudentPeriodResponse.builder()
+                        .registrationPeriodId(periodId)
+                        .studentId(studentId)
+                        .username(username)
+                        .fullName(fullName)
+                        .registrationType("UNCOMPLETED")
+                        .topicId(null)
+                        .topicTitle(null)
+                        .topicCode(null)
+                        .build());
+            }
+        }
+
+        log.info("Tìm thấy {} sinh viên chưa hoàn thiện", result.size());
+        return result;
+    }
+
     /**
      * Map Register entity sang GetStudentPeriodResponse
      */

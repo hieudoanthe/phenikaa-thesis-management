@@ -70,6 +70,16 @@ public class EmailDecorator implements NotificationService {
         return wrappedService.toggleReadAndPublish(receiverId, notificationId);
     }
 
+    @Override
+    public Mono<Notification> findById(String notificationId) {
+        return wrappedService.findById(notificationId);
+    }
+
+    @Override
+    public Mono<Notification> markAsReadAndPublish(int receiverId, String notificationId) {
+        return wrappedService.markAsReadAndPublish(receiverId, notificationId);
+    }
+
     private boolean shouldSendEmail(String notificationType) {
         log.info("Checking if should send email for type: {}", notificationType);
         

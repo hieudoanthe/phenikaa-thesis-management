@@ -90,6 +90,26 @@ public class NotificationServiceImpl implements NotificationService {
                 });
     }
 
+    @Override
+    public Mono<Notification> findById(String notificationId) {
+        return notificationRepository.findById(notificationId);
+    }
+
+    @Override
+    public Mono<Notification> markAsReadAndPublish(int receiverId, String notificationId) {
+        Query query = new Query(Criteria.where("receiverId").is(receiverId)
+                .and("_id").is(notificationId));
+
+        Update update = new Update().set("read", true);
+
+        return mongoTemplate.findAndModify(query, update, Notification.class)
+                .doOnSuccess(updatedNoti -> {
+                    if (updatedNoti != null) {
+                        notificationBroadcaster.publish(receiverId, updatedNoti);
+                    }
+                });
+    }
+
     /**
      * Very small sanitizer to convert HTML email content to a readable WS text.
      * - strips tags

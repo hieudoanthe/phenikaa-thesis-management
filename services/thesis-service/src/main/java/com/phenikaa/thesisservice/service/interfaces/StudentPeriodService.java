@@ -25,4 +25,11 @@ public interface StudentPeriodService {
      * @return Danh sách tất cả sinh viên
      */
     List<GetStudentPeriodResponse> getAllStudentsByPeriod(Integer periodId);
+
+    /**
+     * Lấy danh sách sinh viên thuộc đợt nhưng CHƯA hoàn thiện (chưa đăng ký hoặc chưa đề xuất đề tài)
+     * @param periodId ID của đợt đăng ký
+     * @return Danh sách sinh viên chưa hoàn thiện
+     */
+    List<GetStudentPeriodResponse> getIncompleteStudentsByPeriod(Integer periodId);
 }

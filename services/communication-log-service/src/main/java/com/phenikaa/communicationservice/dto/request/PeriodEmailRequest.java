@@ -21,4 +21,9 @@ public class PeriodEmailRequest {
     private String systemUrl;
     private String supportEmail;
     private String supportPhone;
+    private String type; // ANNOUNCEMENT | REMINDER
+    // New: when REMINDER, only send to students who haven't completed
+    private Boolean reminderOnlyIncomplete;
+    // Optional: scheduler-driven
+    private Integer remindBeforeHours; // e.g. 48
 }

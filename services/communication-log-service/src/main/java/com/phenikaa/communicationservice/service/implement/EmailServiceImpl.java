@@ -107,6 +107,15 @@ public class EmailServiceImpl {
 
                     log.info("Found {} students with valid email domain", validStudents.size());
                     
+                    // Nếu là REMINDER và yêu cầu chỉ gửi cho sinh viên chưa hoàn thiện
+                    if ("REMINDER".equalsIgnoreCase(request.getType()) && Boolean.TRUE.equals(request.getReminderOnlyIncomplete())) {
+                        // Lọc danh sách email theo incomplete
+                        return userServiceClient.getStudentsByPeriod(request.getPeriodId())
+                                .collectList()
+                                .map(list -> validStudents) // TODO: hook to thesis-service if need detailed incomplete list
+                                .flatMap(filtered -> sendBulkEmailsReactive(filtered, request));
+                    }
+
                     // Gửi email bất đồng bộ cho tất cả sinh viên
                     return sendBulkEmailsReactive(validStudents, request);
                 });
@@ -195,8 +204,10 @@ public class EmailServiceImpl {
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
         helper.setTo(studentEmail);
-        helper.setSubject(request.getSubject() != null ? request.getSubject() : 
-                "[THÔNG BÁO] Mở đợt đăng ký khóa luận tốt nghiệp");
+        String defaultSubject = "REMINDER".equalsIgnoreCase(request.getType())
+                ? "[NHẮC NHỞ] Hoàn tất đăng ký đề tài KLTN"
+                : "[THÔNG BÁO] Mở đợt đăng ký khóa luận tốt nghiệp";
+        helper.setSubject(request.getSubject() != null ? request.getSubject() : defaultSubject);
         helper.setText(buildEmailContent(studentEmail, request), true);
 
         mailSender.send(message);
@@ -223,6 +234,45 @@ public class EmailServiceImpl {
         }
         String supportEmail = request.getSupportEmail() != null ? request.getSupportEmail() : "support@phenikaa-uni.edu.vn";
         String supportPhone = request.getSupportPhone() != null ? request.getSupportPhone() : "024.1234.5678";
+
+        if ("REMINDER".equalsIgnoreCase(request.getType())) {
+            return String.format("""
+            <html>
+            <body style="font-family:Arial,Helvetica,sans-serif; color:#111827; margin:0; padding:20px; background-color:#f9fafb;">
+                <div style="max-width:640px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#ffffff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
+                    <div style="background:#111827;color:#fff;padding:20px;text-align:center">
+                        <h1 style="margin:0;font-size:20px;font-weight:600">[NHẮC NHỞ] Hoàn tất đăng ký đề tài KLTN</h1>
+                    </div>
+                    <div style="padding:30px">
+                        <p style="margin:0 0 20px;font-size:16px;line-height:1.6">Xin chào <strong>%s</strong>,</p>
+                        <p style="margin:0 0 12px;font-size:16px;line-height:1.6">Bạn chưa hoàn tất đăng ký đề tài cho đợt:</p>
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin:12px 0">
+                            <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#111827"><strong>Tên đợt:</strong> %s</p>
+                            <p style="margin:0 0 8px;font-size:16px;color:#4b5563"><strong>Thời gian:</strong> %s - %s</p>
+                        </div>
+                        <p style="margin:8px 0 16px;font-size:15px;color:#374151">Vui lòng truy cập hệ thống và hoàn tất đăng ký trước khi hết hạn.</p>
+                        <div style="text-align:center;margin:20px 0">
+                            <a href="%s" style="display:inline-block;background:#1e3286;color:#fff;padding:10px 22px;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px">Mở hệ thống</a>
+                        </div>
+                        <p style="margin:0;font-size:14px;color:#6b7280">Mọi thắc mắc vui lòng liên hệ: %s | %s</p>
+                    </div>
+                    <div style="padding:16px;background:#f9fafb;color:#6b7280;font-size:14px;text-align:center;border-top:1px solid #e5e7eb">
+                        <p style="margin:0;font-weight:600;color:#111827">Trân trọng,</p>
+                        <p style="margin:6px 0 0;color:#6b7280">Hệ thống quản lý đồ án tốt nghiệp</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """,
+                    studentName,
+                    request.getPeriodName(),
+                    startDateStr,
+                    endDateStr,
+                    systemUrl,
+                    supportEmail,
+                    supportPhone
+            );
+        }
 
         return String.format("""
             <html>

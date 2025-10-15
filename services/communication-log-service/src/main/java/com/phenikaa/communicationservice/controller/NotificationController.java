@@ -2,6 +2,7 @@ package com.phenikaa.communicationservice.controller;
 
 import com.phenikaa.communicationservice.dto.request.NotificationRequest;
 import com.phenikaa.communicationservice.entity.Notification;
+import com.phenikaa.communicationservice.repository.NotificationRepository;
 import com.phenikaa.communicationservice.service.decorator.EmailDecorator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +15,11 @@ import reactor.core.publisher.Mono;
 public class NotificationController {
 
     private final EmailDecorator notificationService;
+    private final NotificationRepository notificationRepository;
 
-    public NotificationController(EmailDecorator notificationService) {
+    public NotificationController(EmailDecorator notificationService, NotificationRepository notificationRepository) {
         this.notificationService = notificationService;
+        this.notificationRepository = notificationRepository;
     }
 
     @PostMapping("/send")
@@ -49,6 +52,17 @@ public class NotificationController {
 
         return notificationService.toggleReadAndPublish(receiverId, notificationId)
                 .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{notificationId}/mark-read")
+    public Mono<ResponseEntity<Notification>> markAsRead(@PathVariable String notificationId) {
+        // Tìm notification trước để lấy receiverId
+        return notificationRepository.findById(notificationId)
+                .flatMap(notification -> 
+                    notificationService.markAsReadAndPublish(notification.getReceiverId(), notificationId)
+                        .map(ResponseEntity::ok)
+                )
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }
