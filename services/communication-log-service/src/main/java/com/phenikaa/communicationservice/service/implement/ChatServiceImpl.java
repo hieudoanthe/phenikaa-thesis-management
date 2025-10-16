@@ -43,82 +43,6 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public Flux<Map<String, Object>> getUserConversations(String userId) {
-        // Tạo aggregation pipeline để lấy danh sách conversations của user
-        MatchOperation matchOperation = Aggregation.match(
-            new Criteria().orOperator(
-                where("senderId").is(userId),
-                where("receiverId").is(userId)
-            )
-        );
-
-        // Group theo conversation partner và lấy tin nhắn cuối cùng
-        GroupOperation groupOperation = Aggregation.group("senderId", "receiverId")
-            .last("content").as("lastMessage")
-            .last("timestamp").as("lastMessageTime")
-            .count().as("messageCount");
-
-        // Project để tạo conversation object
-        ProjectionOperation projectionOperation = Aggregation.project()
-            .andExpression("_id.senderId").as("senderId")
-            .andExpression("_id.receiverId").as("receiverId")
-            .and("lastMessage").as("lastMessage")
-            .and("lastMessageTime").as("lastMessageTime")
-            .and("messageCount").as("messageCount");
-
-        // Sort theo thời gian tin nhắn cuối cùng
-        SortOperation sortOperation = Aggregation.sort(Sort.by(Sort.Direction.DESC, "lastMessageTime"));
-
-        Aggregation aggregation = Aggregation.newAggregation(
-            matchOperation,
-            groupOperation,
-            projectionOperation,
-            sortOperation
-        );
-
-        return mongoTemplate.aggregate(aggregation, "chat_messages", Map.class)
-            .collectList()
-            .flatMapMany(conversations -> {
-                // Lấy tất cả partner IDs
-                var partnerIds = conversations.stream()
-                    .map(conv -> {
-                        String senderId = (String) conv.get("senderId");
-                        String receiverId = (String) conv.get("receiverId");
-                        return senderId.equals(userId) ? receiverId : senderId;
-                    })
-                    .distinct()
-                    .toList();
-
-                // Lấy thông tin user cho tất cả partners
-                return userServiceClient.getUsersByIds(partnerIds.toArray(new String[0]))
-                    .collectMap(user -> (String) user.get("userId"))
-                    .flatMapMany(userMap -> 
-                        Flux.fromIterable(conversations)
-                            .map(conv -> {
-                                String senderId = (String) conv.get("senderId");
-                                String receiverId = (String) conv.get("receiverId");
-                                String partnerId = senderId.equals(userId) ? receiverId : senderId;
-                                
-                                Map<String, Object> userInfo = userMap.getOrDefault(partnerId, Map.of());
-                                
-                                Map<String, Object> conversation = new HashMap<>();
-                                conversation.put("partnerId", partnerId);
-                                conversation.put("partnerName", userInfo.getOrDefault("fullName", "Unknown User"));
-                                conversation.put("partnerEmail", userInfo.getOrDefault("email", ""));
-                                conversation.put("partnerAvatar", userInfo.getOrDefault("avt", ""));
-                                conversation.put("lastMessage", conv.get("lastMessage"));
-                                conversation.put("lastMessageTime", conv.get("lastMessageTime"));
-                                conversation.put("messageCount", conv.get("messageCount"));
-                                conversation.put("unreadCount", 0);
-                                conversation.put("conversationId", partnerId); // Sử dụng partnerId làm conversationId
-                                
-                                return conversation;
-                            })
-                    );
-            });
-    }
-
-    @Override
     public Flux<Map<String, Object>> getRecentMessages(String userId) {
         // Lấy 20 tin nhắn gần nhất của user
         return mongoTemplate.find(
@@ -136,6 +60,29 @@ public class ChatServiceImpl implements ChatService {
             messageMap.put("timestamp", message.getTimestamp());
             return messageMap;
         });
+    }
+
+    @Override
+    public Flux<String> getDistinctPartners(String userId) {
+        // Lấy tất cả receiverIds mà user đã gửi và tất cả senderIds đã gửi cho user,
+        // hợp nhất và loại bỏ trùng
+        Flux<String> sentTo = mongoTemplate
+            .query(ChatMessage.class)
+            .distinct("receiverId")
+            .matching(query(where("senderId").is(userId)))
+            .as(String.class)
+            .all();
+
+        Flux<String> receivedFrom = mongoTemplate
+            .query(ChatMessage.class)
+            .distinct("senderId")
+            .matching(query(where("receiverId").is(userId)))
+            .as(String.class)
+            .all();
+
+        return Flux.merge(sentTo, receivedFrom)
+            .filter(id -> id != null && !id.equals(userId))
+            .distinct();
     }
 
 }

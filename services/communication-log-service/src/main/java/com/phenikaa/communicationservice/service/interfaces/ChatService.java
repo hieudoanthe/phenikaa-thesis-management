@@ -9,6 +9,6 @@ import java.util.Map;
 public interface ChatService {
     <T extends ChatMessage> Mono<T> saveMessage(T message);
     Flux<ChatMessage> getChatHistory(String user1, String user2);
-    Flux<Map<String, Object>> getUserConversations(String userId);
     Flux<Map<String, Object>> getRecentMessages(String userId);
+    Flux<String> getDistinctPartners(String userId);
 }

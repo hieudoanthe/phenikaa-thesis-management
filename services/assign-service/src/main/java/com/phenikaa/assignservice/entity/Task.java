@@ -32,10 +32,10 @@ public class Task {
     @Column(name = "assigned_by")
     private Integer assignedBy;
 
-    @Column(name = "task_name", nullable = false)
+    @Column(name = "task_name", nullable = false, columnDefinition = "nvarchar(255)")
     private String taskName;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "nvarchar(255)")
     private String description;
 
     @Column(name = "start_date")

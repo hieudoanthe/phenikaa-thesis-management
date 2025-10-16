@@ -28,7 +28,7 @@ public class ReportSubmission {
     @Column(name = "assignment_id")
     private Integer assignmentId;
 
-    @Column(name = "report_title", nullable = false)
+    @Column(name = "report_title", nullable = false, columnDefinition = "nvarchar(255)")
     private String reportTitle;
 
     @Column(name = "description", columnDefinition = "nvarchar(255)")

@@ -81,7 +81,11 @@ public class NotificationServiceImpl implements NotificationService {
                     boolean newValue = !existing.isRead();
                     Update update = new Update().set("read", newValue);
 
-                    return mongoTemplate.findAndModify(query, update, Notification.class)
+                    return mongoTemplate.findAndModify(
+                                    query,
+                                    update,
+                                    org.springframework.data.mongodb.core.FindAndModifyOptions.options().returnNew(true),
+                                    Notification.class)
                             .doOnSuccess(updatedNoti -> {
                                 if (updatedNoti != null) {
                                     notificationBroadcaster.publish(receiverId, updatedNoti);
@@ -102,7 +106,11 @@ public class NotificationServiceImpl implements NotificationService {
 
         Update update = new Update().set("read", true);
 
-        return mongoTemplate.findAndModify(query, update, Notification.class)
+        return mongoTemplate.findAndModify(
+                        query,
+                        update,
+                        org.springframework.data.mongodb.core.FindAndModifyOptions.options().returnNew(true),
+                        Notification.class)
                 .doOnSuccess(updatedNoti -> {
                     if (updatedNoti != null) {
                         notificationBroadcaster.publish(receiverId, updatedNoti);

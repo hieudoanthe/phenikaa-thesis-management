@@ -29,10 +29,10 @@ public class Assignment {
     @Column(name = "assigned_by")
     private Integer assignedBy;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, columnDefinition = "nvarchar(255)")
     private String title;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "nvarchar(255)")
     private String description;
 
     @Column(name = "due_date")

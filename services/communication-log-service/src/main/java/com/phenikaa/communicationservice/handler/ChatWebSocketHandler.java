@@ -52,15 +52,9 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                         .thenReturn(msg))
                 .doOnError(Throwable::printStackTrace);
 
-        // Gửi tin đến client
+        // Gửi tin đến client (payload String đã được serialize)
         Flux<WebSocketMessage> output = broadcaster.subscribe(userId)
-                .map(msg -> {
-                    try {
-                        return session.textMessage(mapper.writeValueAsString(msg));
-                    } catch (Exception e) {
-                        return session.textMessage("");
-                    }
-                })
+                .map(session::textMessage)
                 .doOnError(Throwable::printStackTrace);
 
         return session.send(output)

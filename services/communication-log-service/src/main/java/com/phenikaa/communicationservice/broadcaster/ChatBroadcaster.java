@@ -1,8 +1,10 @@
 package com.phenikaa.communicationservice.broadcaster;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.phenikaa.communicationservice.entity.ChatMessage;
-import org.springframework.data.redis.connection.ReactiveSubscription;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import com.phenikaa.communicationservice.entity.GroupMessage;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -10,29 +12,39 @@ import reactor.core.publisher.Mono;
 @Component
 public class ChatBroadcaster {
 
-    private final ReactiveRedisTemplate<String, ChatMessage> redisTemplate;
+    private final ReactiveStringRedisTemplate redisTemplate;
+    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    public ChatBroadcaster(ReactiveRedisTemplate<String, ChatMessage> redisTemplate) {
+    public ChatBroadcaster(ReactiveStringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
-    // Publish tin nhắn: gửi lên topic theo cặp user
     public Mono<Long> publish(ChatMessage msg) {
-        String topic = getTopic(msg.getSenderId(), msg.getReceiverId());
-        return redisTemplate.convertAndSend(topic, msg);
+        String topic = userTopic(msg.getReceiverId());
+        return redisTemplate.convertAndSend(topic, serialize(msg));
     }
 
-    // Subscribe: nhận tất cả topic mà user tham gia
-    public Flux<ChatMessage> subscribe(String userId) {
-        return redisTemplate.listenToPattern("chat_*")
-                .map(ReactiveSubscription.Message::getMessage)
-                .filter(msg -> msg.getReceiverId().equals(userId));
+    public Mono<Long> publishGroup(GroupMessage msg, java.util.List<String> memberIds) {
+        String payload = serialize(msg);
+        return Flux.fromIterable(memberIds)
+                .flatMap(memberId -> redisTemplate.convertAndSend(userTopic(memberId), payload))
+                .reduce(0L, Long::sum);
     }
 
-    // Sinh topic theo cặp user (thứ tự tăng dần để không bị lệch)
-    private String getTopic(String user1, String user2) {
-        return user1.compareTo(user2) < 0
-                ? "chat_" + user1 + "_" + user2
-                : "chat_" + user2 + "_" + user1;
+    public Flux<String> subscribe(String userId) {
+        String topic = userTopic(userId);
+        return redisTemplate.listenToChannel(topic).map(m -> m.getMessage());
+    }
+
+    private String serialize(Object obj) {
+        try {
+            return mapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private String userTopic(String userId) {
+        return "chat_user_" + userId;
     }
 }
