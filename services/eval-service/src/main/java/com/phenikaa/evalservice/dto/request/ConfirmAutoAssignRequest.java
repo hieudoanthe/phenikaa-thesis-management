@@ -31,6 +31,7 @@ public class ConfirmAutoAssignRequest {
     public static class StudentAssignDto {
         private Integer studentId;
         private Integer topicId;
+        private Integer supervisorId; 
         private Integer reviewerId;
         private String studentName;
         private String specialization;

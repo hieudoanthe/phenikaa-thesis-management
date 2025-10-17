@@ -511,6 +511,47 @@ public class EvaluationService {
         response.setEvaluatedAt(evaluation.getEvaluatedAt());
         response.setEvaluationStatus(evaluation.getEvaluationStatus());
         
+        // Set các trường điểm mới cho từng vai trò với fallback về trường điểm cũ
+        // Hội đồng (COMMITTEE) - 6 tiêu chí
+        response.setPresentationClarityScore(evaluation.getPresentationClarityScore() != null ? 
+            evaluation.getPresentationClarityScore() : (evaluation.getPresentationScore() != null ? evaluation.getPresentationScore() * 0.1f : null));
+        response.setReviewerQaScore(evaluation.getReviewerQaScore() != null ? 
+            evaluation.getReviewerQaScore() : (evaluation.getContentScore() != null ? evaluation.getContentScore() * 0.3f : null));
+        response.setCommitteeQaScore(evaluation.getCommitteeQaScore() != null ? 
+            evaluation.getCommitteeQaScore() : (evaluation.getDefenseScore() != null ? evaluation.getDefenseScore() * 0.3f : null));
+        response.setAttitudeScore(evaluation.getAttitudeScore() != null ? 
+            evaluation.getAttitudeScore() : (evaluation.getTechnicalScore() != null ? evaluation.getTechnicalScore() * 0.2f : null));
+        response.setContentImplementationScore(evaluation.getContentImplementationScore() != null ? 
+            evaluation.getContentImplementationScore() : (evaluation.getInnovationScore() != null ? evaluation.getInnovationScore() * 0.9f : null));
+        response.setRelatedIssuesScore(evaluation.getRelatedIssuesScore() != null ? 
+            evaluation.getRelatedIssuesScore() : (evaluation.getTechnicalScore() != null ? evaluation.getTechnicalScore() * 0.2f : null));
+        
+        // Giảng viên phản biện (REVIEWER) - 5 tiêu chí
+        response.setFormatScore(evaluation.getFormatScore() != null ? 
+            evaluation.getFormatScore() : (evaluation.getContentScore() != null ? evaluation.getContentScore() * 0.3f : null));
+        response.setContentQualityScore(evaluation.getContentQualityScore() != null ? 
+            evaluation.getContentQualityScore() : (evaluation.getPresentationScore() != null ? evaluation.getPresentationScore() * 0.8f : null));
+        response.setRelatedIssuesReviewerScore(evaluation.getRelatedIssuesReviewerScore() != null ? 
+            evaluation.getRelatedIssuesReviewerScore() : (evaluation.getTechnicalScore() != null ? evaluation.getTechnicalScore() * 0.4f : null));
+        response.setPracticalApplicationScore(evaluation.getPracticalApplicationScore() != null ? 
+            evaluation.getPracticalApplicationScore() : (evaluation.getInnovationScore() != null ? evaluation.getInnovationScore() * 0.4f : null));
+        response.setBonusScore(evaluation.getBonusScore() != null ? 
+            evaluation.getBonusScore() : null);
+        
+        // Giảng viên hướng dẫn (SUPERVISOR) - 6 tiêu chí
+        response.setStudentAttitudeScore(evaluation.getStudentAttitudeScore() != null ? 
+            evaluation.getStudentAttitudeScore() : (evaluation.getPresentationScore() != null ? evaluation.getPresentationScore() * 0.2f : null));
+        response.setProblemSolvingScore(evaluation.getProblemSolvingScore() != null ? 
+            evaluation.getProblemSolvingScore() : (evaluation.getContentScore() != null ? evaluation.getContentScore() * 0.2f : null));
+        response.setFormatSupervisorScore(evaluation.getFormatSupervisorScore() != null ? 
+            evaluation.getFormatSupervisorScore() : (evaluation.getTechnicalScore() != null ? evaluation.getTechnicalScore() * 0.3f : null));
+        response.setContentImplementationSupervisorScore(evaluation.getContentImplementationSupervisorScore() != null ? 
+            evaluation.getContentImplementationSupervisorScore() : (evaluation.getInnovationScore() != null ? evaluation.getInnovationScore() * 0.9f : null));
+        response.setRelatedIssuesSupervisorScore(evaluation.getRelatedIssuesSupervisorScore() != null ? 
+            evaluation.getRelatedIssuesSupervisorScore() : (evaluation.getTechnicalScore() != null ? evaluation.getTechnicalScore() * 0.2f : null));
+        response.setPracticalApplicationSupervisorScore(evaluation.getPracticalApplicationSupervisorScore() != null ? 
+            evaluation.getPracticalApplicationSupervisorScore() : (evaluation.getInnovationScore() != null ? evaluation.getInnovationScore() * 0.2f : null));
+        
         // Lấy thông tin đề tài từ thesis-service
         try {
             var topicInfo = thesisServiceClient.getTopicById(evaluation.getTopicId());

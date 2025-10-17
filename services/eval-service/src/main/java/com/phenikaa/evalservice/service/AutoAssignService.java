@@ -321,7 +321,7 @@ public class AutoAssignService {
                     sessionId,
                     st.getStudentId(),
                     topicId,
-                    null, // Bỏ supervisorId
+                    st.getSupervisorId(), 
                     studentName,
                     major,
                     topicTitle

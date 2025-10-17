@@ -22,7 +22,7 @@ public class SupervisorSummary {
 
     private Integer supervisorId;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "nvarchar(2000)")
     private String content;
 
     private LocalDateTime createdAt;

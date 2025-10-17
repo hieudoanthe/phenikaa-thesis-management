@@ -22,7 +22,7 @@ public class ReviewerSummary {
 
     private Integer reviewerId;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "nvarchar(2000)")
     private String content;
 
     private LocalDateTime createdAt;

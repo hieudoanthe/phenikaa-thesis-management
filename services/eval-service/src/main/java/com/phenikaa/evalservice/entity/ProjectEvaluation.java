@@ -106,7 +106,7 @@ public class ProjectEvaluation {
     @Column(name = "total_score")
     private Float totalScore; // Tổng điểm (0-10)
 
-    @Column(name = "comments", columnDefinition = "TEXT")
+    @Column(name = "comments", columnDefinition = "nvarchar(2000)")
     private String comments;
 
     @Column(name = "evaluated_at")
