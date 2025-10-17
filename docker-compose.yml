@@ -108,6 +108,7 @@ services:
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
       - DOMAIN=${DOMAIN}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - discovery-server
     networks:
@@ -141,6 +142,7 @@ services:
       - USER_SERVICE_HOST=${USER_SERVICE_HOST}
       - DOMAIN=${DOMAIN}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
@@ -176,6 +178,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
@@ -213,6 +216,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
@@ -251,6 +255,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
@@ -288,6 +293,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
@@ -323,6 +329,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
@@ -370,6 +377,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
@@ -405,6 +413,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
@@ -445,6 +454,7 @@ services:
       - REDIS_DATABASE=${REDIS_DATABASE}
       - REDIS_TIMEOUT=${REDIS_TIMEOUT}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - config-server
       - discovery-server
