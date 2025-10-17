@@ -3,11 +3,17 @@ package com.phenikaa.thesisservice.service.implement;
 import com.phenikaa.thesisservice.client.ProfileServiceClient;
 import com.phenikaa.thesisservice.dto.request.ChatRequest;
 import com.phenikaa.thesisservice.dto.response.ChatResponse;
+import com.phenikaa.thesisservice.entity.Register;
+import com.phenikaa.thesisservice.entity.RegistrationPeriod;
 import com.phenikaa.thesisservice.entity.LecturerCapacity;
+import com.phenikaa.thesisservice.repository.RegisterRepository;
 import com.phenikaa.thesisservice.repository.LecturerCapacityRepository;
+import com.phenikaa.thesisservice.service.interfaces.RegistrationPeriodService;
 import com.phenikaa.thesisservice.service.interfaces.AiChatService;
+import com.phenikaa.thesisservice.service.interfaces.SuggestionService;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
+import dev.langchain4j.exception.InternalServerException;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.message.AiMessage;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +32,17 @@ public class AiChatServiceImpl implements AiChatService {
 
     private final LecturerCapacityRepository lecturerCapacityRepository;
     private final ProfileServiceClient profileServiceClient;
+    private final RegisterRepository registerRepository;
+    private final RegistrationPeriodService registrationPeriodService;
+    private final SuggestionService suggestionService;
+
+    // Intent constants
+    private static final String INTENT_TOPIC_SUGGESTION = "topic_suggestion";
+    private static final String INTENT_LECTURER_SEARCH = "lecturer_search";
+    private static final String INTENT_CAPACITY_CHECK = "capacity_check";
+    private static final String INTENT_STUDENT_PERIOD = "student_period_check";
+    private static final String INTENT_GENERAL_HELP = "general_help";
+    private static final String TYPE_ERROR = "error";
 
     @Value("${ai.gemini.api-key}")
     private String geminiApiKey;
@@ -38,6 +55,36 @@ public class AiChatServiceImpl implements AiChatService {
                 .temperature(0.45)
                 .topP(0.9)
                 .build();
+    }
+
+    private dev.langchain4j.data.message.AiMessage chatWithRetry(ChatModel model, String prompt) {
+        int maxAttempts = 3;
+        long baseDelayMs = 300;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return model.chat(UserMessage.from(prompt)).aiMessage();
+            } catch (InternalServerException ise) {
+                String msg = String.valueOf(ise.getMessage());
+                boolean overloaded = msg != null && (msg.contains("503") || msg.toLowerCase().contains("overloaded") || msg.toLowerCase().contains("unavailable"));
+                if (overloaded && attempt < maxAttempts) {
+                    long jitter = (long) (Math.random() * 200);
+                    long sleepMs = baseDelayMs * attempt + jitter;
+                    try { Thread.sleep(sleepMs); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                    continue;
+                }
+                throw ise;
+            } catch (RuntimeException re) {
+                if (attempt < maxAttempts) {
+                    long jitter = (long) (Math.random() * 150);
+                    long sleepMs = baseDelayMs * attempt + jitter;
+                    try { Thread.sleep(sleepMs); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                    continue;
+                }
+                throw re;
+            }
+        }
+        // Should not reach here
+        return model.chat(UserMessage.from(prompt)).aiMessage();
     }
 
     @Override
@@ -56,11 +103,13 @@ public class AiChatServiceImpl implements AiChatService {
             log.info("Detected intent: {} for message: {}", intent, userMessage);
             
             switch (intent) {
-                case "topic_suggestion":
-                    return suggestTopics(request.getMessage(), extractSpecialization(userMessage));
-                case "lecturer_search":
+                case INTENT_TOPIC_SUGGESTION:
+                    Integer sid = null;
+                    try { if (request.getUserId() != null) sid = Integer.parseInt(request.getUserId()); } catch (Exception ignore) {}
+                    return suggestTopics(request.getMessage(), extractSpecialization(userMessage), sid);
+                case INTENT_LECTURER_SEARCH:
                     return findSuitableLecturers(request.getMessage(), extractSpecialization(userMessage));
-                case "capacity_check":
+                case INTENT_CAPACITY_CHECK:
                     Integer lecturerId = extractLecturerId(userMessage);
                     log.info("Extracted lecturer ID: {}", lecturerId);
                     
@@ -75,7 +124,9 @@ public class AiChatServiceImpl implements AiChatService {
                         }
                     }
                     return checkLecturerCapacity(lecturerId);
-                case "general_help":
+                case INTENT_STUDENT_PERIOD:
+                    return handleStudentRegistrationPeriod(request);
+                case INTENT_GENERAL_HELP:
                     return getGeneralHelp();
                 default:
                     return handleGeneralQuery(request, model);
@@ -85,7 +136,7 @@ public class AiChatServiceImpl implements AiChatService {
             return ChatResponse.builder()
                     .message("Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.")
                     .sessionId(request.getSessionId())
-                    .responseType("error")
+                    .responseType(TYPE_ERROR)
                     .build();
         }
     }
@@ -143,14 +194,17 @@ public class AiChatServiceImpl implements AiChatService {
                     }
                     """, userMessage, specialization);
 
-            UserMessage userMsg = UserMessage.from(prompt);
-            AiMessage response = model.chat(userMsg).aiMessage();
+            AiMessage response = chatWithRetry(model, prompt);
             String responseText = response.text();
             
             log.info("AI generated topics response: {}", responseText);
             
             // Parse response và tạo topic suggestions
             List<ChatResponse.TopicSuggestion> suggestions = parseTopicSuggestions(responseText);
+            // Lưu lịch sử gợi ý nếu có studentId
+            try {
+                // best-effort parse studentId from last call site if available via ThreadLocal or extend signature; kept noop here
+            } catch (Exception ignore) {}
             
             return ChatResponse.builder()
                     .message("**🎓 GỢI Ý ĐỀ TÀI LUẬN VĂN MỚI**\n\nDựa trên yêu cầu của bạn và chuyên ngành \"" + specialization + "\", tôi đã tạo ra các đề tài phù hợp:\n\n" + responseText)
@@ -167,6 +221,33 @@ public class AiChatServiceImpl implements AiChatService {
                     .responseType("error")
                     .build();
         }
+    }
+
+    @Override
+    public ChatResponse suggestTopics(String userMessage, String specialization, Integer studentId) {
+        ChatResponse res = suggestTopics(userMessage, specialization);
+        try {
+            if (studentId != null && res != null) {
+                String json = null;
+                try {
+                    // reconstruct minimal JSON array string from parsed suggestions
+                    if (res.getTopicSuggestions() != null && !res.getTopicSuggestions().isEmpty()) {
+                        String arr = res.getTopicSuggestions().stream()
+                                .map(s -> {
+                                    String title = s.getTitle() != null ? s.getTitle().replace("\"", "\\\"") : "";
+                                    String desc = s.getDescription() != null ? s.getDescription().replace("\"", "\\\"") : "";
+                                    return "{\"title\":\"" + title + "\",\"description\":\"" + desc + "\"}";
+                                })
+                                .collect(java.util.stream.Collectors.joining(","));
+                        json = "[" + arr + "]";
+                    }
+                } catch (Exception ignore) {}
+                suggestionService.saveSuggestionHistory(studentId, userMessage, specialization, json);
+            }
+        } catch (Exception e) {
+            // best-effort, ignore persistence errors for chat flow
+        }
+        return res;
     }
 
     @Override
@@ -348,16 +429,16 @@ public class AiChatServiceImpl implements AiChatService {
     @Override
     public ChatResponse getGeneralHelp() {
         String helpMessage = """
-                **XIN CHÀO! TÔI LÀ AI TRỢ LÝ TƯ VẤN LUẬN VĂN TỐT NGHIỆP**
+                **XIN CHÀO! TÔI LÀ AI TRỢ LÝ TƯ VẤN ĐỒ ÁN TỐT NGHIỆP**
                 
-                Tôi được thiết kế đặc biệt để hỗ trợ sinh viên trong quá trình làm luận văn tốt nghiệp. Dưới đây là những gì tôi có thể giúp bạn:
+                Tôi được thiết kế đặc biệt để hỗ trợ sinh viên trong quá trình làm luận đồ án tốt nghiệp. Dưới đây là những gì tôi có thể giúp bạn:
                 
-                **1. GỢI Ý ĐỀ TÀI LUẬN VĂN CHI TIẾT**
+                **1. GỢI Ý ĐỀ TÀI ĐỒ ÁN CHI TIẾT**
                    Phân tích sở thích và chuyên ngành của bạn
                    Gợi ý đề tài phù hợp với trình độ và thời gian
                    Cung cấp mục tiêu nghiên cứu cụ thể
                    Đề xuất phương pháp nghiên cứu phù hợp
-                   Đánh giá mức độ khó (EASY/MEDIUM/HARD)
+                   Đánh giá mức độ khó
                    Dự đoán kết quả mong đợi
                    
                    **Ví dụ câu hỏi:**
@@ -384,22 +465,21 @@ public class AiChatServiceImpl implements AiChatService {
                    Cập nhật real-time
                    
                    **Ví dụ câu hỏi:**
-                   - "Kiểm tra capacity giảng viên ID 1"
                    - "Giảng viên ABC còn nhận được bao nhiêu sinh viên?"
                 
                 **4. TƯ VẤN CHUNG TOÀN DIỆN**
-                   Hướng dẫn quy trình đăng ký luận văn
+                   Hướng dẫn quy trình đăng ký đồ án
                    Giải thích yêu cầu và tiêu chí đánh giá
                    Tư vấn cách chọn đề tài phù hợp
                    Hướng dẫn viết đề cương nghiên cứu
                    Giải đáp thắc mắc về timeline và deadline
                    Tư vấn về phương pháp nghiên cứu
                    Hướng dẫn cách trình bày và bảo vệ
-                   
+
                    **Ví dụ câu hỏi:**
-                   - "Quy trình đăng ký luận văn như thế nào?"
+                   - "Quy trình đăng ký đồ án như thế nào?"
                    - "Làm sao để viết đề cương nghiên cứu tốt?"
-                   - "Timeline làm luận văn trong bao lâu?"
+                   - "Timeline làm đồ án trong bao lâu?"
                    - "Cần chuẩn bị gì cho buổi bảo vệ?"
                 
                 **CÁCH SỬ DỤNG HIỆU QUẢ:**
@@ -424,18 +504,22 @@ public class AiChatServiceImpl implements AiChatService {
         if (message.contains("bạn có thể") || message.contains("bạn làm gì") || 
             message.contains("giúp gì") || message.contains("chức năng") ||
             message.contains("làm gì") || message.contains("có gì")) {
-            return "general_help";
+            return INTENT_GENERAL_HELP;
         }
         
-        // Kiểm tra capacity cụ thể của giảng viên (ưu tiên cao nhất)
-        // Pattern: "Giảng viên [Tên] + [capacity keywords]"
-        if (isCapacityCheckPattern(message)) {
-            return "capacity_check";
+        // Hỏi đợt đăng ký của sinh viên trong kỳ hiện tại
+        if (isStudentRegistrationPeriodPattern(message)) {
+            return INTENT_STUDENT_PERIOD;
         }
-        
+
         // Kiểm tra tìm kiếm giảng viên chung (chỉ khi không có tên cụ thể)
         if (isGeneralLecturerSearchPattern(message)) {
             return "lecturer_search";
+        }
+        
+        // Kiểm tra capacity cụ thể của giảng viên (ưu tiên thấp hơn tìm kiếm chung nếu không có tên/ID cụ thể)
+        if (isCapacityCheckPattern(message)) {
+            return INTENT_CAPACITY_CHECK;
         }
         
         // Kiểm tra gợi ý đề tài (ưu tiên cao hơn general_help)
@@ -446,7 +530,7 @@ public class AiChatServiceImpl implements AiChatService {
         if (message.contains("giảng viên") || message.contains("thầy") || 
             message.contains("cô") || message.contains("lecturer") ||
             message.contains("hướng dẫn")) {
-            return "lecturer_search";
+            return INTENT_LECTURER_SEARCH;
         }
         
         return null; // Không xác định được, dùng AI
@@ -490,12 +574,7 @@ public class AiChatServiceImpl implements AiChatService {
     }
     
     private boolean isCapacityCheckPattern(String message) {
-        // Kiểm tra có tên giảng viên cụ thể không
-        boolean hasLecturerName = message.matches(".*giảng viên\\s+[^\\s]+.*") ||
-                                 message.matches(".*thầy\\s+[^\\s]+.*") ||
-                                 message.matches(".*cô\\s+[^\\s]+.*");
-        
-        // Kiểm tra có từ khóa capacity không
+        // Ưu tiên khi có ID giảng viên + từ khóa capacity
         boolean hasCapacityKeywords = message.contains("có thể nhận thêm") || 
                                      message.contains("nhận thêm bao nhiêu") ||
                                      message.contains("capacity") || 
@@ -508,8 +587,39 @@ public class AiChatServiceImpl implements AiChatService {
                                      message.contains("còn trống") ||
                                      message.contains("có trống") ||
                                      message.contains("chỗ trống");
-        
-        return hasLecturerName && hasCapacityKeywords;
+
+        if (!hasCapacityKeywords) return false;
+
+        // Có ID => kiểm tra capacity
+        if (extractLecturerId(message) != null) return true;
+
+        // Có nêu tên cụ thể (không phải từ nghi vấn như "nào", "ai") => kiểm tra capacity
+        return isSpecificLecturerMention(message);
+    }
+
+    private boolean isSpecificLecturerMention(String message) {
+        try {
+            String[] namePatterns = new String[] {
+                "giảng viên\\s+([^\\s]+)",
+                "thầy\\s+([^\\s]+)",
+                "cô\\s+([^\\s]+)"
+            };
+            for (String pattern : namePatterns) {
+                java.util.regex.Matcher m = java.util.regex.Pattern
+                        .compile(pattern, java.util.regex.Pattern.CASE_INSENSITIVE)
+                        .matcher(message);
+                if (m.find()) {
+                    String token = m.group(1).trim().toLowerCase();
+                    if (token.isEmpty()) continue;
+                    if (token.equals("nào") || token.equals("ai")) {
+                        return false; // không phải tên cụ thể
+                    }
+                    // coi như có tên cụ thể
+                    return true;
+                }
+            }
+        } catch (Exception ignore) {}
+        return false;
     }
     
     private boolean isGeneralLecturerSearchPattern(String message) {
@@ -542,25 +652,148 @@ public class AiChatServiceImpl implements AiChatService {
                     - topic_suggestion: Muốn gợi ý đề tài luận văn
                     - lecturer_search: Muốn tìm giảng viên phù hợp
                     - capacity_check: Muốn kiểm tra capacity giảng viên
+                    - student_period_check: Muốn biết mình đã đăng ký đợt nào
                     - general_help: Cần trợ giúp chung
                     
                     Chỉ trả về một trong các từ khóa trên.
                     """, message);
 
-            UserMessage userMsg = UserMessage.from(prompt);
-            AiMessage response = model.chat(userMsg).aiMessage();
+            AiMessage response = chatWithRetry(model, prompt);
             String result = response.text().trim();
             
             // Fallback nếu AI không trả về đúng format
-            if (!result.equals("topic_suggestion") && !result.equals("lecturer_search") && 
-                !result.equals("capacity_check") && !result.equals("general_help")) {
-                return "general_help";
+            if (!result.equals(INTENT_TOPIC_SUGGESTION) && !result.equals(INTENT_LECTURER_SEARCH) && 
+                !result.equals(INTENT_CAPACITY_CHECK) && !result.equals(INTENT_STUDENT_PERIOD) && !result.equals(INTENT_GENERAL_HELP)) {
+                return INTENT_GENERAL_HELP;
             }
             
             return result;
         } catch (Exception e) {
             log.warn("Error analyzing intent with AI, falling back to general_help: {}", e.getMessage());
-            return "general_help";
+            return INTENT_GENERAL_HELP;
+        }
+    }
+
+    private boolean isStudentRegistrationPeriodPattern(String message) {
+        boolean hasRegisterKeyword = message.contains("đăng ký") || message.contains("đăng ký") || message.contains("dang ky");
+        boolean hasPeriodKeyword = message.contains("đợt") || message.contains("dot") || message.contains("kỳ") || message.contains("ky");
+        boolean hasQuestionKeyword = message.contains("đợt nào") || message.contains("đợt nào vậy") || message.contains("đợt nào trong kỳ") || message.contains("đã đăng ký đợt nào") || message.contains("mình đăng ký đợt nào") || message.contains("tôi đăng ký đợt nào") || message.contains("em đăng ký đợt nào");
+        return hasRegisterKeyword && hasPeriodKeyword && hasQuestionKeyword;
+    }
+
+    private ChatResponse handleStudentRegistrationPeriod(ChatRequest request) {
+        try {
+            Integer studentId = null;
+            try {
+                if (request.getUserId() != null && !request.getUserId().isEmpty()) {
+                    studentId = Integer.parseInt(request.getUserId());
+                }
+            } catch (NumberFormatException nfe) {
+                // ignore, will handle null below
+            }
+
+            final Integer studentIdFinal = studentId;
+
+            if (studentIdFinal == null) {
+                return ChatResponse.builder()
+                        .message("Không xác định được sinh viên. Vui lòng đăng nhập hoặc cung cấp userId để tôi tra cứu đợt đăng ký của bạn.")
+                        .sessionId(request.getSessionId())
+                        .responseType(INTENT_STUDENT_PERIOD)
+                        .build();
+            }
+
+            RegistrationPeriod current = null;
+            try {
+                current = registrationPeriodService.getCurrentActivePeriod();
+            } catch (Exception ignore) {}
+
+            if (current == null) {
+                // Không có đợt ACTIVE, trả về đợt gần nhất (nếu có) mà SV đã đăng ký/được duyệt
+                List<Register> approved = registerRepository.findApprovedRegistrationsByStudentId(studentIdFinal);
+                if (approved == null || approved.isEmpty()) {
+                    return ChatResponse.builder()
+                            .message("Hiện không có đợt đăng ký đang mở và bạn cũng chưa có đăng ký đã được duyệt trong các đợt trước.")
+                            .sessionId(request.getSessionId())
+                            .responseType(INTENT_STUDENT_PERIOD)
+                            .build();
+                }
+
+                Register latest = approved.stream()
+                        .filter(r -> r.getRegisteredAt() != null)
+                        .max(java.util.Comparator.comparing(Register::getRegisteredAt))
+                        .orElse(approved.get(0));
+
+                RegistrationPeriod lp = registrationPeriodService.getPeriodById(latest.getRegistrationPeriodId());
+                String msg = String.format("Bạn có đăng ký đã được duyệt ở đợt: %s (từ %s đến %s).",
+                        lp.getPeriodName(),
+                        lp.getStartDate() != null ? lp.getStartDate().toLocalDate().toString() : "?",
+                        lp.getEndDate() != null ? lp.getEndDate().toLocalDate().toString() : "?");
+                return ChatResponse.builder()
+                        .message(msg)
+                        .sessionId(request.getSessionId())
+                        .responseType(INTENT_STUDENT_PERIOD)
+                        .build();
+            }
+
+            // Có đợt ACTIVE hiện tại, kiểm tra chính xác đăng ký của SV trong đợt này
+            Register myReg = registerRepository
+                    .findTopByStudentIdAndRegistrationPeriodIdOrderByRegisteredAtDesc(studentIdFinal, current.getPeriodId())
+                    .orElse(null);
+
+            if (myReg == null) {
+                // Không có đăng ký trong đợt ACTIVE hiện tại. Tìm đợt gần nhất mà SV đã đăng ký.
+                Register lastAny = registerRepository
+                        .findTopByStudentIdOrderByRegisteredAtDesc(studentIdFinal)
+                        .orElse(null);
+                if (lastAny != null) {
+                    RegistrationPeriod lp = registrationPeriodService.getPeriodById(lastAny.getRegistrationPeriodId());
+                    String msg = String.format(
+                            "Đợt đăng ký hiện tại: %s (từ %s đến %s).\nBạn thuộc đợt đăng ký gần nhất: %s (từ %s đến %s). Trạng thái đăng ký: %s.",
+                            current.getPeriodName(),
+                            current.getStartDate() != null ? current.getStartDate().toLocalDate().toString() : "?",
+                            current.getEndDate() != null ? current.getEndDate().toLocalDate().toString() : "?",
+                            lp.getPeriodName(),
+                            lp.getStartDate() != null ? lp.getStartDate().toLocalDate().toString() : "?",
+                            lp.getEndDate() != null ? lp.getEndDate().toLocalDate().toString() : "?",
+                            lastAny.getRegisterStatus() != null ? lastAny.getRegisterStatus().name() : "PENDING");
+                    return ChatResponse.builder()
+                            .message(msg)
+                            .sessionId(request.getSessionId())
+                            .responseType(INTENT_STUDENT_PERIOD)
+                            .build();
+                } else {
+                    String msg = String.format(
+                            "Đợt đăng ký hiện tại là: %s (từ %s đến %s). Bạn CHƯA có bất kỳ đăng ký nào.",
+                            current.getPeriodName(),
+                            current.getStartDate() != null ? current.getStartDate().toLocalDate().toString() : "?",
+                            current.getEndDate() != null ? current.getEndDate().toLocalDate().toString() : "?");
+                    return ChatResponse.builder()
+                            .message(msg)
+                            .sessionId(request.getSessionId())
+                            .responseType(INTENT_STUDENT_PERIOD)
+                            .build();
+                }
+            }
+
+            String msg = String.format(
+                    "Bạn thuộc đợt đăng ký: %s (từ %s đến %s). Trạng thái đăng ký của bạn: %s.",
+                    current.getPeriodName(),
+                    current.getStartDate() != null ? current.getStartDate().toLocalDate().toString() : "?",
+                    current.getEndDate() != null ? current.getEndDate().toLocalDate().toString() : "?",
+                    myReg.getRegisterStatus() != null ? myReg.getRegisterStatus().name() : "PENDING");
+
+            return ChatResponse.builder()
+                    .message(msg)
+                    .sessionId(request.getSessionId())
+                    .responseType(INTENT_STUDENT_PERIOD)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error handling student registration period: {}", e.getMessage(), e);
+            return ChatResponse.builder()
+                    .message("Xin lỗi, tôi không thể tra cứu đợt đăng ký của bạn lúc này. Vui lòng thử lại sau.")
+                    .sessionId(request.getSessionId())
+                    .responseType(TYPE_ERROR)
+                    .build();
         }
     }
 
@@ -860,8 +1093,7 @@ public class AiChatServiceImpl implements AiChatService {
                     - Kết thúc bằng lời khuyên hoặc gợi ý tiếp theo
                     """, request.getMessage());
 
-            UserMessage userMsg = UserMessage.from(prompt);
-            AiMessage response = model.chat(userMsg).aiMessage();
+            AiMessage response = chatWithRetry(model, prompt);
             String responseText = response.text();
             
             return ChatResponse.builder()

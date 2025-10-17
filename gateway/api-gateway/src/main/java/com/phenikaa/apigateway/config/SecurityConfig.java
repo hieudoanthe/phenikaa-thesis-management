@@ -59,6 +59,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/thesis-service/student-period/**").hasAnyRole("ADMIN", "STUDENT")
                         .pathMatchers("/api/user-service/student/**").hasRole("STUDENT")
                         .pathMatchers("/api/thesis-service/student/**").hasRole("STUDENT")
+                        .pathMatchers("/api/thesis-service/suggestions/**").hasRole("STUDENT")
                         .pathMatchers("/api/thesis-service/teacher/**").hasRole("TEACHER")
                         .pathMatchers("/api/thesis-service/admin/**").hasAnyRole("ADMIN", "STUDENT")
                         .pathMatchers("/api/profile-service/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RegisterRepository extends JpaRepository<Register, Integer> {
@@ -34,4 +35,10 @@ public interface RegisterRepository extends JpaRepository<Register, Integer> {
     // Today's statistics
     Long countByRegisteredAtBetween(java.time.Instant start, java.time.Instant end);
     List<Register> findByRegisteredAtBetween(java.time.Instant start, java.time.Instant end);
+
+    // Tìm đăng ký mới nhất của sinh viên
+    Optional<Register> findTopByStudentIdOrderByRegisteredAtDesc(Integer studentId);
+
+    // Lấy đăng ký của sinh viên trong một đợt cụ thể
+    Optional<Register> findTopByStudentIdAndRegistrationPeriodIdOrderByRegisteredAtDesc(Integer studentId, Integer registrationPeriodId);
 }

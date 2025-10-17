@@ -33,7 +33,7 @@ spring:
         - id: ${THESIS_SERVICE_NAME}
           uri: ${THESIS_SERVICE_URL}
           predicates:
-            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**, /internal/periods/**, /api/period-statistics/**
+            - Path=/api/thesis-service/teacher/**, /api/thesis-service/student/**, /api/thesis-service/admin/**, /api/thesis-service/student-period/**, /api/thesis-service/ai-chat/**, /internal/thesis/**, /internal/periods/**, /api/period-statistics/**, /api/thesis-service/suggestions/**
 
         - id: ${ASSIGN_SERVICE_NAME}
           uri: ${ASSIGN_SERVICE_URL}

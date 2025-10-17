@@ -10,6 +10,7 @@ import com.phenikaa.evalservice.repository.StudentDefenseRepository;
 import com.phenikaa.evalservice.repository.DefenseCommitteeRepository;
 import com.phenikaa.evalservice.repository.DefenseSessionRepository;
 import com.phenikaa.evalservice.client.ThesisServiceClient;
+import com.phenikaa.evalservice.client.NotificationServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class EvaluationService {
     private final DefenseCommitteeRepository defenseCommitteeRepository;
     private final DefenseSessionRepository defenseSessionRepository;
     private final ThesisServiceClient thesisServiceClient;
+    private final NotificationServiceClient notificationClient;
     
     /**
      * Chấm điểm cho sinh viên
@@ -50,7 +52,7 @@ public class EvaluationService {
         // 1) Validate scores based on role-specific criteria
         validateScoresByRole(request);
 
-        // Kiểm tra xem đã có đánh giá chưa (lấy bản ghi mới nhất nếu có nhiều)
+        // Kiểm tra xem đã có đánh giá chưa 
         var existingEvaluations = evaluationRepository
                 .findAllByTopicIdAndEvaluatorIdAndEvaluationTypeOrderByEvaluatedAtDesc(
                         request.getTopicId(),
@@ -60,7 +62,7 @@ public class EvaluationService {
 
         ProjectEvaluation evaluation;
         if (!existingEvaluations.isEmpty()) {
-            // Cập nhật đánh giá hiện có (bản ghi mới nhất)
+            // Cập nhật đánh giá hiện có
             evaluation = existingEvaluations.get(0);
             log.info("Updating existing evaluation: {}", evaluation.getEvaluationId());
         } else {
@@ -419,7 +421,29 @@ public class EvaluationService {
                 .collect(Collectors.toList()));
         
         log.info("Final score calculated for topic {}: {}", topicId, finalScore);
-        
+
+        // Gửi thông báo cho sinh viên nếu đã có điểm cuối cùng
+        try {
+            if (finalScore != null) {
+                Integer studentId = evaluations.stream()
+                        .map(ProjectEvaluation::getStudentId)
+                        .filter(java.util.Objects::nonNull)
+                        .findFirst()
+                        .orElse(null);
+                if (studentId != null) {
+                    String message = String.format("Điểm tổng kết đồ án của bạn: %.2f", finalScore);
+                    java.util.Map<String, Object> body = new java.util.HashMap<>();
+                    body.put("senderId", 0);
+                    body.put("receiverId", studentId);
+                    body.put("message", message);
+                    body.put("type", "FINAL_SCORE");
+                    notificationClient.sendNotification(body);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not send final score notification: {}", e.getMessage());
+        }
+
         return response;
     }
     

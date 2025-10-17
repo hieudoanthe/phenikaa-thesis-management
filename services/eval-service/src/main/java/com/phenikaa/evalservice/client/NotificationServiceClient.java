@@ -12,10 +12,6 @@ import java.util.Map;
         path = "/communication-log-service",
         configuration = FeignTokenInterceptor.class)
 public interface NotificationServiceClient {
-
-    /**
-     * Gửi thông báo cho sinh viên
-     */
     @PostMapping("/notifications/send")
     void sendNotification(@RequestBody Map<String, Object> noti);
 }
