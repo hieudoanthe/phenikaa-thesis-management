@@ -2,7 +2,7 @@ package com.phenikaa.submissionservice.controller;
 
 import com.phenikaa.submissionservice.dto.request.FeedbackRequest;
 import com.phenikaa.submissionservice.dto.response.FeedbackResponse;
-import com.phenikaa.submissionservice.service.FeedbackService;
+import com.phenikaa.submissionservice.service.interfaces.FeedbackService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

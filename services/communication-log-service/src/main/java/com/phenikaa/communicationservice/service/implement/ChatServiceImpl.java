@@ -27,7 +27,6 @@ import static org.springframework.data.mongodb.core.query.Query.query;
 public class ChatServiceImpl implements ChatService {
 
     private final ReactiveMongoTemplate mongoTemplate;
-    private final UserServiceClient userServiceClient;
 
     public <T extends ChatMessage> Mono<T> saveMessage(T message) {
         return mongoTemplate.save(message);

@@ -1,4 +1,4 @@
-package com.phenikaa.submissionservice.service;
+package com.phenikaa.submissionservice.service.implement;
 
 import com.phenikaa.submissionservice.client.NotificationServiceClient;
 import com.phenikaa.submissionservice.client.UserServiceClient;
@@ -30,7 +30,7 @@ import com.phenikaa.submissionservice.dto.request.SubmissionFilterRequest;
 @Service
 @Slf4j
 @Transactional
-public class ReportSubmissionService {
+public class ReportSubmissionServiceImpl {
     
     private final ReportSubmissionRepository reportSubmissionRepository;
     private final NotificationServiceClient communicationServiceClient;
@@ -38,7 +38,7 @@ public class ReportSubmissionService {
     private final UserServiceClient userServiceClient;
     private final ThesisServiceClient thesisServiceClient;
     
-    public ReportSubmissionService(
+    public ReportSubmissionServiceImpl(
             ReportSubmissionRepository reportSubmissionRepository,
             NotificationServiceClient communicationServiceClient,
             @Qualifier("cloudinaryFileService") FileStorageService cloudinaryService,

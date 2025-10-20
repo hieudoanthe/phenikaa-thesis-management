@@ -4,7 +4,7 @@ import com.phenikaa.submissionservice.dto.request.ReportSubmissionRequest;
 import com.phenikaa.submissionservice.dto.request.SubmissionFilterRequest;
 import com.phenikaa.submissionservice.dto.response.ReportSubmissionResponse;
 import com.phenikaa.submissionservice.dto.response.SubmissionStatusResponse;
-import com.phenikaa.submissionservice.service.ReportSubmissionService;
+import com.phenikaa.submissionservice.service.implement.ReportSubmissionServiceImpl;
 import com.phenikaa.submissionservice.service.interfaces.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,14 +29,14 @@ import java.util.List;
 @Slf4j
 public class ReportSubmissionController {
 
-    private final ReportSubmissionService reportSubmissionService;
+    private final ReportSubmissionServiceImpl reportSubmissionServiceImpl;
     private final FileStorageService fileStorageService;
 
     public ReportSubmissionController(
-            ReportSubmissionService reportSubmissionService,
+            ReportSubmissionServiceImpl reportSubmissionServiceImpl,
             @org.springframework.beans.factory.annotation.Qualifier("cloudinaryFileService") FileStorageService fileStorageService
     ) {
-        this.reportSubmissionService = reportSubmissionService;
+        this.reportSubmissionServiceImpl = reportSubmissionServiceImpl;
         this.fileStorageService = fileStorageService;
     }
 
@@ -46,7 +46,7 @@ public class ReportSubmissionController {
             @RequestParam(value = "file", required = false) MultipartFile file) {
         try {
             log.info("Creating new report submission for topic: {}", request.getTopicId());
-            ReportSubmissionResponse response = reportSubmissionService.createSubmission(request, file);
+            ReportSubmissionResponse response = reportSubmissionServiceImpl.createSubmission(request, file);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             log.error("Error creating submission: {}", e.getMessage(), e);
@@ -61,7 +61,7 @@ public class ReportSubmissionController {
             @RequestParam(value = "file", required = false) MultipartFile file) {
         try {
             log.info("Updating submission: {}", submissionId);
-            ReportSubmissionResponse response = reportSubmissionService.updateSubmission(submissionId, request, file);
+            ReportSubmissionResponse response = reportSubmissionServiceImpl.updateSubmission(submissionId, request, file);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error updating submission: {}", e.getMessage(), e);
@@ -72,7 +72,7 @@ public class ReportSubmissionController {
     @GetMapping("/submissions/{submissionId}")
     public ResponseEntity<ReportSubmissionResponse> getSubmissionById(@PathVariable Integer submissionId) {
         try {
-            ReportSubmissionResponse response = reportSubmissionService.getSubmissionById(submissionId);
+            ReportSubmissionResponse response = reportSubmissionServiceImpl.getSubmissionById(submissionId);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error getting submission: {}", e.getMessage(), e);
@@ -83,7 +83,7 @@ public class ReportSubmissionController {
     @GetMapping("/submissions/topic/{topicId}")
     public ResponseEntity<List<ReportSubmissionResponse>> getSubmissionsByTopic(@PathVariable Integer topicId) {
         try {
-            List<ReportSubmissionResponse> responses = reportSubmissionService.getSubmissionsByTopic(topicId);
+            List<ReportSubmissionResponse> responses = reportSubmissionServiceImpl.getSubmissionsByTopic(topicId);
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
             log.error("Error getting submissions by topic: {}", e.getMessage(), e);
@@ -94,7 +94,7 @@ public class ReportSubmissionController {
     @GetMapping("/submissions/user/{userId}")
     public ResponseEntity<List<ReportSubmissionResponse>> getSubmissionsByUser(@PathVariable Integer userId) {
         try {
-            List<ReportSubmissionResponse> responses = reportSubmissionService.getSubmissionsByUser(userId);
+            List<ReportSubmissionResponse> responses = reportSubmissionServiceImpl.getSubmissionsByUser(userId);
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
             log.error("Error getting submissions by user: {}", e.getMessage(), e);
@@ -105,7 +105,7 @@ public class ReportSubmissionController {
     @GetMapping("/submissions")
     public ResponseEntity<Page<ReportSubmissionResponse>> getSubmissionsWithPagination(Pageable pageable) {
         try {
-            Page<ReportSubmissionResponse> responses = reportSubmissionService.getSubmissionsWithPagination(pageable);
+            Page<ReportSubmissionResponse> responses = reportSubmissionServiceImpl.getSubmissionsWithPagination(pageable);
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
             log.error("Error getting submissions with pagination: {}", e.getMessage(), e);
@@ -120,7 +120,7 @@ public class ReportSubmissionController {
     ) {
         try {
             // Nếu không truyền header, có thể lấy từ SecurityContext sau này
-            Page<ReportSubmissionResponse> responses = reportSubmissionService.filterSubmissions(request, studentId);
+            Page<ReportSubmissionResponse> responses = reportSubmissionServiceImpl.filterSubmissions(request, studentId);
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
             log.error("Error filtering submissions: {}", e.getMessage(), e);
@@ -134,7 +134,7 @@ public class ReportSubmissionController {
             @RequestParam Integer status) {
         try {
             log.info("Updating submission status: {} to {}", submissionId, status);
-            ReportSubmissionResponse response = reportSubmissionService.updateSubmissionStatus(submissionId, status);
+            ReportSubmissionResponse response = reportSubmissionServiceImpl.updateSubmissionStatus(submissionId, status);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error updating submission status: {}", e.getMessage(), e);
@@ -145,7 +145,7 @@ public class ReportSubmissionController {
     @GetMapping("/submissions/{submissionId}/file-url")
     public ResponseEntity<String> getFileUrl(@PathVariable Integer submissionId) {
         try {
-            ReportSubmissionResponse submission = reportSubmissionService.getSubmissionById(submissionId);
+            ReportSubmissionResponse submission = reportSubmissionServiceImpl.getSubmissionById(submissionId);
             if (submission.getFilePath() == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -159,7 +159,7 @@ public class ReportSubmissionController {
     @GetMapping("/submissions/{submissionId}/file")
     public ResponseEntity<byte[]> getFile(@PathVariable Integer submissionId) {
         try {
-            ReportSubmissionResponse submission = reportSubmissionService.getSubmissionById(submissionId);
+            ReportSubmissionResponse submission = reportSubmissionServiceImpl.getSubmissionById(submissionId);
             if (submission.getFilePath() == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -226,7 +226,7 @@ public class ReportSubmissionController {
     public ResponseEntity<Void> deleteSubmission(@PathVariable Integer submissionId) {
         try {
             log.info("Deleting submission: {}", submissionId);
-            reportSubmissionService.deleteSubmission(submissionId);
+            reportSubmissionServiceImpl.deleteSubmission(submissionId);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             log.error("Error deleting submission: {}", e.getMessage(), e);
@@ -284,7 +284,7 @@ public class ReportSubmissionController {
     public ResponseEntity<SubmissionStatusResponse> getSubmissionStatus(@PathVariable Integer userId) {
         try {
             log.info("Getting submission status for user: {}", userId);
-            SubmissionStatusResponse response = reportSubmissionService.checkSubmissionStatus(userId);
+            SubmissionStatusResponse response = reportSubmissionServiceImpl.checkSubmissionStatus(userId);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error getting submission status for user {}: {}", userId, e.getMessage(), e);

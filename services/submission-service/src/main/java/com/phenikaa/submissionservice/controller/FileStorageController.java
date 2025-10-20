@@ -1,6 +1,6 @@
 package com.phenikaa.submissionservice.controller;
 
-import com.phenikaa.submissionservice.service.FileStorageStrategy;
+import com.phenikaa.submissionservice.service.implement.FileStorageStrategyImpl;
 import com.phenikaa.submissionservice.service.interfaces.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import java.util.Map;
 @Slf4j
 public class FileStorageController {
     
-    private final FileStorageStrategy fileStorageStrategy;
+    private final FileStorageStrategyImpl fileStorageStrategyImpl;
     
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     @Qualifier("traditionalFileService")
@@ -44,13 +44,13 @@ public class FileStorageController {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            FileStorageService service = fileStorageStrategy.getFileStorageService();
+            FileStorageService service = fileStorageStrategyImpl.getFileStorageService();
             String filePath = service.uploadFile(file, folder);
             
             response.put("status", "success");
             response.put("filePath", filePath);
-            response.put("storageType", fileStorageStrategy.getCurrentStorageType());
-            response.put("message", "File uploaded successfully using " + fileStorageStrategy.getCurrentStorageType());
+            response.put("storageType", fileStorageStrategyImpl.getCurrentStorageType());
+            response.put("message", "File uploaded successfully using " + fileStorageStrategyImpl.getCurrentStorageType());
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -64,7 +64,7 @@ public class FileStorageController {
     @GetMapping("/download")
     public ResponseEntity<byte[]> downloadFile(@RequestParam String path) {
         try {
-            FileStorageService service = fileStorageStrategy.getFileStorageService();
+            FileStorageService service = fileStorageStrategyImpl.getFileStorageService();
             byte[] fileContent = service.downloadFile(path);
             
             // Determine content type
@@ -234,7 +234,7 @@ public class FileStorageController {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            fileStorageStrategy.comparePerformance(file, folder);
+            fileStorageStrategyImpl.comparePerformance(file, folder);
             response.put("status", "success");
             response.put("message", "Performance comparison completed. Check logs for details.");
         } catch (Exception e) {
@@ -250,7 +250,7 @@ public class FileStorageController {
     @GetMapping("/config")
     public ResponseEntity<Map<String, Object>> getConfig() {
         Map<String, Object> config = new HashMap<>();
-        config.put("currentStorageType", fileStorageStrategy.getCurrentStorageType());
+        config.put("currentStorageType", fileStorageStrategyImpl.getCurrentStorageType());
         config.put("traditionalAvailable", traditionalService != null);
         config.put("nioAvailable", nioService != null);
         config.put("cloudinaryAvailable", cloudinaryService != null);
@@ -262,7 +262,7 @@ public class FileStorageController {
     @GetMapping("/stream")
     public ResponseEntity<byte[]> streamFile(@RequestParam String path) {
         try {
-            FileStorageService service = fileStorageStrategy.getFileStorageService();
+            FileStorageService service = fileStorageStrategyImpl.getFileStorageService();
             
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             service.streamFile(path, baos);

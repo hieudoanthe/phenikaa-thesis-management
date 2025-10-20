@@ -2,10 +2,10 @@ package com.phenikaa.authservice.controller;
 
 import com.phenikaa.authservice.client.UserServiceClient;
 import com.phenikaa.authservice.client.CommunicationServiceClient;
+import com.phenikaa.authservice.service.interfaces.AuthService;
 import com.phenikaa.dto.request.RefreshTokenRequest;
 import com.phenikaa.dto.request.LoginRequest;
 import com.phenikaa.authservice.dto.response.AuthResponse;
-import com.phenikaa.authservice.service.implement.AuthService;
 import com.phenikaa.dto.response.RefreshTokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

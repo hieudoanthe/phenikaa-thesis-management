@@ -1,4 +1,4 @@
-package com.phenikaa.submissionservice.service;
+package com.phenikaa.submissionservice.service.implement;
 
 import com.phenikaa.submissionservice.client.NotificationServiceClient;
 import com.phenikaa.submissionservice.dto.request.FeedbackRequest;
@@ -7,6 +7,7 @@ import com.phenikaa.submissionservice.entity.Feedback;
 import com.phenikaa.submissionservice.entity.ReportSubmission;
 import com.phenikaa.submissionservice.repository.FeedbackRepository;
 import com.phenikaa.submissionservice.repository.ReportSubmissionRepository;
+import com.phenikaa.submissionservice.service.interfaces.FeedbackService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,12 +25,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-public class FeedbackService {
+public class FeedbackServiceImpl implements FeedbackService {
     
     private final FeedbackRepository feedbackRepository;
     private final ReportSubmissionRepository reportSubmissionRepository;
     private final NotificationServiceClient communicationServiceClient;
-    
+
     /**
      * Tạo phản hồi mới
      */
@@ -182,23 +183,7 @@ public class FeedbackService {
         Optional<Double> averageScore = feedbackRepository.findAverageScoreBySubmissionId(submissionId);
         return averageScore.orElse(0.0);
     }
-    
-    /**
-     * Lấy phản hồi mới nhất của submission
-     */
-    public Optional<FeedbackResponse> getLatestFeedback(Integer submissionId) {
-        Optional<Feedback> latestFeedback = feedbackRepository.findFirstBySubmissionSubmissionIdOrderByCreatedAtDesc(submissionId);
-        return latestFeedback.map(this::convertToResponse);
-    }
-    
-    /**
-     * Kiểm tra xem reviewer đã phản hồi chưa
-     */
-    public boolean hasReviewerFeedback(Integer submissionId, Integer reviewerId) {
-        Optional<Feedback> existingFeedback = feedbackRepository.findBySubmissionSubmissionIdAndReviewerId(submissionId, reviewerId);
-        return existingFeedback.isPresent();
-    }
-    
+
     /**
      * Convert entity to response DTO
      */

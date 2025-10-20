@@ -2,6 +2,7 @@ package com.phenikaa.authservice.service.implement;
 
 
 import com.phenikaa.authservice.client.UserServiceClient;
+import com.phenikaa.authservice.service.interfaces.AuthService;
 import com.phenikaa.dto.request.RefreshTokenRequest;
 import com.phenikaa.dto.request.LoginRequest;
 import com.phenikaa.authservice.dto.response.AuthResponse;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AuthService {
+public class AuthServiceImpl implements AuthService {
 
     private final UserServiceClient userServiceClient;
     private final JwtUtil jwtUtil;
